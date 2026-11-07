@@ -29,7 +29,7 @@ Ncrust 各平台线（Android `app/`、Windows `windows/`、Lumia 原型 `lumia/
 | `api/playlists.md` | 歌单主机/路径、匿名读取证据、分页与完整性判定、写操作待验证边界 | Android 实验入口已接入；fake-gateway 与模拟器验收记录见 [实施说明](../docs/playlists/implementation.md)，真实账号写入仍待验证 |
 | `fixtures/crypto/` | eapi / weapi / xeapi 固定输入 → 固定输出（随机量全部固定以保证可复现） | Windows 已接入三组夹具；Android 已接入 xeapi，eapi/weapi 夹具测试待补 |
 | `api/xeapi.md` | 官方 Android 9.x 请求加密层 + 收藏新通道 `/api/v1/radio/like` | 两端已接入实现与 xeapi 夹具测试；真实账号收藏持久性仍待验证 |
-| `fixtures/update/` | 应用内更新：跨班次按资产名找严格更高版本、忽略 draft / prerelease、资产名与扩展名校验 | ✅ 两端消费同一份夹具，prerelease 与扩展名的历史差异已消除 |
+| `fixtures/update/` | Windows 应用内更新：跨班次按资产名找严格更高版本、忽略 draft / prerelease、资产名与扩展名校验 | ✅ Windows 消费；Android 应用内更新器已移除 |
 | `api/entitlement.md` + `fixtures/entitlement/` | 登录失效 / VIP / 试听 / 无版权 / 音质受限的判定规则与界面要求，及三组判定夹具 | 两端实现及三组夹具测试已接入；真机与真实账号验收仍待完成 |
 | `tools/` | 零依赖 Node 参考实现与调研脚本：`xeapi.mjs`、`gen-xeapi-fixtures.mjs`、`probe-xeapi.mjs`（匿名探针）、`like-experiment.mjs`（收藏回滚对照实验，**会改账号数据，须账号主人同意**） | 📝 |
 | `tools/probe-playlists.mjs` + `.test.mjs` | 白名单匿名只读探针；`node --test spec/tools/probe-playlists.test.mjs` 校验读写边界与完整性摘要 | ✅ 4 项离线测试；公开样本 7 次读取通过，不证明账号写入 |

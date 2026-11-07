@@ -79,7 +79,6 @@ import com.smart.neteast.playlist.PlaylistManager
 import com.smart.neteast.playlist.PlaylistPanelMode
 import com.smart.neteast.playlist.PlaylistPanelRequest
 import com.smart.neteast.ui.components.TopScrimIconButton
-import com.smart.neteast.ui.components.UpdateNavDot
 import com.smart.neteast.ui.navigation.MainNavGraph
 import com.smart.neteast.ui.navigation.NavRoutes
 import com.smart.neteast.ui.player.PlayerCardOverlay
@@ -102,7 +101,6 @@ import com.smart.neteast.ui.theme.toMetroColors
 import com.smart.neteast.ui.viewmodel.PlayerViewModel
 import com.smart.neteast.share.NeteaseLink
 import com.smart.neteast.share.NeteaseLinkParser
-import com.smart.neteast.update.UpdateService
 import io.github.takahashirinta.kanesumi.anim.sokuou.metroViewConfiguration
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.MetroTheme
@@ -133,8 +131,6 @@ class MainActivity : ComponentActivity() {
         // 冷启动即刻并发启动预热：Home 三条网络 + 封面 Coil 预取。
         // splash 期间跑完，进入主页时 ContentCache 已就位，无 loader 闪烁。
         AppWarmup.start(this)
-        // 更新检查：先把上次发现的结果读回来（24 小时窗口内不再联网，但横幅要立刻能显示）。
-        UpdateService.init(this)
         PlaylistManager.init(this)
         enableEdgeToEdge()
         setContent {
@@ -210,16 +206,6 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // 更新检查：等 splash 收起（首页已渲染）再等约 10 秒才联网，
-                    // 避开冷启动的预热请求与首帧。24 小时窗口、开关与「失败静默」
-                    // 都在 UpdateService.autoCheck 里。用 splash 状态当触发条件而不是
-                    // LaunchedEffect(Unit)：语言切换会重走一遍 splash，那时也该重新判定
-                    // （窗口没过就不会再发请求）。
-                    LaunchedEffect(showSplash) {
-                        if (showSplash) return@LaunchedEffect
-                        delay(10_000L)
-                        UpdateService.autoCheck(this@MainActivity)
-                    }
                     if (showBatteryPrompt) {
                         BackgroundActivityDialog(
                             onAllow = {
@@ -1229,22 +1215,6 @@ fun MainScreen(
 
     // 页面、导航、播放器及覆盖页共用高度档，后续 S2 无需再移动 provider。
     CompositionLocalProvider(LocalHeightClass provides heightClass) {
-    var showAbout by remember { mutableStateOf(false) }
-    // 更新页：与「关于」同一套覆盖层做法（全屏 + 悬浮返回箭头）。放在关于之前判断，
-    // 这样从关于页进来时返回能落回关于页，而不是直接回主界面。
-    var showUpdate by remember { mutableStateOf(false) }
-    if (showUpdate) {
-        UpdatePageOverlay(onClose = { showUpdate = false })
-        return@CompositionLocalProvider
-    }
-    if (showAbout) {
-        AboutScreen(
-            onBack = { showAbout = false },
-            onOpenUpdate = { showUpdate = true }
-        )
-        return@CompositionLocalProvider
-    }
-
     var showWebLogin by remember { mutableStateOf(false) }
     // 宽屏（平板/折叠展开/车机）走扫码登录：会话失效横幅点了之后弹出的登录流程与用户页一致。
     var showQrRelogin by remember { mutableStateOf(false) }
@@ -1301,14 +1271,43 @@ fun MainScreen(
                     android.webkit.WebView(ctx).apply {
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
+                        settings.saveFormData = false
                         settings.useWideViewPort = true
                         settings.loadWithOverviewMode = true
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            importantForAutofill = android.view.View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+                        }
                         android.webkit.CookieManager.getInstance()
                             .setAcceptThirdPartyCookies(this, true)
                         webViewClient = object : android.webkit.WebViewClient() {
                             override fun onPageFinished(
                                 view: android.webkit.WebView, url: String
                             ) {
+                                // 网易登录页由网页动态创建输入框；禁用浏览器表单记忆并持续
+                                // 关闭手机号/短信验证码字段的 autocomplete。
+                                view.evaluateJavascript(
+                                    """(function(){
+                                        function disableLoginAutofill(){
+                                            document.querySelectorAll('input').forEach(function(input){
+                                                var type=(input.type||'').toLowerCase();
+                                                var name=((input.name||'')+' '+(input.id||'')+' '+(input.placeholder||'')).toLowerCase();
+                                                if(type==='tel'||type==='number'||type==='password'||/phone|mobile|captcha|code|验证码|手机号/.test(name)){
+                                                    input.setAttribute('autocomplete','off');
+                                                    input.setAttribute('autocorrect','off');
+                                                    input.setAttribute('autocapitalize','off');
+                                                    input.setAttribute('spellcheck','false');
+                                                }
+                                            });
+                                            document.querySelectorAll('form').forEach(function(form){form.setAttribute('autocomplete','off');});
+                                        }
+                                        disableLoginAutofill();
+                                        if(!window.__ncrustAutofillObserver){
+                                            window.__ncrustAutofillObserver=new MutationObserver(disableLoginAutofill);
+                                            window.__ncrustAutofillObserver.observe(document.documentElement,{childList:true,subtree:true});
+                                        }
+                                    })();""".trimIndent(),
+                                    null
+                                )
                                 val cookie = android.webkit.CookieManager.getInstance()
                                     .getCookie(url)
                                 // 只认非空的 MUSIC_U：会话失效时网页会把它置空（`MUSIC_U=`），
@@ -1600,8 +1599,6 @@ fun MainScreen(
                         )
 
                         2 -> UserScreen(
-                            onOpenAbout = { showAbout = true },
-                            onOpenUpdate = { showUpdate = true },
                             themeIndex = themeIndex,
                             onThemeChange = onThemeChange,
                             themeMode = themeMode,
@@ -1673,9 +1670,6 @@ fun MainScreen(
                         )
                     }
                 }
-                // 「用户」图标右上角的小圆点：叠加绘制在导航之上（MetroBottomNav 没有角标
-                // 字段，且库对本仓库只读）。宽屏走左侧 sidebar，不画。
-                UpdateNavDot()
             }
         }
 

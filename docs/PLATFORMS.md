@@ -5,7 +5,7 @@
 | 平台线 | 技术路线 | 仓内落点 | 当前状态 |
 |---|---|---|---|
 | Windows 桌面 | C# / UWP + WinUI 2 | `windows/` | 已有客户端与发行线；模块规则见 `windows/AGENTS.md` |
-| Android 主版 | Kotlin / Android + Compose / Media3 | `app/` | 已有客户端与发行线；继续修复更新与阅读体验、研究歌单管理 |
+| Android 主版 | Kotlin / Android + Compose / Media3 | `app/` | 已有客户端与发行线；当前不包含应用内更新器 |
 | Linux | Rust / Kanesumi | 待建立实现目录 | 路线已指定；本轮无应用骨架、构建或 Linux 运行验证 |
 | Lumia 950 | C++ / WinUI（UWP、Windows.UI.Xaml）/ ARM32 | `lumia/` | 从原 Ritsudou 迁入原型基线；尚未品牌迁移、协议对齐或本轮构建验收 |
 | Android 4 极简版 | 沿用 Walkman 立项的 Kotlin / 原生 View / MediaPlayer | `walkman/` | 已有任务书与 API 16 可行性研究；仓内尚只有任务文档，没有 W0 应用工程 |

@@ -64,8 +64,7 @@ android {
     }
     buildFeatures {
         compose = true
-        // 让 AboutScreen 通过 BuildConfig.VERSION_NAME 动态显示版本号，
-        // 避免每次发版忘记同步硬编码。
+        // RetrofitClient uses BuildConfig.DEBUG to gate development-only network logs.
         buildConfig = true
     }
     testOptions {

@@ -41,7 +41,6 @@ data class Strings(
     val themeModeLight: String,
     val themeColorNames: List<String>,
     val languageSectionTitle: String,
-    val aboutButton: String,
     val storageSectionTitle: String,
     val cacheSizeLabel: (Long) -> String,
     val clearCache: String,
@@ -147,29 +146,6 @@ data class Strings(
     val loadingSongsCount: (Int) -> String,
     val playAllPartial: (Int) -> String,
 
-    // About
-    val aboutTitle: String,
-    val aboutAppSubtitle: String,
-    val aboutSectionProject: String,
-    val aboutVersion: String,
-    val aboutDeveloper: String,
-    val aboutLicense: String,
-    val aboutRepository: String,
-    val aboutSectionTechStack: String,
-    val aboutLangLabel: String,
-    val aboutUIFrameworkLabel: String,
-    val aboutDesignSystemLabel: String = "Design System",
-    val aboutAudioEngineLabel: String,
-    val aboutNetworkLabel: String,
-    val aboutImageLabel: String,
-    val aboutSectionTeam: String,
-    val aboutRoleDev: String,
-    val aboutRoleTester: String,
-    val aboutSectionCredits: String,
-    val aboutCreditCli: String,
-    val aboutCreditAnim: String,
-    val aboutCreditDesign: String,
-
     // Player UI
     val noLyrics: String,
     val emptyQueue: String,
@@ -274,43 +250,6 @@ data class Strings(
     val trialSettingTitle: String,
     val trialSettingPlay: String,
     val trialSettingSkip: String,
-
-    // ---------- 应用内更新（GitHub Releases；规则见 docs/RELEASES.md 与 spec/fixtures/update） ----------
-    // 用户页顶部横幅：(新版本号)。点它进更新页。
-    val updateAvailableBanner: (String) -> String,
-    // 底部导航圆点的无障碍描述
-    val updateDotDesc: String,
-    // 用户页 / 关于页的手动入口
-    val updateCheckNow: String,
-    val updateChecking: String,
-    val updateUpToDate: String,
-    val updateCheckFailed: String,
-    // 用户页设置项
-    val updateSectionTitle: String,
-    val updateAutoCheckTitle: String,
-    val updateAutoCheckDescription: String,
-    // 更新页
-    val updateTitle: String,
-    val updateReleasedLabel: String,
-    val updateSizeLabel: String,
-    val updateNotesLabel: String,
-    val updateNoNotes: String,
-    val updateDownloadAndInstall: String,
-    val updateOpenInBrowser: String,
-    val updateLater: String,
-    val updateCancelDownload: String,
-    // 总长未知时的下载文案
-    val updateDownloading: String,
-    // (百分比)
-    val updateDownloadingPercent: (Int) -> String,
-    val updateVerifying: String,
-    val updateDownloadFailed: String,
-    val updatePackageMismatch: String,
-    val updateVersionNotHigher: String,
-    val updateArchiveUnreadable: String,
-    val updateSignatureMismatch: String,
-    val updateInstallBlockedHint: String,
-    val updateInstallLaunchFailed: String,
 )
 
 /** 字节数格式化为人类可读的 B/KB/MB/GB，供 cacheSizeLabel 复用。 */
