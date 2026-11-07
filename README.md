@@ -1,6 +1,6 @@
 <div align="center">
 
-# Ncrust
+# Smart Netease
 
 ### 把网易云的曲库，装进一块直角玻璃
 
@@ -10,15 +10,15 @@ Android · Kotlin + Jetpack Compose + Media3 ｜ Windows · C# + UWP + WinUI 2 �
 
 平台主线：Windows（C#/WinUI）、Android（Kotlin）、Linux（Rust/Kanesumi）、Lumia 950（C++/WinUI）、Android 4 极简版。当前实现与计划状态见 [平台规划](docs/PLATFORMS.md)；Lumia 原型在 `lumia/`，Linux 与 Android 4 尚未形成可发行应用。当前先推进 Ncrust，Ritsudou 的独立技术方向暂缓。
 
-[![Version](https://img.shields.io/badge/version-1.4.1-brightgreen?style=flat-square)](https://github.com/GuitaristRin/Ncrust/releases)
-[![APK](https://img.shields.io/badge/APK-3.9%20MB-blue?style=flat-square)](https://github.com/GuitaristRin/Ncrust/releases)
+[![Version](https://img.shields.io/badge/version-1.4.1-brightgreen?style=flat-square)](https://github.com/smartzheng/smart-netease/releases)
+[![APK](https://img.shields.io/badge/APK-3.9%20MB-blue?style=flat-square)](https://github.com/smartzheng/smart-netease/releases)
 [![API](https://img.shields.io/badge/API-24%2B-green?style=flat-square&logo=android)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9.24-purple?style=flat-square&logo=kotlin)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/Compose-BOM%202024.12-blue?style=flat-square&logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
-[![Windows](https://img.shields.io/badge/Windows-1.0.0-0078D4?style=flat-square&logo=windows11)](https://github.com/GuitaristRin/Ncrust/releases)
+[![Windows](https://img.shields.io/badge/Windows-1.0.0-0078D4?style=flat-square&logo=windows11)](https://github.com/smartzheng/smart-netease/releases)
 [![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](LICENSE)
 
-[**下载安装**](https://github.com/GuitaristRin/Ncrust/releases) · [**Wiki 文档**](https://github.com/GuitaristRin/Ncrust/wiki) · [**问题反馈**](https://github.com/GuitaristRin/Ncrust/issues) · [**Kanesumi 设计库**](https://github.com/GuitaristRin/Kanesumi-sec-a)
+[**下载安装**](https://github.com/smartzheng/smart-netease/releases) · [**Wiki 文档**](https://github.com/smartzheng/smart-netease/wiki) · [**问题反馈**](https://github.com/smartzheng/smart-netease/issues) · [**Kanesumi 设计库**](https://github.com/GuitaristRin/Kanesumi-sec-a)
 
 </div>
 
@@ -116,7 +116,7 @@ Android · Kotlin + Jetpack Compose + Media3 ｜ Windows · C# + UWP + WinUI 2 �
 
 ## 📦 安装
 
-1. 打开 [Releases](https://github.com/GuitaristRin/Ncrust/releases) 的最新一班（Latest），下载 Android 通用包 `ncrust-android-universal-*.apk`（约 **3.9 MB**）
+1. 打开 [Releases](https://github.com/smartzheng/smart-netease/releases) 的最新一班（Latest），下载 Android 通用包 `ncrust-android-universal-*.apk`（约 **3.9 MB**）
 2. 允许「未知来源」安装
 3. 打开 App，在用户页登录（见下）
 
@@ -151,7 +151,7 @@ projects/
 ### 构建命令
 
 ```bash
-git clone https://github.com/GuitaristRin/Ncrust.git
+git clone https://github.com/smartzheng/smart-netease.git
 git clone https://github.com/GuitaristRin/Kanesumi-sec-a.git
 
 cd Ncrust
@@ -211,7 +211,7 @@ app/src/main/java/com/takahashirinta/ncrust/
 └── ui/                    # screen / player / components / theme / i18n / navigation
 ```
 
-> 更完整的架构说明见 [AGENTS.md](AGENTS.md) 与 [Wiki](https://github.com/GuitaristRin/Ncrust/wiki)。
+> 更完整的架构说明见 [AGENTS.md](AGENTS.md) 与 [Wiki](https://github.com/smartzheng/smart-netease/wiki)。
 
 ---
 
@@ -225,7 +225,7 @@ Windows 客户端在本仓库的 [`windows/`](windows/) 目录，用 **C# + UWP 
 
 ### 📥 下载安装（Windows 10 1809+ / x64）
 
-1. 打开 [Releases](https://github.com/GuitaristRin/Ncrust/releases) 里最新一班 `CrateStack-*`，下载
+1. 打开 [Releases](https://github.com/smartzheng/smart-netease/releases) 里最新一班 `CrateStack-*`，下载
    `ncrust-windows-x86_64-<版本>.appinstaller`（推荐：经它安装后**自动更新**）与同目录的 `.cer`；
    各平台最新版索引见 [`docs/RELEASES.md`](docs/RELEASES.md)。
 2. 首次安装需先把自签证书装进**机器级**存储（MSIX 的签名校验由系统在本地计算机存储里查，
@@ -287,6 +287,6 @@ Windows 客户端在本仓库的 [`windows/`](windows/) 目录，用 **C# + UWP 
 
 **如果 Ncrust 让你重新爱上听歌，请赐一颗 Star ⭐**
 
-[问题反馈](https://github.com/GuitaristRin/Ncrust/issues) · [Wiki](https://github.com/GuitaristRin/Ncrust/wiki) · [Releases](https://github.com/GuitaristRin/Ncrust/releases)
+[问题反馈](https://github.com/smartzheng/smart-netease/issues) · [Wiki](https://github.com/smartzheng/smart-netease/wiki) · [Releases](https://github.com/smartzheng/smart-netease/releases)
 
 </div>

@@ -21,7 +21,7 @@ plugins {
 // 结果输出在 benchmark/build/outputs/connected_android_test_additional_output/benchmark/ 下。
 
 android {
-    namespace = "com.takahashirinta.ncrust.benchmark"
+    namespace = "com.smart.neteast.benchmark"
     compileSdk = 36
     // 被测应用：com.android.test 模块必须显式指定
     targetProjectPath = ":app"

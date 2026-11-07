@@ -1,0 +1,1106 @@
+package com.smart.neteast.ui.player
+
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.MarqueeAnimationMode
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.Coil
+import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
+import com.smart.neteast.library.LibraryManager
+import com.smart.neteast.network.SongItem
+import com.smart.neteast.network.CoverUrls
+import com.smart.neteast.QueueModes
+import com.smart.neteast.ui.HeightClass
+import com.smart.neteast.ui.LocalHeightClass
+import com.smart.neteast.ui.i18n.LocalStrings
+import com.smart.neteast.ui.viewmodel.PlayerViewModel
+import io.github.takahashirinta.kanesumi.anim.sokuou.SokuouTweens
+import io.github.takahashirinta.kanesumi.controls.MetroDivider
+import io.github.takahashirinta.kanesumi.controls.MetroIconButton
+import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
+import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
+import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
+import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import kotlin.math.abs
+import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import android.widget.Toast
+
+@Composable
+fun PlayerCard(
+    song: SongItem?,
+    isPlaying: Boolean,
+    screenHeightPx: Float,
+    progress: Animatable<Float, AnimationVector1D>,
+    totalDragDistancePx: Float = 0f,
+    playbackQueue: List<SongItem> = emptyList(),
+    currentQueueIndex: Int = -1,
+    playMode: Int = 0,
+    onPlayPause: () -> Unit,
+    onDismiss: () -> Unit,
+    onPlayPrevious: () -> Unit = {},
+    onPlayNext: () -> Unit = {},
+    onRemoveFromQueue: (Int) -> Unit = {},
+    onPlayFromQueue: (Int) -> Unit = {},
+    onMoveInQueue: (Int, Int) -> Unit = { _, _ -> },
+    onTogglePlayMode: () -> Unit = {},
+    onPlayNothing: () -> Unit = {},
+    onSongInfoClick: () -> Unit = {},
+    onClearQueue: () -> Unit = {},
+    onSavePlaylist: () -> Unit = {},
+    onNavigateToUser: () -> Unit = {}
+) {
+    val hasSong = song != null
+    // 初始落大封面: 歌词未就绪时(加载中/确无), 全屏默认看封面而非空歌词面板;
+    // lyricsReady 到位后由下方的 LaunchedEffect 自动切回歌词视图。
+    var showLyrics by remember { mutableStateOf(false) }
+    var showQueue by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val strings = LocalStrings.current
+    val playerViewModel: PlayerViewModel = viewModel()
+    val lyrics by playerViewModel.lyrics.collectAsState()
+    val translatedLyrics by playerViewModel.translatedLyrics.collectAsState()
+    val lyricsLoading by playerViewModel.lyricsLoading.collectAsState()
+    val lyricsSongId by playerViewModel.lyricsSongId.collectAsState()
+    val lyricsNoContentSongId by playerViewModel.lyricsNoContentSongId.collectAsState()
+    val showLyricsTranslation by playerViewModel.showLyricsTranslation.collectAsState()
+    // 收藏库状态: 当前歌是否已收藏(右下角 加号/对号 切换用)。切歌或操作后刷新。
+    var libraryTick by remember { mutableIntStateOf(0) }
+    val isSongSaved = remember(song?.id, libraryTick) {
+        song?.let { LibraryManager.isSongSaved(context, it.id) } ?: false
+    }
+    // currentPosition / progress 是 2Hz 更新的 StateFlow，直接传引用给需要的子组件，
+    // 让它们在最小作用域（graphicsLayer / Canvas draw / derivedStateOf / 叶子 Text）内订阅，
+    // 避免 PlayerCard 本身随位置更新 2Hz 重组
+    // duration / qualityIndex / isBuffering downgraded to leaf collect inside FullPlayerControls;
+    // subscribing at this scope would force the whole PlayerCard subtree to recompose on song
+    // change / buffer flap, dragging in AsyncImage + Column layout for no reason.
+
+    // 宽屏分栏进度：0 = 单栏（封面居中、控件铺满居中），1 = 两栏（左封面+控件 / 右歌词·队列）。
+    // 由是否显示歌词/队列驱动；窄屏不读取该值（不触发额外重组）。
+    val wideSplit by animateFloatAsState(
+        targetValue = if (showLyrics || showQueue) 1f else 0f,
+        animationSpec = tween(280, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)),
+        label = "widePlayerSplit"
+    )
+
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
+    val screenWidthPx = with(density) { screenWidthDp.toPx() }
+    val dp24px = with(density) { 24.dp.toPx() }
+    // 宽屏播放器两栏（Apple Music 式）：左封面 / 右歌词·队列。
+    val isWidePlayer = LocalConfiguration.current.screenWidthDp >= 600
+    val heightClass = LocalHeightClass.current
+    val tinyPlayer = !isWidePlayer && heightClass == HeightClass.Tiny
+    // 宽屏左栏占整宽的比例：随 wideSplit 在 100%(单栏) 与 44%(两栏) 间过渡。窄屏恒为 1。
+    val wideLeftFraction = if (isWidePlayer) 1f - 0.56f * wideSplit else 1f
+    // 迷你条与顶栏按钮的触觉反馈
+    val haptic = LocalHapticFeedback.current
+
+    // 唯一封面 overlay：全屏 ↔ miniBar 始终是同一个 cover，只平滑移动/缩放，绝不消失。
+    // 宽屏大图落点由左栏"封面区"实测得到（区域化，分辨率无关）。
+    var cardRootOrigin by remember { mutableStateOf(Offset.Zero) }
+    var wideCoverCenter by remember { mutableStateOf(Offset.Zero) }
+    var wideCoverSizePx by remember { mutableStateOf(0f) }
+    val wideCoverBaseSizePx = if (isWidePlayer) {
+        // 实测前用兜底尺寸，避免首帧 1px 让 Coil 按 1px 解码成纯色（重进时尤为明显）。
+        if (wideCoverSizePx > 0f) wideCoverSizePx
+        else minOf(screenWidthPx * 0.4f, screenHeightPx * 0.5f)
+    } else screenWidthPx
+    val coverSizeDp = with(density) { wideCoverBaseSizePx.toDp() }
+    val miniCoverHalfPx = with(density) { 24.dp.toPx() }
+    val statusBarPx = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        .let { with(density) { it.toPx() } }
+    val miniCoverCenterX = with(density) { 36.dp.toPx() }
+    val miniCoverCenterY = statusBarPx + with(density) { 28.dp.toPx() }
+    // 回调只写测量状态；状态只在封面的 layout / graphicsLayer 中读取，不把测量变化
+    // 提升到整卡 composition。内容区测的是 systemBarsPadding 内侧，不能再扣一次系统栏。
+    val narrowContentSize = remember { mutableStateOf(IntSize.Zero) }
+    val narrowTopBarHeight = remember { mutableFloatStateOf(0f) }
+    val narrowControlsHeight = remember { mutableFloatStateOf(0f) }
+    val narrowTitleHeight = remember { mutableFloatStateOf(0f) }
+    val controlsGapPx = with(density) { 16.dp.toPx() }
+    val coverGapPx = with(density) { 12.dp.toPx() }
+    val narrowCover = remember(statusBarPx, controlsGapPx, coverGapPx, screenHeightPx, dp24px) {
+        derivedStateOf {
+            narrowCoverGeometry(
+                availableWidthPx = narrowContentSize.value.width.toFloat(),
+                contentHeightPx = statusBarPx + narrowContentSize.value.height,
+                topBarBottomPx = statusBarPx + narrowTopBarHeight.floatValue,
+                controlsHeightPx = narrowControlsHeight.floatValue + controlsGapPx,
+                titleReservePx = narrowTitleHeight.floatValue,
+                minGapPx = coverGapPx,
+                preferredCenterYPx = screenHeightPx * 0.3f + dp24px
+            )
+        }
+    }
+
+    // 下面几个阈值布尔一律保存为 State 对象、只在 [ThresholdScope] 里读：derivedStateOf 只在阈值穿越时
+    // 通知，但若在 PlayerCard 顶层读，每次穿越仍会把整张卡片（歌词 / 队列 / 控件）重组一遍。
+    // 展开一次会穿越 0.01 / 0.7 / 0.9 / 0.99 四个阈值——Xperia 10 VII 实测每次 5~15ms，正落在
+    // 展开 / 收起的头几帧（Perfetto + runtime-tracing，2026-10-15）。
+    // 完全收起时才激活迷你播放栏
+    val miniBarEnabled = remember { derivedStateOf { progress.value < 0.01f } }
+    val miniBarInteractionSource = remember { MutableInteractionSource() }
+    // 完全展开时才激活收起按钮
+    val dismissEnabled = remember { derivedStateOf { progress.value > 0.99f } }
+    // 展开态子树常挂载（无 gate）：LyricsView / QueueView / FullPlayerControls / 大封面
+    // 信息在 MainScreen 首次 composition 时即挂载，交互只切 graphicsLayer alpha，不再
+    // 走 mount/dispose。这是"Apple Music 手感"的关键——原生 View 系统里 player subview
+    // 是 app 启动就构建好、隐藏用 visibility=GONE 的；我们此前用 if (expandedEnough) 条件
+    // 挂载来省折叠态 layout 成本，但把构造成本压到了首次跨阈值那一帧，压不进单帧就必然卡。
+    // 常挂载的代价：折叠态 LazyColumn 仍走一次 layout（懒渲染，实际每帧 1-3ms），交换
+    // 首次 expand 永远不卡。冷启动那一次成本由 Splash + AppWarmup 兜底吸收。
+
+    // lyricAnimProgress：0 = 大封面，1 = 小封面；驱动封面缩放 + 内容淡入淡出
+    // queueSlideProgress：0 = 歌词位置，1 = 列表位置；仅 b↔c 时动画，其他时 snap
+    // 两个 Animatable 均只在 graphicsLayer { } draw 阶段读取，动画帧内零 recompose
+    // 初始 0（大封面）：冷启动/splash 后若当前歌无歌词，首帧即大封面，不会"停"在歌词位
+    val lyricAnimProgress = remember { Animatable(0f) }
+    val queueSlideProgress = remember { Animatable(0f) }
+    // 仅在歌词模式下歌词可交互；阈值穿越处各触发一次重组，其余帧零重组
+    val lyricsEnabled by remember { derivedStateOf { lyricAnimProgress.value > 0.5f && queueSlideProgress.value < 0.5f } }
+    // 卡片基本展开(>90%)时播放器内容区才可交互。面板常挂载、graphicsLayer 只调 alpha,
+    // 折叠态下歌词行/队列行在屏幕底部(迷你条与导航栏之间的缝隙)依然命中测试——
+    // 用户"在导航栏底部乱按"会点到不可见的歌词行/队列行, 触发 seek/切歌。
+    // 展开阈值和 alpha 淡入阈值(0.7)错开, 保证交互只在内容真正可见后开启。
+    val cardExpandedForInput = remember { derivedStateOf { progress.value > 0.9f } }
+    // 歌词面板可交互 = 歌词模式 && 卡片基本展开；合成一个 State，免得 LyricsView 外层为两个布尔各重组一次。
+    val lyricsInteractive = remember { derivedStateOf { lyricsEnabled && cardExpandedForInput.value } }
+    // 窄屏顶栏歌名可见 = 卡片展开到顶栏淡入（> 0.7）且处于小封面 / 歌词模式（歌名区 alpha 跟随 lyricAnimProgress）。
+    val titleVisible = remember { derivedStateOf { progress.value > 0.7f && lyricAnimProgress.value > 0.5f } }
+    // 卡片收起时，歌词 / 进度条 / 时间文本都看不见，但它们常挂载在一个整屏大小的图层里：2Hz 的位置更新
+    // 会让歌词滚动、进度条重绘，RenderThread 每次都要重画整块 1080x2520（Xperia 10 VII 实测每帧 ~14ms，
+    // 静止页面 6 帧/秒）。收起时冻结喂给它们的位置 / 进度，展开一越过 0.01 就追上当前值。
+    val cardShown = remember { derivedStateOf { progress.value > 0.01f } }
+    val shownPosition = rememberGatedFlow(playerViewModel.currentPosition, cardShown)
+    val shownProgress = rememberGatedFlow(playerViewModel.progress, cardShown)
+    LaunchedEffect(cardShown.value, song?.id) {
+        if (cardShown.value) playerViewModel.refreshPlaybackProgress(song?.duration)
+    }
+
+    // ---- 歌词可达性驱动的「大封面 ↔ 歌词视图」自动切换 ----
+    // - 切歌瞬间: 旧歌词已被 ViewModel 清空, 直接落大封面, 绝不残留上一首歌词。
+    // - 歌词就绪(lyricsReady): 自动切回歌词视图（Apple Music 语义）。
+    // - 歌词未就绪(仍在加载/确无): 保持大封面 + 灰按钮。
+    // - 用户在队列视图时不打扰。
+    // lyricsReady：歌词**属于当前歌**且非加载中。旧歌词残留(切歌过渡)不算就绪——
+    // 由 lyricsSongId == song?.id 保证, 否则无歌词的新歌会被误判就绪显示旧歌词。
+    val lyricsReady = lyricsSongId == song?.id && !lyricsLoading && lyrics.isNotEmpty()
+    // 只有服务端明确答复"确无歌词"时才置灰歌词按钮；加载中/请求失败都保持可点，
+    // 失败时点一下即触发重试，而不是一次网络抖动就把按钮永久禁用（issue: 后台被杀重进后按钮灰掉）。
+    val lyricsNoContent = lyricsNoContentSongId == song?.id && lyrics.isEmpty()
+    val lyricsUnavailable = lyricsNoContent && !lyricsLoading
+
+    // 底部切换行与 Tiny 顶栏使用同一组回调，保留歌词重试和收藏即时刷新行为。
+    val onToggleLyricsAction: () -> Unit = {
+        showLyrics = !showLyrics
+        showQueue = false
+        if (!lyricsReady && !lyricsLoading) playerViewModel.retryLyrics()
+    }
+    val onToggleQueueAction: () -> Unit = {
+        showQueue = !showQueue
+        showLyrics = false
+    }
+    val onAddToLibraryAction: () -> Unit = {
+        song?.let { cur ->
+            if (LibraryManager.isSongSaved(context, cur.id)) {
+                LibraryManager.removeSong(context, cur.id)
+                Toast.makeText(context, strings.removedFromLibrary, Toast.LENGTH_SHORT).show()
+            } else {
+                LibraryManager.saveSong(context, cur)
+                Toast.makeText(context, strings.addedToLibrary, Toast.LENGTH_SHORT).show()
+            }
+            libraryTick++
+        }
+    }
+
+    // 每首歌只自动切到歌词视图一次；用户手动关掉歌词后，不再被自动打开
+    // （否则关歌词时 showLyrics 被 effect 立刻改回 true，wideSplit 回不到 0，
+    //  表现为"封面/控件都不动"）。
+    var autoSwitchedForSong by remember(song?.id) { mutableStateOf(false) }
+
+    LaunchedEffect(song?.id, lyricsReady, lyricsLoading, showQueue) {
+        when {
+            showQueue -> {
+                // 用户在队列：不打扰, 放弃自动回切
+            }
+            // 歌词就绪 → 首次自动切到歌词视图（封面缩小/左移）
+            lyricsReady -> {
+                if (!autoSwitchedForSong) {
+                    autoSwitchedForSong = true
+                    if (!showLyrics) showLyrics = true
+                }
+            }
+            // 加载中：保持当前视图，不清空也不切回大封面 —— 切歌时封面完全不动。
+            lyricsLoading -> {
+            }
+            // 确无歌词（加载完成且为空）→ 回大封面
+            else -> if (showLyrics) showLyrics = false
+        }
+    }
+
+    LaunchedEffect(showLyrics, showQueue) {
+        when {
+            showLyrics -> {
+                // 与封面缩小并行
+                launch { lyricAnimProgress.animateTo(1f, tween(190, easing = FastOutSlowInEasing)) }
+                // 若当前 queueSlideProgress > 0（来自列表模式），横滑回歌词位置
+                if (queueSlideProgress.value > 0.01f) {
+                    queueSlideProgress.animateTo(
+                        0f, tween(260, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
+                    )
+                }
+            }
+            showQueue -> {
+                launch { lyricAnimProgress.animateTo(1f, tween(190, easing = FastOutSlowInEasing)) }
+                when {
+                    // 已在列表位置（或正在返回），无需再动
+                    queueSlideProgress.value > 0.99f -> {}
+                    // 来自稳定歌词模式（lyricAnimProgress 已是 1）→ 横滑
+                    lyricAnimProgress.value > 0.95f -> {
+                        queueSlideProgress.animateTo(
+                            1f, tween(260, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
+                        )
+                    }
+                    // 来自大封面模式 → 不横滑，仅随封面缩小淡入
+                    else -> queueSlideProgress.snapTo(1f)
+                }
+            }
+            else -> {
+                // 切回大封面：等封面展开完成，内容随 lyricAnimProgress 自然淡出
+                lyricAnimProgress.animateTo(0f, tween(300, easing = LinearOutSlowInEasing))
+                // 封面展开后重置滑动位置，为下次 b→c 准备
+                queueSlideProgress.snapTo(0f)
+            }
+        }
+    }
+
+    // 展开动作触发一次歌词定位: 面板常挂载, isVisible 不会翻转, 若不做强制定位,
+    // 从 mini bar 拉起后歌词停在旧位置(或用户上次手动滚动的位置)
+    var lyricLocateTrigger by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        snapshotFlow { progress.value }
+            .distinctUntilChanged { a, b -> (a > 0.9f) == (b > 0.9f) }
+            .collect { p ->
+                if (p > 0.9f) lyricLocateTrigger++
+            }
+    }
+
+    // 歌词/队列面板可交互(展开 + 面板在前台)时,面板区域内的纵向手势归内部列表滚动。
+    // 根节点的整卡拖拽与兜底消费器都不得抢手势——否则在面板上一滑,整卡被拖走、
+    // 列表几乎滚不动(issue #23)。面板外的封面/顶栏/大封面模式仍驱动整卡。
+    val topBarBottomPx = statusBarPx + with(density) { 56.dp.toPx() }
+    val isPanelInteractive by remember {
+        derivedStateOf {
+            (lyricsEnabled || queueSlideProgress.value > 0.5f) && progress.value > 0.7f
+        }
+    }
+    fun isOverPanel(y: Float, x: Float) = isPanelInteractive && y > topBarBottomPx &&
+        (!isWidePlayer || x > screenWidthPx / 2f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { cardRootOrigin = it.boundsInRoot().topLeft }
+            // Outer modifier → runs last within this node in Main pass (after drag detector below).
+            // Consumes remaining events when fully expanded so Scaffold siblings never receive them.
+            // 面板区域不吞事件:内部列表需要先拿到未消费的 MOVE 才能滚动。
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Main)
+                        if (progress.value > 0.99f) {
+                            val pos = event.changes.firstOrNull()?.position
+                            if (pos == null || !isOverPanel(pos.y, pos.x)) {
+                                event.changes.forEach { it.consume() }
+                            }
+                        }
+                    }
+                }
+            }
+            // Inner modifier → runs first within this node in Main pass.
+            // Handles drag-to-expand/collapse; runs before the outer consumer so it sees unconsumed MOVE.
+            // 仅在有歌（!hasSong = 暂无播放）时可拖拽；用 hasSong 作 key，来了歌后手势重新激活。
+            .pointerInput(hasSong) {
+                if (!hasSong) return@pointerInput
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    // 面板内纵向手势完全交给内部 LazyColumn/进度条,根节点不消费任何事件。
+                    if (isOverPanel(down.position.y, down.position.x)) return@awaitEachGesture
+                    val startProgress = progress.value
+                    val pointer = down.id
+                    val slop = viewConfiguration.touchSlop
+                    // 自定义竖直 slop 检测：**忽略消费标志**累积位移。标准
+                    // awaitVerticalTouchSlopOrCancellation 一旦看到事件被消费就返回 null——
+                    // miniBar 的 clickable 会消费 down/事件, 导致拖拽永远起不来
+                    // ("滑动拉起"失效)。这里越界后再 consume, 之后正常 drag。
+                    var acc = 0f
+                    var dragging = false
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == pointer } ?: break
+                        if (!change.pressed) break
+                        acc += change.position.y - change.previousPosition.y
+                        if (abs(acc) > slop) {
+                            dragging = true
+                            change.consume()
+                            break
+                        }
+                    }
+                    if (!dragging) return@awaitEachGesture
+                    // 手动拖动循环：同样忽略消费标志读位移, 边拖边 consume
+                    // （压制 miniBar clickable 的按压, 让它不会在抬手时误触发展开）。
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == pointer } ?: break
+                        if (!change.pressed) break
+                        change.consume()
+                        val dragAmount = change.position.y - change.previousPosition.y
+                        if (dragAmount != 0f) {
+                            coroutineScope.launch {
+                                progress.snapTo(
+                                    (progress.value - dragAmount / totalDragDistancePx).coerceIn(0f, 1f)
+                                )
+                            }
+                        }
+                    }
+                    coroutineScope.launch {
+                        val target = if (startProgress < 0.5f) {
+                            if (progress.value >= 0.5f) 1f else 0f
+                        } else {
+                            if (progress.value >= 0.75f) 1f else 0f
+                        }
+                        progress.animateTo(
+                            target,
+                            if (target == 1f)
+                                tween(durationMillis = 400, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
+                            else
+                                tween(durationMillis = 260, easing = FastOutSlowInEasing)
+                        )
+                    }
+                }
+            }
+    ) {
+        // 全屏纯黑背景。展开时 translationY=0，卡片顶与封面顶/内容区顶等高；
+        // 折叠时整体下移一个 statusBar 高，使顶边对齐 miniBar 内容。miniBar 自带
+        // statusBarsPadding（内容被下推 statusBar 高），背景若不跟着下移，miniBar
+        // 上方就会多出一条 statusBar 高的 surface 色块——即"手机 miniBar 变高一片"。
+        // statusBarPx 在车机(WindowInsets=0)为 0，天然不影响车机。
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    translationY = statusBarPx * (1f - progress.value)
+                }
+                .background(LocalMetroColors.current.background)
+        )
+        // 折叠态卡背：卡片整体下移后，miniBar 下方露出的是这张黑底（原底部导航/系统栏
+        // 位置）。折叠时用 surface 盖住，与 miniBar 同色，避免底部黑块；展开时透明。
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    alpha = (1f - progress.value * 5f).coerceIn(0f, 1f)
+                    translationY = statusBarPx * (1f - progress.value)
+                }
+                .background(LocalMetroColors.current.surface)
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .systemBarsPadding()
+                .onSizeChanged { narrowContentSize.value = it }
+        ) {
+            if (hasSong) {
+                val s = song!!
+
+                // 底部播放控件（窄屏整宽 / 宽屏左栏共用）。常挂载，alpha 只在 draw 阶段调。
+                val playerControls: @Composable () -> Unit = {
+                    FullPlayerControls(
+                        isPlaying = isPlaying,
+                        showLyrics = showLyrics,
+                        showQueue = showQueue,
+                        progressFlow = shownProgress,
+                        positionFlow = shownPosition,
+                        durationFlow = playerViewModel.duration,
+                        qualityIndexFlow = playerViewModel.currentQualityIndex,
+                        qualityOptions = strings.qualityOptions,
+                        trialFlow = playerViewModel.currentIsTrial,
+                        onPlayPause = onPlayPause,
+                        onPlayPrevious = onPlayPrevious,
+                        onPlayNext = onPlayNext,
+                        onToggleLyrics = onToggleLyricsAction,
+                        onToggleQueue = onToggleQueueAction,
+                        onAddToLibrary = onAddToLibraryAction,
+                        isInLibrary = isSongSaved,
+                        isBufferingFlow = playerViewModel.isBuffering,
+                        onSeek = { fraction ->
+                            val dur = playerViewModel.duration.value
+                            if (dur > 0) {
+                                playerViewModel.seekTo((fraction * dur).toLong())
+                            }
+                        },
+                        onNavigateToUser = onNavigateToUser,
+                        lyricsUnavailable = lyricsUnavailable,
+                        previousEnabled = playMode != QueueModes.INFINITY,
+                        landscape = isWidePlayer,
+                        compact = !isWidePlayer && heightClass != HeightClass.Regular,
+                        tiny = tinyPlayer
+                    )
+                }
+
+                // 歌词 / 队列双面板（窄屏整宽 / 宽屏右栏共用）。
+                val playerPanels: @Composable (Modifier) -> Unit = { panelModifier ->
+                    Box(modifier = panelModifier) {
+                        // 歌词面板：translationX 从 0 滑至 -screenWidthPx，确保非歌词模式下完全移出屏幕，
+                        // 彻底消除与列表面板的命中测试重叠（combinedClickable 忽略 isConsumed 标志）
+                        // alpha 用阶梯而非交叉淡化: 切换时源面板瞬时隐藏、目标面板单层全宽滑入,
+                        // 每帧只合成一个面板——原先 260ms 内两个全屏面板同时 alpha 混合是
+                        // 低端机上左右切换动作的主要 GPU 成本。
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    val q = queueSlideProgress.value
+                                    alpha = lyricAnimProgress.value * if (q < 0.01f) 1f else 0f
+                                    translationX = -q * screenWidthPx
+                                }
+                        ) {
+                            // 切歌时旧歌词渐隐、新歌词渐显（Sokuou UWP 缓动）。
+                            // key = song?.id：同一首歌的歌词更新不触发 Crossfade, 只换内容。
+                            Crossfade(
+                                targetState = song?.id,
+                                animationSpec = SokuouTweens.CoverFade,
+                                label = "LyricsCrossfade"
+                            ) { _ ->
+                                ThresholdScope(lyricsInteractive) { interactive ->
+                                LyricsView(
+                                    lyrics = lyrics,
+                                    translatedLyrics = translatedLyrics,
+                                    showTranslation = showLyricsTranslation,
+                                    positionFlow = shownPosition,
+                                    isPlaying = isPlaying,
+                                    isVisible = showLyrics,
+                                    forcedLocateTrigger = lyricLocateTrigger,
+                                    onSeekToMs = { ms -> playerViewModel.seekTo(ms) },
+                                    enabled = interactive,
+                                    onUserScrolled = {},
+                                    isLoading = lyricsLoading,
+                                )
+                                }
+                            }
+                        }
+
+                        // 列表面板：translationX 从 +screenWidthPx 滑至 0，稳定态时完全在屏幕外
+                        // alpha 阶梯同上: q < 0.01 时完全透明, 切换只合成单个面板
+                        // 面板标题行高度: 队列自动定位要按"整个队列区域"(含标题行)居中
+                        var queueHeaderHeightPx by remember { mutableFloatStateOf(0f) }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    val q = queueSlideProgress.value
+                                    alpha = lyricAnimProgress.value * if (q > 0.01f) 1f else 0f
+                                    translationX = (1f - q) * screenWidthPx
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                                    .onGloballyPositioned {
+                                        queueHeaderHeightPx = it.size.height.toFloat()
+                                    },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                MetroText(
+                                    strings.queueTitle,
+                                    color = LocalMetroColors.current.onBackground,
+                                    style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                MetroIconButton(onClick = onTogglePlayMode) {
+                                    MetroIcon(
+                                        imageVector = when (playMode) {
+                                            QueueModes.SINGLE -> Icons.Rounded.RepeatOne
+                                            QueueModes.SHUFFLE -> Icons.Rounded.Shuffle
+                                            QueueModes.LINE -> Icons.Rounded.PlaylistPlay
+                                            QueueModes.INFINITY -> Icons.Rounded.AllInclusive
+                                            else -> Icons.Rounded.Repeat
+                                        },
+                                        contentDescription = strings.playModeButton,
+                                        tint = if (playMode != QueueModes.CYCLE) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
+                                        sizeDp = 24.dp
+                                    )
+                                }
+                                MetroIconButton(onClick = onSavePlaylist) {
+                                    MetroIcon(
+                                        imageVector = Icons.Rounded.Add,
+                                        contentDescription = strings.saveAsPlaylist,
+                                        tint = LocalMetroColors.current.onBackground,
+                                        sizeDp = 24.dp
+                                    )
+                                }
+                                // 清空队列: 停播并回到暂无播放态
+                                MetroIconButton(onClick = onClearQueue) {
+                                    MetroIcon(
+                                        imageVector = Icons.Rounded.DeleteSweep,
+                                        contentDescription = strings.clearQueue,
+                                        tint = LocalMetroColors.current.onBackground,
+                                        sizeDp = 24.dp
+                                    )
+                                }
+                            }
+                            MetroDivider(color = LocalMetroColors.current.divider)
+                            ThresholdScope(cardExpandedForInput) { interactive ->
+                                QueueView(
+                                    queue = playbackQueue,
+                                    currentIndex = currentQueueIndex,
+                                    playMode = playMode,
+                                    isActive = showQueue,
+                                    interactive = interactive,
+                                    queueHeaderHeightPx = queueHeaderHeightPx,
+                                    onPlayIndex = onPlayFromQueue,
+                                    onRemoveIndex = onRemoveFromQueue,
+                                    onMove = onMoveInQueue
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (isWidePlayer) {
+                    // 宽屏：Row 两栏，区域化布局（weight 分区，无绝对定位 / 魔法数字）。
+                    // 左栏 = 封面区(weight 撑满剩余) + 歌名 + 控件；右栏 = 歌词·队列占满整轴。
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        Column(
+                            modifier = Modifier
+                                .weight(wideLeftFraction)
+                                .fillMaxHeight()
+                        ) {
+                            // 封面区：只作为"唯一封面 overlay"在宽屏的落点参考——实测其中心与
+                            // 尺寸，交给 overlay 封面定位。这里不再放第二个封面，保证全屏 ↔
+                            // miniBar 始终是同一个 cover。
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                                    .onGloballyPositioned { coords ->
+                                        val b = coords.boundsInRoot()
+                                        // 封面在左栏封面区内居中（不贴边，视觉更和谐）。
+                                        wideCoverCenter = b.center - cardRootOrigin
+                                        wideCoverSizePx = minOf(b.width, b.height)
+                                    }
+                            )
+                            // 歌名 / 歌手 + 控件：限宽居中，与封面成组（单栏时不再铺满整宽显得散）。
+                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                Column(
+                                    modifier = Modifier
+                                        .widthIn(max = 560.dp)
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 24.dp)
+                                        .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                                        .clickable { onSongInfoClick() }
+                                ) {
+                                    MetroText(
+                                        s.name,
+                                        color = LocalMetroColors.current.onBackground,
+                                        style = LocalMetroTypography.current.titleLarge,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    MetroText(
+                                        s.artists?.joinToString("/") { it.name } ?: "",
+                                        color = LocalMetroColors.current.primary,
+                                        style = LocalMetroTypography.current.bodyLarge,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                Box(
+                                    modifier = Modifier
+                                        .widthIn(max = 560.dp)
+                                        .fillMaxWidth()
+                                        .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                                ) {
+                                    playerControls()
+                                }
+                            }
+                            Spacer(Modifier.height(8.dp))
+                        }
+                        // 右栏常挂载（weight 给极小下限，wideSplit=0 时宽度趋 0 但不卸载）：
+                        // 避免开关歌词时面板反复 mount/unmount 导致歌词状态丢失/不再重绘。
+                        Box(
+                            modifier = Modifier
+                                .weight((1f - wideLeftFraction).coerceAtLeast(0.0001f))
+                                .fillMaxHeight()
+                        ) {
+                            playerPanels(
+                                Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                            )
+                        }
+                    }
+                } else {
+                    // 窄屏：顶部标题栏 + 整宽面板 + 底部控件。
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .onSizeChanged { narrowTopBarHeight.floatValue = it.height.toFloat() }
+                            .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                            // Tiny 右侧固定预留 4×44dp 按键 + 8dp 边距。320dp 宽时标题
+                            // 仍有 68dp，长歌名用既有跑马灯，绝不伸到按键下方。
+                            .padding(start = 68.dp, end = if (tinyPlayer) 184.dp else 56.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .graphicsLayer { alpha = lyricAnimProgress.value }
+                                // 歌名区域可点: 上拉"转到歌手/转到专辑"菜单(类 Apple Music)
+                                .clickable { onSongInfoClick() }
+                        ) {
+                            // 跑马灯只在标题真正可见时挂：这一层只在 graphicsLayer 里调 alpha，卡片收起或处于
+                            // 大封面模式时它看不见，但无限跑马灯照样以 60fps 驱动重绘——Xperia 10 VII 实测
+                            // 长标题时静止首页 53 帧/秒、CPU 40~60%（2026-10-15）。
+                            ThresholdScope(titleVisible) { visible ->
+                                MetroText(
+                                    s.name,
+                                    color = LocalMetroColors.current.onBackground,
+                                    style = LocalMetroTypography.current.titleMedium,
+                                    maxLines = 1,
+                                    overflow = if (visible) TextOverflow.Clip else TextOverflow.Ellipsis,
+                                    modifier = if (visible) Modifier.basicMarquee(
+                                        iterations = Int.MAX_VALUE,
+                                        animationMode = MarqueeAnimationMode.Immediately,
+                                        initialDelayMillis = 2000,
+                                        repeatDelayMillis = 2500,
+                                        velocity = 48.dp
+                                    ) else Modifier
+                                )
+                            }
+                            MetroText(
+                                s.artists?.joinToString("/") { it.name } ?: "",
+                                color = LocalMetroColors.current.onSurfaceVariant,
+                                style = LocalMetroTypography.current.bodyMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                    ) {
+                        playerPanels(Modifier.fillMaxSize())
+                        // 大封面模式下的曲名/歌手信息：overlay 在面板底部；不挤占歌词
+                        // 布局，但其完整实测高度会从大封面可用带中扣除。
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .fillMaxWidth()
+                                .onSizeChanged { narrowTitleHeight.floatValue = it.height.toFloat() }
+                                .padding(horizontal = 24.dp, vertical = 8.dp)
+                                .graphicsLayer {
+                                    alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) *
+                                            (1f - lyricAnimProgress.value)
+                                }
+                                // 歌名区域可点: 上拉"转到歌手/转到专辑"菜单(类 Apple Music)
+                                .clickable { onSongInfoClick() }
+                        ) {
+                            MetroText(
+                                s.name,
+                                color = LocalMetroColors.current.onBackground,
+                                style = LocalMetroTypography.current.titleLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            MetroText(
+                                s.artists?.joinToString("/") { it.name } ?: "",
+                                color = LocalMetroColors.current.primary,
+                                style = LocalMetroTypography.current.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onSizeChanged { narrowControlsHeight.floatValue = it.height.toFloat() }
+                            .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                    ) {
+                        playerControls()
+                    }
+                }
+            }
+        }
+
+        // 迷你播放栏叠加层：始终在 Composition 中，透明度仅在绘制阶段控制，避免动画期间触发重组
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .height(56.dp)
+                .graphicsLayer {
+                    alpha = (1f - progress.value * 5f).coerceIn(0f, 1f)
+                }
+                .background(LocalMetroColors.current.surface)
+        ) {
+            // 点击展开的命中层放在最底下（而不是挂在外层 Box 的 modifier 上），阈值翻转只重组这一层；
+            // 上面 Row 里的按钮照样先拿到点击。暂无播放（hasSong=false）时不可点击展开，避免空白播放器被拉起。
+            ThresholdScope(miniBarEnabled) { enabled ->
+                if (enabled && hasSong) {
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .clickable(
+                                interactionSource = miniBarInteractionSource,
+                                indication = null,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        progress.animateTo(
+                                            1f,
+                                            tween(durationMillis = 400, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
+                                        )
+                                    }
+                                }
+                            )
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxSize().padding(end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (hasSong) {
+                    val s = song!!
+                    // 唯一封面 overlay 会落到这个方形占位处（窄屏与宽屏一致）。
+                    Spacer(modifier = Modifier.width(68.dp).fillMaxHeight())
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 12.dp)
+                    ) {
+                        MetroText(
+                            s.name,
+                            color = LocalMetroColors.current.onBackground,
+                            style = LocalMetroTypography.current.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        MetroText(
+                            s.artists?.joinToString("/") { it.name } ?: "",
+                            color = LocalMetroColors.current.onSurfaceVariant,
+                            style = LocalMetroTypography.current.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    // 音质徽标位：试听片段时显示「试听」（全屏播放器的徽标同理）。
+                    // 不加 miniBarEnabled 门控：那会在展开阈值处改变这条 Row 的布局。
+                    TrialBadge(
+                        trialFlow = playerViewModel.currentIsTrial,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    ThresholdScope(miniBarEnabled) { enabled -> if (enabled) {
+                        MetroIconButton(onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onPlayPause()
+                        }) {
+                            MetroIcon(
+                                imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                                contentDescription = null,
+                                tint = LocalMetroColors.current.onBackground
+                            )
+                        }
+                        MetroIconButton(onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onPlayNext()
+                        }) {
+                            MetroIcon(Icons.Rounded.SkipNext, null, tint = LocalMetroColors.current.onBackground)
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.width(96.dp))
+                    } }
+                } else {
+                    // 暂无播放: 卡片仍不可拉起(保持既有约束), 但给一个播放键
+                    // 直接开始 Infinity——取每日推荐开播, 无需先有队列
+                    MetroText(
+                        strings.noSongPlaying,
+                        color = LocalMetroColors.current.onSurfaceVariant,
+                        style = LocalMetroTypography.current.bodyMedium,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 12.dp)
+                    )
+                    ThresholdScope(miniBarEnabled) { enabled -> if (enabled) {
+                        MetroIconButton(onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onPlayNothing()
+                        }) {
+                            MetroIcon(
+                                imageVector = Icons.Rounded.PlayArrow,
+                                contentDescription = LocalStrings.current.playButton,
+                                tint = LocalMetroColors.current.onBackground
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                    } }
+                }
+            }
+        }
+
+        // 唯一封面叠加层：全屏 ↔ miniBar 共用这一个 cover，随 progress 平滑位移/缩放。
+        // 窄屏大图按实测可用带收缩并居中；Regular 空间足够时仍满宽、原锚点。
+        if (hasSong) {
+            val s = song!!
+            StableCover(
+                model = CoverUrls.large(s.album?.picUrl),
+                contentDescription = null,
+                placeholderColor = LocalMetroColors.current.surfaceVariant,
+                modifier = Modifier
+                    .then(
+                        if (isWidePlayer) Modifier.size(coverSizeDp)
+                        else Modifier.layout { measurable, _ ->
+                            // onSizeChanged 在首次布局结束后才回填。未测量时沿用原底图宽度，
+                            // 避免 Coil 首次 draw 以 1px 请求封面，后续放大仍只有纯色像素。
+                            // 真正测得零空间才用 1px 避免除零；mini 封面仍为 56dp。
+                            val baseSize = if (narrowContentSize.value == IntSize.Zero) screenWidthPx
+                                else narrowCover.value.sizePx
+                            val side = baseSize.roundToInt().coerceAtLeast(1)
+                            val placeable = measurable.measure(Constraints.fixed(side, side))
+                            layout(side, side) { placeable.place(0, 0) }
+                        }
+                    )
+                    .graphicsLayer {
+                        val geometry = narrowCover.value
+                        val coverSizePx = if (isWidePlayer) wideCoverBaseSizePx else size.width.coerceAtLeast(1f)
+                        val miniScale = miniCoverHalfPx * 2f / coverSizePx
+                        val largeCoverCenterX = if (isWidePlayer) wideCoverCenter.x else geometry.centerXPx
+                        val largeCoverCenterY = if (isWidePlayer) wideCoverCenter.y else geometry.centerYPx
+                        val boundsCenter = coverSizePx / 2f
+                        val p = progress.value
+                        val normalizedP = ((p - 0.2f) / 0.8f).coerceIn(0f, 1f)
+                        // 宽屏封面恒为大图（缩到 mini 是窄屏"大封面↔歌词"切换的语义）；
+                        // 宽屏下它随分栏进度在左栏与居中之间平滑移动。
+                        val lyricAnimValue = if (isWidePlayer) 0f else lyricAnimProgress.value
+
+                        val targetCenterX = largeCoverCenterX + lyricAnimValue * (miniCoverCenterX - largeCoverCenterX)
+                        val targetCenterY = largeCoverCenterY + lyricAnimValue * (miniCoverCenterY - largeCoverCenterY)
+                        val targetScale = miniScale + (1f - lyricAnimValue) * (1f - miniScale)
+
+                        val currentCenterX = miniCoverCenterX + normalizedP * (targetCenterX - miniCoverCenterX)
+                        val currentCenterY = miniCoverCenterY + normalizedP * (targetCenterY - miniCoverCenterY)
+                        val currentBaseScale = miniScale + normalizedP * (targetScale - miniScale)
+                        // Keep the album art rounded at both ends of the shared full-player → mini-bar motion.
+                        // Percentage corners scale with the cover, so the mini artwork stays visibly rounded.
+                        val cornerPercent = (5f + 13f * (1f - currentBaseScale).coerceIn(0f, 1f))
+                            .roundToInt().coerceIn(5, 18)
+
+                        scaleX = currentBaseScale
+                        scaleY = currentBaseScale
+                        translationX = currentCenterX - boundsCenter
+                        translationY = currentCenterY - boundsCenter
+                        transformOrigin = TransformOrigin(0.5f, 0.5f)
+                        shape = RoundedCornerShape(cornerPercent)
+                        clip = true
+                    },
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        // 收起按钮叠加层：z 序最高，保证触摸事件不被任何下层元素拦截
+        if (hasSong) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .height(56.dp)
+                    .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                    .padding(end = 8.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                if (tinyPlayer) {
+                    ThresholdScope(dismissEnabled) { enabled ->
+                        if (enabled) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                PlayerPanelToggles(
+                                    showLyrics, showQueue, isSongSaved, lyricsUnavailable,
+                                    onToggleLyricsAction, onToggleQueueAction, onAddToLibraryAction,
+                                    44.dp, 24.dp
+                                )
+                                Box(
+                                    Modifier.size(44.dp).clickable { onDismiss() },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    MetroIcon(Icons.Rounded.KeyboardArrowDown, strings.collapsePlayer,
+                                        tint = LocalMetroColors.current.onBackground)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    ThresholdScope(dismissEnabled) { enabled ->
+                        if (enabled) {
+                            MetroIconButton(onClick = onDismiss) {
+                                MetroIcon(Icons.Rounded.KeyboardArrowDown, strings.collapsePlayer, tint = LocalMetroColors.current.onBackground)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * [open] 为真时把 [source] 原样转发，为假时停在最后一个值：给看不见的子树一份「冻结」的流，
+ * 它们就既不重组也不重绘。重新打开时立即从 [source] 的当前值继续。
+ */
+@Composable
+private fun <T> rememberGatedFlow(source: StateFlow<T>, open: State<Boolean>): StateFlow<T> {
+    val gated = remember(source) { MutableStateFlow(source.value) }
+    LaunchedEffect(source, open) {
+        snapshotFlow { open.value }.collectLatest { isOpen ->
+            if (isOpen) source.collect { gated.value = it }
+        }
+    }
+    return gated
+}
+
+/**
+ * 读取一个阈值布尔的最小重组作用域：非 inline 的 Composable 自带重组边界，状态翻转时只重组
+ * [content]，不会把调用方（PlayerCard 整卡）一起拖进重组。
+ */
+@Composable
+private fun ThresholdScope(state: State<Boolean>, content: @Composable (Boolean) -> Unit) {
+    content(state.value)
+}
+
+// 新封面超过该阈值仍未就绪，才退化为纯色占位（"实在不出来再禁用"）。
+private const val COVER_HOLD_MS = 400L
+
+/**
+ * 切歌不闪的封面。Coil 的 [AsyncImagePainter] 在 model 变化时先进入 loading 态、
+ * 画 placeholder（纯色），新图没秒出就会闪一下占位色。这里改为：
+ *  - 记住最近一次成功加载的封面，切歌换图期间先沿用旧图（视觉无缝）；
+ *  - 新图在 [COVER_HOLD_MS] 内就绪 → 直接换上新图；
+ *  - 超过阈值仍未就绪 → 才退化为占位色。
+ */
+@Composable
+private fun StableCover(
+    model: Any?,
+    contentDescription: String?,
+    placeholderColor: Color,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
+) {
+    val context = LocalContext.current
+    val painter = rememberAsyncImagePainter(
+        model = model,
+        imageLoader = Coil.imageLoader(context),
+    )
+    val state = painter.state
+    // 最近一次成功加载的封面位图（跨切歌保留）。
+    var lastBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    // 新图超过阈值仍未就绪 → 退化占位色。
+    var timedOut by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state) {
+        val s = state
+        if (s is AsyncImagePainter.State.Success) {
+            (s.result.drawable as? BitmapDrawable)?.bitmap?.let { lastBitmap = it }
+            timedOut = false
+        }
+    }
+    LaunchedEffect(model) {
+        timedOut = false
+        delay(COVER_HOLD_MS)
+        if (painter.state !is AsyncImagePainter.State.Success) timedOut = true
+    }
+
+    Box(modifier = modifier) {
+        // 底层：切歌后旧图垫底（超阈值退化占位色）。
+        val bg = if (timedOut) null else lastBitmap
+        if (bg != null) {
+            Image(
+                painter = remember(bg) { BitmapPainter(bg.asImageBitmap()) },
+                contentDescription = null,
+                modifier = Modifier.matchParentSize(),
+                contentScale = contentScale,
+            )
+        } else {
+            Box(Modifier.matchParentSize().background(placeholderColor))
+        }
+        // 上层：当前请求的 painter。必须真正绘制它，Coil 才会在 onRemembered 里发起
+        // 请求；loading 时它不画东西，露出底层旧图/占位色。
+        Image(
+            painter = painter,
+            contentDescription = contentDescription,
+            modifier = Modifier.matchParentSize(),
+            contentScale = contentScale,
+        )
+    }
+}

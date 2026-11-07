@@ -1,0 +1,265 @@
+package com.smart.neteast.ui.components
+
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Base64
+import android.util.Log
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import com.smart.neteast.auth.QrPairServer
+import com.smart.neteast.network.PlaylistApi
+import com.smart.neteast.ui.i18n.LocalStrings
+import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
+import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
+import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+private const val TAG = "QrLogin"
+
+/** 扫码状态机（UI 侧）。 */
+private enum class QrState { Loading, Waiting, Scanned, Expired, Failed, InvalidSession, NetworkError }
+
+/**
+ * 平板 / 大屏独占的扫码登录弹窗。
+ *
+ * 流程：`/eapi/login/qrcode/unikey`（eapi + PC 客户端身份 + type=3，打 interfacepc）拿到
+ * unikey，本地渲染二维码（服务端一般不给图），每 2 秒轮询 `client/login`：
+ * 801 待扫 / 802 已扫待确认 / 803 成功。803 的 cookie 在响应的 Set-Cookie 头里，
+ * 先用它打一次 `account/get` 校验（`account` 非空才算登录），校验不过就留在弹窗里让用户重试。
+ * 800 过期或请求失败时点击二维码可重新申请。
+ *
+ * 「通用登录」退回到与手机一致的 WebView 官方登录页。
+ */
+@Composable
+fun QrLoginDialog(
+    onLoginSuccess: (cookie: String) -> Unit,
+    onGenericLogin: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalStrings.current
+    val scope = rememberCoroutineScope()
+
+    var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var state by remember { mutableStateOf(QrState.Loading) }
+    var pollJob by remember { mutableStateOf<Job?>(null) }
+    // 平板侧局域网配对服务：手机 Ncrust 扫同一个二维码时把 cookie 回传过来。
+    var pairServer by remember { mutableStateOf<QrPairServer?>(null) }
+
+    fun hintFor(current: QrState): String = when (current) {
+        QrState.Scanned -> strings.qrScannedHint
+        QrState.Expired -> strings.qrExpiredHint
+        QrState.Failed -> strings.qrLoadFailed
+        QrState.InvalidSession -> strings.qrSessionInvalid
+        QrState.NetworkError -> strings.qrNetworkError
+        else -> strings.qrScanHint
+    }
+
+    fun refresh() {
+        pollJob?.cancel()
+        pairServer?.stop()
+        pairServer = null
+        qrBitmap = null
+        state = QrState.Loading
+        pollJob = scope.launch {
+            val key = PlaylistApi.getLoginQrKey()
+            if (key == null || key.unikey.isEmpty()) {
+                state = QrState.Failed
+                return@launch
+            }
+            // 官方 App 扫码走轮询; Ncrust 手机扫码走局域网回传, 两条路谁先到用谁。
+            pairServer = QrPairServer(key.unikey) { cookie -> onLoginSuccess(cookie) }.also { it.start() }
+            // 二维码内容是 PC 形态的官方登录链接（`?codekey=<unikey>`，不带 chainId）：
+            // 服务端一般不给图, 用 zxing 本地生成(官方客户端同款做法)。
+            val qrContent = key.qrurl
+            qrBitmap = key.qrimg?.let { decodeQrImage(it) } ?: generateQrBitmap(qrContent)
+            if (qrBitmap == null) {
+                state = QrState.Failed
+                return@launch
+            }
+            state = QrState.Waiting
+            var ticks = 0
+            while (ticks < 150) {
+                delay(2_000)
+                ticks++
+                // 单次轮询失败(网络抖动)不能让整个轮询协程死掉——否则扫码确认后
+                // 永远等不到 803, 表现为"授权了还是没登进去"。
+                val st = runCatching { PlaylistApi.checkLoginQr(key.unikey) }.getOrNull()
+                if (st == null) {
+                    Log.w(TAG, "poll failed (transient), retry")
+                    continue
+                }
+                Log.d(TAG, "poll code=${st.code} hasCookie=${st.cookie != null}")
+                when (st.code) {
+                    800 -> { state = QrState.Expired; return@launch }
+                    802 -> state = QrState.Scanned
+                    803 -> {
+                        val cookie = st.cookie
+                        if (cookie == null) {
+                            // 803 但 Set-Cookie 里没有非空 MUSIC_U：这次确认没带上会话。
+                            Log.e(TAG, "803 without non-empty MUSIC_U in Set-Cookie")
+                            state = QrState.Failed
+                            return@launch
+                        }
+                        // 803 只说明手机上确认了: 先用这份 cookie 打 account/get, 服务端认了才算成功。
+                        // 不校验就会出现「提示登录成功、回首页仍显示未登录」。
+                        when (PlaylistApi.validateSession(cookie)) {
+                            PlaylistApi.SessionCheck.Valid -> {
+                                Log.d(TAG, "session validated, handing off login")
+                                onLoginSuccess(cookie)
+                            }
+                            PlaylistApi.SessionCheck.Invalid -> {
+                                Log.w(TAG, "session rejected by account/get")
+                                state = QrState.InvalidSession
+                            }
+                            PlaylistApi.SessionCheck.Unknown -> {
+                                Log.w(TAG, "session check failed (network)")
+                                state = QrState.NetworkError
+                            }
+                        }
+                        return@launch
+                    }
+                }
+            }
+            // 长时间无人扫码，按过期处理
+            state = QrState.Expired
+        }
+    }
+
+    LaunchedEffect(Unit) { refresh() }
+    DisposableEffect(Unit) {
+        onDispose {
+            pollJob?.cancel()
+            pairServer?.stop()
+        }
+    }
+
+    val refreshable = state == QrState.Expired || state == QrState.Failed ||
+        state == QrState.InvalidSession || state == QrState.NetworkError
+
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .ncrustDialogSurface()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            MetroText(
+                strings.qrLoginTitle,
+                color = LocalMetroColors.current.onBackground,
+                style = TextStyle(fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
+            )
+            Spacer(Modifier.height(16.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(240.dp)
+                    .background(Color.White)
+                    .clickable(enabled = refreshable) { refresh() },
+                contentAlignment = Alignment.Center
+            ) {
+                val bmp = qrBitmap
+                when {
+                    bmp != null -> Image(
+                        bitmap = bmp.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize().padding(8.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                    state == QrState.Loading -> MetroText(
+                        strings.loading,
+                        color = LocalMetroColors.current.onSurfaceVariant,
+                        style = LocalMetroTypography.current.bodyMedium,
+                    )
+                    else -> MetroText(
+                        hintFor(state),
+                        color = LocalMetroColors.current.onSurfaceVariant,
+                        style = LocalMetroTypography.current.bodySmall.copy(textAlign = TextAlign.Center),
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+            MetroText(
+                hintFor(state),
+                color = if (state == QrState.Scanned) LocalMetroColors.current.primary
+                else LocalMetroColors.current.onSurfaceVariant,
+                style = LocalMetroTypography.current.bodySmall.copy(textAlign = TextAlign.Center),
+            )
+
+            Spacer(Modifier.height(24.dp))
+            // 通用登录：与手机默认的 WebView 官方登录页一致
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .border(1.dp, LocalMetroColors.current.primary, RoundedCornerShape(14.dp))
+                    .clickable(onClick = onGenericLogin)
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                MetroText(
+                    strings.qrGenericLogin,
+                    color = LocalMetroColors.current.primary,
+                    style = TextStyle(fontSize = 14.sp),
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .border(1.dp, LocalMetroColors.current.divider, RoundedCornerShape(14.dp))
+                    .clickable(onClick = onDismiss)
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                MetroText(
+                    strings.close,
+                    color = LocalMetroColors.current.onSurfaceVariant,
+                    style = TextStyle(fontSize = 14.sp),
+                )
+            }
+        }
+    }
+}
+
+/** 解析 `data:image/png;base64,...` 为 Bitmap；失败返回 null。 */
+private fun decodeQrImage(dataUrl: String): Bitmap? = runCatching {
+    val b64 = dataUrl.substringAfter("base64,", dataUrl)
+    val bytes = Base64.decode(b64, Base64.DEFAULT)
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+}.getOrNull()
+
+/** zxing 本地生成二维码位图（纯黑白，白底）。失败返回 null。 */
+private fun generateQrBitmap(content: String, sizePx: Int = 512): Bitmap? = runCatching {
+    val matrix = com.google.zxing.qrcode.QRCodeWriter()
+        .encode(content, com.google.zxing.BarcodeFormat.QR_CODE, sizePx, sizePx)
+    val bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.RGB_565)
+    for (x in 0 until sizePx) {
+        for (y in 0 until sizePx) {
+            bmp.setPixel(x, y, if (matrix.get(x, y)) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        }
+    }
+    bmp
+}.getOrNull()

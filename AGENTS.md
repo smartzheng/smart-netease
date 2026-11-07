@@ -128,7 +128,7 @@ Also at file scope: `formatDuration(ms)`, and `object QueueModes { CYCLE=0, SING
 
 ### Package Layout
 
-Under `com.takahashirinta.ncrust/`:
+Under `com.smart.neteast/`:
 
 | Package | Purpose |
 |---|---|

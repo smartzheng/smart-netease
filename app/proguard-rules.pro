@@ -28,12 +28,12 @@
 -keep class * extends com.google.gson.reflect.TypeToken
 
 # Ncrust 网络模型 —— 全部 keep，Gson 反射用
--keep class com.takahashirinta.ncrust.network.** { *; }
--keep class com.takahashirinta.ncrust.network.model.** { *; }
--keep class com.takahashirinta.ncrust.lyric.** { *; }
+-keep class com.smart.neteast.network.** { *; }
+-keep class com.smart.neteast.network.model.** { *; }
+-keep class com.smart.neteast.lyric.** { *; }
 # 权益模型：SongItem.privilege（SongPrivilege）随队列 / 收藏经 Gson 落盘，与 network.** 同理整包 keep，
 # 免得重演 da07bb0 那种 R8 剪掉反射字段后冷启动闪退。
--keep class com.takahashirinta.ncrust.account.** { *; }
+-keep class com.smart.neteast.account.** { *; }
 
 # =============================================================================
 # Retrofit / OkHttp —— 保留 interface 上的 HTTP 注解
@@ -75,7 +75,7 @@
 # =============================================================================
 # 反射直接命中的常量（BuildConfig）
 # =============================================================================
--keep class com.takahashirinta.ncrust.BuildConfig { *; }
+-keep class com.smart.neteast.BuildConfig { *; }
 
 # =============================================================================
 # WebView JS 接口（登录页用 WebView，未来若加 JS bridge 需在此声明）

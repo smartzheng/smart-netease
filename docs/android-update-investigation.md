@@ -25,7 +25,7 @@
 | 检查 | 结果 |
 |---|---|
 | 无 GitHub 认证访问公开 APK 链接、跟随重定向 | HTTP 200，4,075,560 字节 |
-| 本地 aapt2 读取身份 | `com.takahashirinta.ncrust`，versionName 1.4.1，versionCode 9，minSdk 24，targetSdk 36 |
+| 本地 aapt2 读取身份 | `com.smart.neteast`，versionName 1.4.1，versionCode 9，minSdk 24，targetSdk 36 |
 | apksigner verify | 通过，v2 签名，1 个签名者 |
 | SHA-256 与 GitHub 资产摘要比对 | 一致，`363a980a5a75362ecede73c90be2ac9b4b8f870bced122811462809ee9607e3f` |
 | APK 位于应用 cacheDir 后由 ApkArchive 读取 | 模拟器通过，包名、版本和非空签名摘要均有效 |

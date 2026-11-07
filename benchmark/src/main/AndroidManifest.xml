@@ -4,7 +4,7 @@
 
     <instrumentation
         android:name="androidx.test.runner.AndroidJUnitRunner"
-        android:targetPackage="com.takahashirinta.ncrust"
+        android:targetPackage="com.smart.neteast"
         android:label="Ncrust Macrobenchmark" />
 
     <!--

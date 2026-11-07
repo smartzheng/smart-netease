@@ -13,7 +13,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.takahashirinta.ncrust"
+    namespace = "com.smart.neteast"
     compileSdk = 36
 
     // ---------- 签名配置 ----------
@@ -29,7 +29,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.takahashirinta.ncrust"
+        applicationId = "com.smart.neteast"
         minSdk = 24
         targetSdk = 36
         versionCode = 10

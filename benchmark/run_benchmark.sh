@@ -21,7 +21,7 @@ cd "$(dirname "$0")/.."
 ADB="${ADB_BINARY:-adb}"
 BENCH_APK="benchmark/build/outputs/apk/debug/benchmark-debug.apk"
 APP_APK="app/build/outputs/apk/release/app-release-unsigned.apk"
-PACKAGE="com.takahashirinta.ncrust"
+PACKAGE="com.smart.neteast"
 BENCH_PKG="$PACKAGE.benchmark"
 TARGET="${1:-all}"
 ADB_BIN="$(command -v "$ADB")"
@@ -125,13 +125,13 @@ disable_animations() {
 ensure_bench_apk
 
 case "$TARGET" in
-  startup) disable_animations; run com.takahashirinta.ncrust.benchmark.StartupBenchmark ;;
-  scroll)  run com.takahashirinta.ncrust.benchmark.HomeScrollBenchmark ;;
-  expand)  run com.takahashirinta.ncrust.benchmark.ExpandPlayerBenchmark ;;
-  all)     disable_animations; run com.takahashirinta.ncrust.benchmark.StartupBenchmark
+  startup) disable_animations; run com.smart.neteast.benchmark.StartupBenchmark ;;
+  scroll)  run com.smart.neteast.benchmark.HomeScrollBenchmark ;;
+  expand)  run com.smart.neteast.benchmark.ExpandPlayerBenchmark ;;
+  all)     disable_animations; run com.smart.neteast.benchmark.StartupBenchmark
            restore_animations
-           run com.takahashirinta.ncrust.benchmark.HomeScrollBenchmark
-           run com.takahashirinta.ncrust.benchmark.ExpandPlayerBenchmark ;;
+           run com.smart.neteast.benchmark.HomeScrollBenchmark
+           run com.smart.neteast.benchmark.ExpandPlayerBenchmark ;;
   *) echo "用法: $0 [startup|scroll|expand|all]"; exit 2 ;;
 esac
 

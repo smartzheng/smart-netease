@@ -1,0 +1,86 @@
+package com.smart.neteast.ui.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import com.smart.neteast.ui.i18n.LocalStrings
+import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
+import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
+import io.github.takahashirinta.kanesumi.core.theme.MetroText
+
+/**
+ * 后台活动授权弹窗（首次启动、且尚未加入电池优化白名单时弹出）。
+ * 与应用内其他选择对话框共享圆角表面和明确的前后层级。
+ */
+@Composable
+fun BackgroundActivityDialog(
+    onAllow: () -> Unit,
+    onLater: () -> Unit
+) {
+    val strings = LocalStrings.current
+    Dialog(onDismissRequest = onLater) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .ncrustDialogSurface()
+                .padding(24.dp)
+        ) {
+            MetroText(
+                strings.batteryTitle,
+                color = LocalMetroColors.current.onBackground,
+                style = TextStyle(fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
+            )
+            Spacer(Modifier.height(12.dp))
+            MetroText(
+                strings.batteryMessage,
+                color = LocalMetroColors.current.onSurfaceVariant,
+                style = LocalMetroTypography.current.bodyMedium,
+            )
+            Spacer(Modifier.height(24.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(LocalMetroColors.current.primary)
+                    .clickable(onClick = onAllow)
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                MetroText(
+                    strings.batteryAllow,
+                    color = Color.Black,
+                    style = TextStyle(fontSize = 14.sp),
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .border(1.dp, LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                    .clickable(onClick = onLater)
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                MetroText(
+                    strings.batteryLater,
+                    color = LocalMetroColors.current.onSurfaceVariant,
+                    style = TextStyle(fontSize = 14.sp),
+                )
+            }
+        }
+    }
+}

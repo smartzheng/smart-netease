@@ -15,7 +15,7 @@
 ## 1. 工程形态
 
 - 目录：仓库根下 `walkman/`，**独立 Gradle 构建**（自带 `settings.gradle.kts`、`gradlew`），不加入根 `settings.gradle.kts`，与 `windows/` 一样对主工程不可见。
-- 包名 `com.takahashirinta.ncrust.walkman`，应用名「Ncrust」（启动器上与主应用区分可加副标题，由负责人定）。
+- 包名 `com.smart.neteast.walkman`，应用名「Ncrust」（启动器上与主应用区分可加副标题，由负责人定）。
 - `minSdk 16`，`targetSdk` 取能在 4.1 上正常运行的最高合理值（工人需说明取值理由），ABI 只打 `armeabi-v7a`。
 - 语言 Kotlin；**不用 Compose、不用 AndroidX**（主流 AndroidX 已不支持 API 16）——界面用框架原生 View / Activity。
 - 依赖白名单（再加需在最终回复里说明理由，由派工者批准）：`kotlin-stdlib`、OkHttp `3.12.13`（最后支持 API 9+ 的分支）、Okio 1.x、

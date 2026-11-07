@@ -1,0 +1,196 @@
+package com.smart.neteast.ui.screen
+import androidx.compose.material.icons.rounded.*
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LibraryAdd
+import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.PlaylistPlay
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.smart.neteast.cache.ContentCache
+import com.smart.neteast.library.AlbumInfo
+import com.smart.neteast.library.LibraryManager
+import com.smart.neteast.network.RetrofitClient
+import com.smart.neteast.network.SongItem
+import com.smart.neteast.network.model.AlbumDetail
+import com.smart.neteast.network.model.AlbumSongItem
+import com.smart.neteast.ui.components.DetailHeader
+import com.smart.neteast.ui.components.DetailScaffold
+import com.smart.neteast.ui.components.PlayAllDialog
+import com.smart.neteast.ui.components.SongCard
+import com.smart.neteast.ui.components.SongCardStyle
+import com.smart.neteast.ui.components.SongMenuAction
+import com.smart.neteast.ui.i18n.LocalStrings
+import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
+import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import android.widget.Toast
+
+@Composable
+fun AlbumDetailScreen(
+    albumId: Long,
+    onBack: () -> Unit,
+    onSongClick: (SongItem) -> Unit,
+    onArtistClick: (Long) -> Unit = {},
+    onReplaceAndPlay: (List<SongItem>) -> Unit = {},
+    onInsertNext: (List<SongItem>) -> Unit = {},
+    onSongInsertNext: (SongItem) -> Unit = {},
+    onSongAppendToQueue: (SongItem) -> Unit = {},
+    onShowSongMenu: (SongItem, List<SongMenuAction>) -> Unit = { _, _ -> }
+) {
+    // 命中缓存则用缓存作为初始 state，屏幕进入时立即有内容渲染。
+    val cached = remember(albumId) { ContentCache.getAlbum(albumId) }
+    var album by remember(albumId) { mutableStateOf(cached?.album) }
+    var songs by remember(albumId) { mutableStateOf(cached?.songs ?: emptyList()) }
+    var isLoading by remember(albumId) { mutableStateOf(cached == null) }
+    var error by remember(albumId) { mutableStateOf<String?>(null) }
+    var showPlayAllDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val strings = LocalStrings.current
+    // 专辑收藏状态: 本地缓存是即时真源(云端异步同步), 切换后自增 tick 刷新
+    var albumTick by remember { mutableIntStateOf(0) }
+    val isAlbumSaved = remember(albumId, albumTick) {
+        LibraryManager.getSavedAlbums(context).any { it.albumId == albumId }
+    }
+
+    LaunchedEffect(albumId) {
+        // 有缓存时后台静默刷新；无缓存则前台 loading。
+        if (cached == null) isLoading = true
+        error = null
+        try {
+            val response = RetrofitClient.api.getAlbumDetail(albumId)
+            ContentCache.putAlbum(albumId, response)
+            album = response.album
+            songs = response.songs ?: emptyList()
+        } catch (e: Exception) {
+            // 缓存兜底：即使刷新失败，如果有旧内容就不显示错误。
+            if (cached == null) error = strings.loadFailed(e.message)
+        } finally {
+            isLoading = false
+        }
+    }
+
+    val songItems = remember(songs) {
+        songs.map { s -> SongItem(id = s.id, name = s.name, artists = s.artists, album = s.album, duration = s.getDurationMs()) }
+    }
+
+    if (showPlayAllDialog) {
+        PlayAllDialog(
+            songCount = songItems.size,
+            onDismiss = { showPlayAllDialog = false },
+            onReplaceAndPlay = { onReplaceAndPlay(songItems) },
+            onInsertNext = { onInsertNext(songItems) }
+        )
+    }
+
+    DetailScaffold(
+        title = strings.albumDetailTitle,
+        onBack = onBack,
+        isLoading = isLoading,
+        hasCachedContent = album != null,
+        error = error,
+        onRetry = null,
+        header = {
+            DetailHeader(
+                coverUrl = album?.picUrl,
+                title = album?.name ?: "",
+                subtitle = album?.artist?.name,
+                // 点击作曲者 → 跳歌手页, 无按动反馈
+                onSubtitleClick = {
+                    album?.artist?.id?.let { onArtistClick(it) }
+                },
+                infoLines = buildList {
+                    album?.publishTime?.let { time ->
+                        val date = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                            .format(java.util.Date(time))
+                        add(strings.albumReleaseDate(date))
+                    }
+                    album?.company?.let { add(strings.albumLabel(it)) }
+                    add(strings.trackCountSongs(songs.size))
+                },
+                onPlayAll = if (songItems.isNotEmpty()) ({ showPlayAllDialog = true }) else null,
+                headerActions = {
+                    if (songItems.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .background(LocalMetroColors.current.surfaceVariant)
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) {
+                                        if (isAlbumSaved) {
+                                            LibraryManager.removeAlbum(context, albumId)
+                                            Toast.makeText(context, strings.removedFromLibrary, Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            LibraryManager.subscribeAlbum(context, AlbumInfo(
+                                                albumId = albumId,
+                                                name = album?.name ?: "",
+                                                picUrl = album?.picUrl ?: "",
+                                                artist = album?.artist?.name ?: "",
+                                                songCount = songItems.size
+                                            ))
+                                            Toast.makeText(context, strings.addedToLibrary, Toast.LENGTH_SHORT).show()
+                                        }
+                                        albumTick++
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                MetroText(
+                                    if (isAlbumSaved) strings.actionUnsaveAlbum else strings.actionSaveAlbum,
+                                    color = LocalMetroColors.current.primary,
+                                    style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                )
+                            }
+                        }
+                    }
+                }
+            )
+        },
+        content = {
+            // 直接消费上面 remember(songs) 生成的 songItems，避免每次重组在 items 块内
+            // 重新 new SongItem 破坏稳定性；补 key 让 Compose 按 id diff
+            items(songItems, key = { it.id }) { songItem ->
+                SongCard(
+                    song = songItem,
+                    style = SongCardStyle.COMPACT,
+                    onClick = { onSongClick(songItem) },
+                    onShowMenu = {
+                        onShowSongMenu(songItem, listOf(
+                            SongMenuAction(Icons.Rounded.LibraryAdd, strings.actionAddToLibrary) {
+                                LibraryManager.saveSong(context, songItem)
+                                Toast.makeText(context, strings.addedToLibrary, Toast.LENGTH_SHORT).show()
+                            },
+                            SongMenuAction(Icons.Rounded.PlaylistPlay, strings.actionInsertNext) {
+                                onSongInsertNext(songItem)
+                            },
+                            SongMenuAction(Icons.Rounded.PlaylistAdd, strings.actionAppendToQueue) {
+                                onSongAppendToQueue(songItem)
+                            }
+                        ))
+                    }
+                )
+            }
+        }
+    )
+}

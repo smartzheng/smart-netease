@@ -16,7 +16,7 @@
 
 ## 1. 总表
 
-> 「真机怎么量」一列里的命令都是可在设备上直接跑的形式；`$PKG` = `com.takahashirinta.ncrust`，`$NCRUST` = 仓库根。
+> 「真机怎么量」一列里的命令都是可在设备上直接跑的形式；`$PKG` = `com.smart.neteast`，`$NCRUST` = 仓库根。
 > 「改法草图」只写方向，不写实现——本任务不改产品代码。
 
 | 编号 | 类别 | 问题（一句话） | 证据（文件:行） | 预估收益 | 风险 | 真机怎么量 | 改法草图 |
@@ -131,7 +131,7 @@
 #   - 每轮之间不要清应用数据；Coil 磁盘缓存与 ART profile 要保持同一热度
 set -euo pipefail
 
-PKG="com.takahashirinta.ncrust"
+PKG="com.smart.neteast"
 BENCH_PKG="$PKG.benchmark"
 LABEL="${1:?用法: perf_measure.sh <base|opt>}"
 NCRUST="$(cd "$(dirname "$0")" && pwd)"   # 若贴进终端跑，改成仓库根绝对路径
@@ -236,7 +236,7 @@ data_sources {
       atrace_categories: "power"
       atrace_categories: "memory"
       atrace_categories: "disk"
-      atrace_apps: "com.takahashirinta.ncrust"
+      atrace_apps: "com.smart.neteast"
     }
   }
 }
