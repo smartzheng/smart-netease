@@ -865,22 +865,26 @@ fun PlayerCard(
                         modifier = Modifier.padding(end = 4.dp)
                     )
                     ThresholdScope(miniBarEnabled) { enabled -> if (enabled) {
-                        MetroIconButton(onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onPlayPause()
-                        }) {
-                            SaltIcon(
-                                imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                                contentDescription = null,
-                                tint = LocalMetroColors.current.onBackground
-                            )
-                        }
-                        MetroIconButton(onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onPlayNext()
-                        }) {
-                            SaltIcon(Icons.Rounded.SkipNext, null, tint = LocalMetroColors.current.onBackground)
-                        }
+                        TransportControlButton(
+                            glyph = if (isPlaying) TransportGlyph.Pause else TransportGlyph.Play,
+                            contentDescription = if (isPlaying) LocalStrings.current.pauseButton else LocalStrings.current.playButton,
+                            tint = LocalMetroColors.current.primary,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onPlayPause()
+                            },
+                            iconSize = 25.dp,
+                        )
+                        TransportControlButton(
+                            glyph = TransportGlyph.Next,
+                            contentDescription = LocalStrings.current.nextButton,
+                            tint = LocalMetroColors.current.onBackground,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onPlayNext()
+                            },
+                            iconSize = 22.dp,
+                        )
                     } else {
                         Spacer(modifier = Modifier.width(96.dp))
                     } }
@@ -896,16 +900,16 @@ fun PlayerCard(
                             .padding(horizontal = 12.dp)
                     )
                     ThresholdScope(miniBarEnabled) { enabled -> if (enabled) {
-                        MetroIconButton(onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onPlayNothing()
-                        }) {
-                            SaltIcon(
-                                imageVector = Icons.Rounded.PlayArrow,
-                                contentDescription = LocalStrings.current.playButton,
-                                tint = LocalMetroColors.current.onBackground
-                            )
-                        }
+                        TransportControlButton(
+                            glyph = TransportGlyph.Play,
+                            contentDescription = LocalStrings.current.playButton,
+                            tint = LocalMetroColors.current.primary,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onPlayNothing()
+                            },
+                            iconSize = 25.dp,
+                        )
                         Spacer(modifier = Modifier.width(12.dp))
                     } }
                 }

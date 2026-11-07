@@ -1,11 +1,9 @@
 package com.smart.neteast.ui.player
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.*
@@ -16,7 +14,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -76,10 +73,10 @@ fun FullPlayerControls(
     val gapTight = if (compact) 4.dp else 8.dp
     val gapLoose = if (compact) 8.dp else 16.dp
     val ctrlRowPad = if (compact) 2.dp else 16.dp
-    val sideBtn = if (compact) 44.dp else 56.dp
-    val sideIcon = if (compact) 26.dp else 32.dp
+    val sideBtn = if (compact) 48.dp else 56.dp
+    val sideIcon = if (compact) 27.dp else 32.dp
     val playBtn = if (compact) 52.dp else 64.dp
-    val playIcon = if (compact) 28.dp else 32.dp
+    val playIcon = if (compact) 34.dp else 42.dp
     val sideGap = if (compact) 16.dp else 24.dp
     val toggleBtn = if (compact) 44.dp else 56.dp
     val toggleIcon = if (compact) 26.dp else 32.dp
@@ -170,57 +167,31 @@ fun FullPlayerControls(
                     modifier = Modifier.align(Alignment.Center),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clickable(enabled = previousEnabled) {
-                                tick()
-                                onPlayPrevious()
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        SaltIcon(
-                            imageVector = Icons.Rounded.SkipPrevious,
-                            contentDescription = strings.prevButton,
-                            tint = if (previousEnabled) LocalMetroColors.current.onBackground else LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.5f),
-                            sizeDp = 28.dp
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(54.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(LocalMetroColors.current.surfaceVariant)
-                            .border(1.dp, LocalMetroColors.current.divider, RoundedCornerShape(16.dp))
-                            .clickable {
-                                tick()
-                                onPlayPause()
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        SaltIcon(
-                            imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                            contentDescription = if (isPlaying) strings.pauseButton else strings.playButton,
-                            tint = LocalMetroColors.current.primary,
-                            sizeDp = 30.dp
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clickable {
-                                tick()
-                                onPlayNext()
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        SaltIcon(
-                            imageVector = Icons.Rounded.SkipNext,
-                            contentDescription = strings.nextButton,
-                            tint = LocalMetroColors.current.onBackground,
-                            sizeDp = 28.dp
-                        )
-                    }
+                    TransportControlButton(
+                        glyph = TransportGlyph.Previous,
+                        contentDescription = strings.prevButton,
+                        tint = if (previousEnabled) LocalMetroColors.current.onBackground else LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.5f),
+                        onClick = { tick(); onPlayPrevious() },
+                        touchSize = 48.dp,
+                        iconSize = 28.dp,
+                        enabled = previousEnabled,
+                    )
+                    TransportControlButton(
+                        glyph = if (isPlaying) TransportGlyph.Pause else TransportGlyph.Play,
+                        contentDescription = if (isPlaying) strings.pauseButton else strings.playButton,
+                        tint = LocalMetroColors.current.primary,
+                        onClick = { tick(); onPlayPause() },
+                        touchSize = 54.dp,
+                        iconSize = 36.dp,
+                    )
+                    TransportControlButton(
+                        glyph = TransportGlyph.Next,
+                        contentDescription = strings.nextButton,
+                        tint = LocalMetroColors.current.onBackground,
+                        onClick = { tick(); onPlayNext() },
+                        touchSize = 48.dp,
+                        iconSize = 28.dp,
+                    )
                 }
                 Box(
                     modifier = Modifier
@@ -320,63 +291,33 @@ fun FullPlayerControls(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(sideBtn)
-                    .clickable(enabled = previousEnabled) {
-                        tick()
-                        onPlayPrevious()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                SaltIcon(
-                    imageVector = Icons.Rounded.SkipPrevious,
-                    contentDescription = strings.prevButton,
-                    tint = if (previousEnabled) LocalMetroColors.current.onBackground else LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.5f),
-                    sizeDp = sideIcon
-                )
-            }
+            TransportControlButton(
+                glyph = TransportGlyph.Previous,
+                contentDescription = strings.prevButton,
+                tint = if (previousEnabled) LocalMetroColors.current.onBackground else LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.5f),
+                onClick = { tick(); onPlayPrevious() },
+                touchSize = sideBtn,
+                iconSize = sideIcon,
+                enabled = previousEnabled,
+            )
             Spacer(Modifier.width(sideGap))
-            Box(
-                modifier = Modifier
-                    .size(playBtn)
-                    .clip(RoundedCornerShape(if (compact) 16.dp else 20.dp))
-                    .background(LocalMetroColors.current.surfaceVariant)
-                    .border(
-                        1.dp,
-                        LocalMetroColors.current.divider,
-                        RoundedCornerShape(if (compact) 16.dp else 20.dp)
-                    )
-                    .clickable {
-                        tick()
-                        onPlayPause()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                SaltIcon(
-                    imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                    contentDescription = if (isPlaying) strings.pauseButton else strings.playButton,
-                    tint = LocalMetroColors.current.primary,
-                    sizeDp = playIcon
-                )
-            }
+            TransportControlButton(
+                glyph = if (isPlaying) TransportGlyph.Pause else TransportGlyph.Play,
+                contentDescription = if (isPlaying) strings.pauseButton else strings.playButton,
+                tint = LocalMetroColors.current.primary,
+                onClick = { tick(); onPlayPause() },
+                touchSize = playBtn,
+                iconSize = playIcon,
+            )
             Spacer(Modifier.width(sideGap))
-            Box(
-                modifier = Modifier
-                    .size(sideBtn)
-                    .clickable {
-                        tick()
-                        onPlayNext()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                SaltIcon(
-                    imageVector = Icons.Rounded.SkipNext,
-                    contentDescription = strings.nextButton,
-                    tint = LocalMetroColors.current.onBackground,
-                    sizeDp = sideIcon
-                )
-            }
+            TransportControlButton(
+                glyph = TransportGlyph.Next,
+                contentDescription = strings.nextButton,
+                tint = LocalMetroColors.current.onBackground,
+                onClick = { tick(); onPlayNext() },
+                touchSize = sideBtn,
+                iconSize = sideIcon,
+            )
         }
         if (!tiny) {
             PlayerPanelToggles(
