@@ -39,7 +39,7 @@ import com.smart.neteast.ui.components.SongCardStyle
 import com.smart.neteast.ui.components.SongMenuAction
 import com.smart.neteast.ui.i18n.LocalStrings
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 import android.widget.Toast
 
 @Composable
@@ -156,7 +156,7 @@ fun AlbumDetailScreen(
                                     }
                                     .padding(horizontal = 12.dp, vertical = 6.dp)
                             ) {
-                                MetroText(
+                                SaltText(
                                     if (isAlbumSaved) strings.actionUnsaveAlbum else strings.actionSaveAlbum,
                                     color = LocalMetroColors.current.primary,
                                     style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)

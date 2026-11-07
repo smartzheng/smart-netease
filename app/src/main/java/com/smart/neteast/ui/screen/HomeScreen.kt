@@ -69,8 +69,8 @@ import io.github.takahashirinta.kanesumi.controls.MetroIconButton
 import io.github.takahashirinta.kanesumi.controls.MetroProgressIndicator
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.smart.neteast.ui.design.SaltIcon
+import com.moriafly.salt.ui.Text as SaltText
 import com.smart.neteast.ui.components.PlayAllButton
 import com.smart.neteast.ui.components.SongCard
 import com.smart.neteast.ui.components.SongCardStyle
@@ -301,7 +301,7 @@ fun HomeScreen(
                                 actions = {
                                     // 手动刷新每日推荐(#26):重新拉取并 diff 平滑替换
                                     MetroIconButton(onClick = { loadDailySongs() }) {
-                                        MetroIcon(
+                                        SaltIcon(
                                             Icons.Rounded.Refresh,
                                             contentDescription = strings.refreshLabel,
                                             tint = LocalMetroColors.current.onSurfaceVariant,
@@ -314,7 +314,7 @@ fun HomeScreen(
                         // 非 Valid（含未登录/已失效）时说明这不是个性化推荐。
                         if (!sessionValid) {
                             item(span = { GridItemSpan(maxLineSpan) }) {
-                                MetroText(
+                                SaltText(
                                     strings.dailySongsLoginHint,
                                     color = LocalMetroColors.current.onSurfaceVariant,
                                     style = LocalMetroTypography.current.bodySmall,
@@ -442,7 +442,7 @@ private fun HomeSearchHeader(
             ) {
                 if (expanded) {
                     MetroIconButton(onClick = onClose) {
-                        MetroIcon(Icons.Rounded.ArrowBack, contentDescription = strings.tabHome,
+                        SaltIcon(Icons.Rounded.ArrowBack, contentDescription = strings.tabHome,
                             tint = LocalMetroColors.current.onSurfaceVariant, sizeDp = 22.dp)
                     }
                     BasicTextField(
@@ -457,7 +457,7 @@ private fun HomeSearchHeader(
                         keyboardActions = KeyboardActions(onSearch = { onSearch() }),
                         decorationBox = { innerTextField ->
                             Box(contentAlignment = Alignment.CenterStart) {
-                                if (query.isEmpty()) MetroText(
+                                if (query.isEmpty()) SaltText(
                                     strings.searchPlaceholder,
                                     color = LocalMetroColors.current.onSurfaceVariant,
                                     style = LocalMetroTypography.current.bodyMedium
@@ -467,14 +467,14 @@ private fun HomeSearchHeader(
                         }
                     )
                     if (query.isNotEmpty()) MetroIconButton(onClick = onClear) {
-                    MetroIcon(Icons.Rounded.Clear, contentDescription = strings.clearSearchButton,
+                    SaltIcon(Icons.Rounded.Clear, contentDescription = strings.clearSearchButton,
                             tint = LocalMetroColors.current.onSurfaceVariant, sizeDp = 20.dp)
                     }
                 } else {
-                    MetroIcon(Icons.Rounded.Search, contentDescription = null,
+                    SaltIcon(Icons.Rounded.Search, contentDescription = null,
                         tint = LocalMetroColors.current.onSurfaceVariant, sizeDp = 22.dp)
                     Spacer(Modifier.width(12.dp))
-                    MetroText(strings.searchPlaceholder, color = LocalMetroColors.current.onSurfaceVariant,
+                    SaltText(strings.searchPlaceholder, color = LocalMetroColors.current.onSurfaceVariant,
                         style = LocalMetroTypography.current.bodyMedium)
                 }
             }
@@ -493,7 +493,7 @@ private fun SectionHeader(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MetroText(
+        SaltText(
             title,
             color = LocalMetroColors.current.onBackground,
             style = LocalMetroTypography.current.title.copy(
@@ -503,7 +503,7 @@ private fun SectionHeader(
         actions()
         if (onPlayAll != null) {
             MetroIconButton(onClick = onPlayAll) {
-                MetroIcon(
+                SaltIcon(
                     Icons.Rounded.PlayArrow,
                     contentDescription = LocalStrings.current.playAllButton,
                     tint = LocalMetroColors.current.primary,
@@ -532,7 +532,7 @@ private fun DailySongTile(song: SongItem, onClick: () -> Unit, onLongClick: () -
             contentScale = ContentScale.Crop
         )
         Spacer(Modifier.height(4.dp))
-        MetroText(
+        SaltText(
             song.name,
             color = LocalMetroColors.current.onBackground,
             style = LocalMetroTypography.current.caption.copy(
@@ -541,7 +541,7 @@ private fun DailySongTile(song: SongItem, onClick: () -> Unit, onLongClick: () -
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
-        MetroText(
+        SaltText(
             song.artists?.joinToString("/") { it.name } ?: strings.unknownArtist,
             color = LocalMetroColors.current.onSurfaceVariant,
             style = LocalMetroTypography.current.label.copy(fontSize = 12.sp),
@@ -573,7 +573,7 @@ private fun SongGridTile(song: SongItem, onClick: () -> Unit, onLongClick: () ->
             contentScale = ContentScale.Crop
         )
         Spacer(Modifier.height(4.dp))
-        MetroText(
+        SaltText(
             song.name,
             color = LocalMetroColors.current.onBackground,
             style = LocalMetroTypography.current.caption.copy(
@@ -582,7 +582,7 @@ private fun SongGridTile(song: SongItem, onClick: () -> Unit, onLongClick: () ->
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
-        MetroText(
+        SaltText(
             song.artists?.joinToString("/") { it.name } ?: strings.unknownArtist,
             color = LocalMetroColors.current.onSurfaceVariant,
             style = LocalMetroTypography.current.label.copy(fontSize = 12.sp),
@@ -612,7 +612,7 @@ private fun PlaylistTile(playlist: PlaylistApi.PlaylistCard, onClick: () -> Unit
             )
         }
         Spacer(Modifier.height(4.dp))
-        MetroText(
+        SaltText(
             playlist.name,
             color = LocalMetroColors.current.onBackground,
             style = LocalMetroTypography.current.caption.copy(
@@ -621,7 +621,7 @@ private fun PlaylistTile(playlist: PlaylistApi.PlaylistCard, onClick: () -> Unit
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
-        MetroText(
+        SaltText(
             strings.trackCountSongs(playlist.trackCount),
             color = LocalMetroColors.current.onSurfaceVariant,
             style = LocalMetroTypography.current.label.copy(fontSize = 12.sp),
@@ -690,7 +690,7 @@ private fun FmRadioTile(
             )
         }
         Spacer(Modifier.height(4.dp))
-        MetroText(
+        SaltText(
             title,
             color = LocalMetroColors.current.onBackground,
             style = LocalMetroTypography.current.caption.copy(
@@ -699,7 +699,7 @@ private fun FmRadioTile(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
-        MetroText(
+        SaltText(
             subtitle,
             color = LocalMetroColors.current.onSurfaceVariant,
             style = LocalMetroTypography.current.label.copy(fontSize = 12.sp),

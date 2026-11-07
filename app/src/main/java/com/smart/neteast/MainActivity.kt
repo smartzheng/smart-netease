@@ -46,7 +46,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.DpSize
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -66,8 +65,11 @@ import com.smart.neteast.power.BackgroundActivity
 import com.smart.neteast.ui.components.BackgroundActivityDialog
 import com.smart.neteast.ui.components.PlayAllDialog
 import com.smart.neteast.ui.components.QrLoginDialog
-import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNav
-import io.github.takahashirinta.kanesumi.structure.bottomnav.MetroBottomNavItem
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import com.moriafly.salt.ui.BottomBar as SaltBottomBar
+import com.moriafly.salt.ui.BottomBarItem as SaltBottomBarItem
+import com.moriafly.salt.ui.SaltTheme
+import com.moriafly.salt.ui.UnstableSaltUiApi
 import io.github.takahashirinta.kanesumi.structure.sidebar.MetroSidebar
 import io.github.takahashirinta.kanesumi.structure.sidebar.MetroSidebarItem
 import com.smart.neteast.ui.components.SongMenuAction
@@ -333,6 +335,7 @@ object QueueModes {
 }
 
 @Composable
+@OptIn(UnstableSaltUiApi::class)
 fun MainScreen(
     themeIndex: Int = 0,
     onThemeChange: (Int) -> Unit = {},
@@ -1495,7 +1498,7 @@ fun MainScreen(
                     .zIndex(0.5f)
                     .width(sidebarWidthDp)
                     .fillMaxHeight()
-                    .background(LocalMetroColors.current.surface)
+                .background(SaltTheme.colors.subBackground)
             ) {
                 MetroSidebar(
                     items = navTabs.map { MetroSidebarItem(it.first, it.second) },
@@ -1657,13 +1660,19 @@ fun MainScreen(
                 // autoReserveBottomStack=false: Ncrust 用自己的 BottomOverlayInsetDp 常量管
                 // 底部预留,不接 MetroShell 的 MetroBottomStackScope,否则 rememberBottomStackReservation
                 // 会因缺 CompositionLocal 而 crash。
-                MetroBottomNav(
-                    selectedIndex = selectedTab,
-                    onSelected = onNavSelected,
-                    items = navTabs.map { MetroBottomNavItem(it.first, it.second) },
-                    indicatorSize = DpSize(0.dp, 0.dp),
-                    autoReserveBottomStack = false,
-                )
+                SaltBottomBar(
+                    modifier = Modifier.fillMaxSize(),
+                    backgroundColor = SaltTheme.colors.subBackground,
+                ) {
+                    navTabs.forEachIndexed { index, (icon, label) ->
+                        SaltBottomBarItem(
+                            state = selectedTab == index,
+                            onClick = { onNavSelected(index) },
+                            painter = rememberVectorPainter(icon),
+                            text = label,
+                        )
+                    }
+                }
                 // 「用户」图标右上角的小圆点：叠加绘制在导航之上（MetroBottomNav 没有角标
                 // 字段，且库对本仓库只读）。宽屏走左侧 sidebar，不画。
                 UpdateNavDot()

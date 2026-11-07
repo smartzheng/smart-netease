@@ -17,7 +17,7 @@ import com.smart.neteast.ui.i18n.LocalStrings
 import com.smart.neteast.ui.viewmodel.SongViewModel
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 
 @Composable
 fun SongDetailScreen(songId: Long, onBack: () -> Unit) {
@@ -47,27 +47,27 @@ fun SongDetailScreen(songId: Long, onBack: () -> Unit) {
                     .padding(start = 16.dp, end = 16.dp, top = 72.dp, bottom = 16.dp)
             ) {
                 songDetail?.let { song ->
-                    MetroText(song.name, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.headlineMedium)
+                    SaltText(song.name, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.headlineMedium)
                     Spacer(modifier = Modifier.height(8.dp))
-                    MetroText(
+                    SaltText(
                         song.artists.joinToString("/") { it.name },
                         color = Color(0xFF1DB954),
                         style = LocalMetroTypography.current.titleMedium
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    MetroText(song.album.name ?: strings.unknownAlbum, color = LocalMetroColors.current.onSurfaceVariant)
+                    SaltText(song.album.name ?: strings.unknownAlbum, color = LocalMetroColors.current.onSurfaceVariant)
                     if (song.duration > 0) {
-                        MetroText(formatDuration(song.duration), color = LocalMetroColors.current.onSurfaceVariant)
+                        SaltText(formatDuration(song.duration), color = LocalMetroColors.current.onSurfaceVariant)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                MetroText(strings.lyricsLabel, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.titleLarge)
+                SaltText(strings.lyricsLabel, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.titleLarge)
                 Spacer(modifier = Modifier.height(8.dp))
 
                 lyric?.let { lrc ->
-                    MetroText(lrc, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.bodyMedium)
-                } ?: MetroText(strings.noLyrics, color = LocalMetroColors.current.onSurfaceVariant)
+                    SaltText(lrc, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.bodyMedium)
+                } ?: SaltText(strings.noLyrics, color = LocalMetroColors.current.onSurfaceVariant)
             }
         }
 

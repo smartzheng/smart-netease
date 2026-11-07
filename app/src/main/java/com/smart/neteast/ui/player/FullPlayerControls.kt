@@ -29,8 +29,8 @@ import androidx.compose.ui.unit.sp
 import com.smart.neteast.formatDuration
 import com.smart.neteast.ui.i18n.LocalStrings
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.smart.neteast.ui.design.SaltIcon
+import com.moriafly.salt.ui.Text as SaltText
 import kotlinx.coroutines.flow.StateFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -125,7 +125,7 @@ fun FullPlayerControls(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        MetroIcon(
+                        SaltIcon(
                             imageVector = Icons.Rounded.Lyrics,
                             contentDescription = strings.lyricsButton,
                             tint = if (lyricsUnavailable) LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.5f)
@@ -142,7 +142,7 @@ fun FullPlayerControls(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        MetroIcon(
+                        SaltIcon(
                             imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
                             contentDescription = strings.queueButton,
                             tint = if (showQueue) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
@@ -158,7 +158,7 @@ fun FullPlayerControls(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        MetroIcon(
+                        SaltIcon(
                             imageVector = if (isInLibrary) Icons.Rounded.Check else Icons.Rounded.Add,
                             contentDescription = strings.addToLibraryButton,
                             tint = if (isInLibrary) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
@@ -179,7 +179,7 @@ fun FullPlayerControls(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        MetroIcon(
+                        SaltIcon(
                             imageVector = Icons.Rounded.SkipPrevious,
                             contentDescription = strings.prevButton,
                             tint = if (previousEnabled) LocalMetroColors.current.onBackground else LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.5f),
@@ -198,7 +198,7 @@ fun FullPlayerControls(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        MetroIcon(
+                        SaltIcon(
                             imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                             contentDescription = if (isPlaying) strings.pauseButton else strings.playButton,
                             tint = LocalMetroColors.current.primary,
@@ -214,7 +214,7 @@ fun FullPlayerControls(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        MetroIcon(
+                        SaltIcon(
                             imageVector = Icons.Rounded.SkipNext,
                             contentDescription = strings.nextButton,
                             tint = LocalMetroColors.current.onBackground,
@@ -329,7 +329,7 @@ fun FullPlayerControls(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                MetroIcon(
+                SaltIcon(
                     imageVector = Icons.Rounded.SkipPrevious,
                     contentDescription = strings.prevButton,
                     tint = if (previousEnabled) LocalMetroColors.current.onBackground else LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.5f),
@@ -353,7 +353,7 @@ fun FullPlayerControls(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                MetroIcon(
+                SaltIcon(
                     imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                     contentDescription = if (isPlaying) strings.pauseButton else strings.playButton,
                     tint = LocalMetroColors.current.primary,
@@ -370,7 +370,7 @@ fun FullPlayerControls(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                MetroIcon(
+                SaltIcon(
                     imageVector = Icons.Rounded.SkipNext,
                     contentDescription = strings.nextButton,
                     tint = LocalMetroColors.current.onBackground,
@@ -415,7 +415,7 @@ fun PlayerPanelToggles(
                 },
             contentAlignment = Alignment.Center
         ) {
-            MetroIcon(
+            SaltIcon(
                 imageVector = Icons.Rounded.Lyrics,
                 contentDescription = strings.lyricsButton,
                 // 无歌词/未加载时置灰, 语义是该歌不可展开歌词
@@ -433,7 +433,7 @@ fun PlayerPanelToggles(
                 },
             contentAlignment = Alignment.Center
         ) {
-            MetroIcon(
+            SaltIcon(
                 imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
                 contentDescription = strings.queueButton,
                 tint = if (showQueue) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
@@ -450,7 +450,7 @@ fun PlayerPanelToggles(
             contentAlignment = Alignment.Center
         ) {
             // 已在库 → 对号(按动移出); 不在库 → 加号(按动收藏)
-            MetroIcon(
+            SaltIcon(
                 imageVector = if (isInLibrary) Icons.Rounded.Check else Icons.Rounded.Add,
                 contentDescription = strings.addToLibraryButton,
                 tint = if (isInLibrary) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
@@ -464,7 +464,7 @@ fun PlayerPanelToggles(
 private fun PositionText(positionFlow: StateFlow<Long>, modifier: Modifier) {
     // 按生命周期收集：熄屏 / 后台时 2Hz 的位置更新不再推动重组。
     val position by positionFlow.collectAsStateWithLifecycle()
-    MetroText(
+    SaltText(
         formatDuration(position),
         color = LocalMetroColors.current.onSurfaceVariant,
         style = TextStyle(fontSize = 12.sp),
@@ -478,7 +478,7 @@ private fun PositionText(positionFlow: StateFlow<Long>, modifier: Modifier) {
 @Composable
 private fun DurationText(durationFlow: StateFlow<Long>, modifier: Modifier) {
     val duration by durationFlow.collectAsStateWithLifecycle()
-    MetroText(
+    SaltText(
         formatDuration(duration),
         color = LocalMetroColors.current.onSurfaceVariant,
         style = TextStyle(fontSize = 12.sp),
@@ -500,7 +500,7 @@ private fun QualityLabel(
     // 试听片段没有"实际档位"可言：显示档位名会让用户以为音质设置生效了。
     val label = if (isTrial) LocalStrings.current.trialBadge
     else options.getOrElse(qualityIndex) { options.getOrElse(3) { "" } }
-    MetroText(
+    SaltText(
         label,
         color = LocalMetroColors.current.primary,
         style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
@@ -520,7 +520,7 @@ private fun QualityLabel(
 fun TrialBadge(trialFlow: StateFlow<Boolean>, modifier: Modifier = Modifier) {
     val isTrial by trialFlow.collectAsState()
     if (!isTrial) return
-    MetroText(
+    SaltText(
         LocalStrings.current.trialBadge,
         color = LocalMetroColors.current.primary,
         style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),

@@ -20,8 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smart.neteast.ui.i18n.LocalStrings
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.smart.neteast.ui.design.SaltIcon
+import com.moriafly.salt.ui.Text as SaltText
 
 /**
  * 登录失效横幅（首页 / 收藏页顶部）。
@@ -45,7 +45,7 @@ fun SessionExpiredBanner(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MetroIcon(
+        SaltIcon(
             Icons.Rounded.Warning,
             contentDescription = null,
             tint = LocalMetroColors.current.primary,
@@ -54,7 +54,7 @@ fun SessionExpiredBanner(
         Spacer(Modifier.width(10.dp))
         // maxLines 不设 1：8 种语言的这句话长度差很大，宁可折成两行也不能被截成
         // 「登录已失效，部分歌…」——截断后用户读不到「重新登录」这个动作。
-        MetroText(
+        SaltText(
             strings.sessionExpiredBanner,
             color = LocalMetroColors.current.primary,
             style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium),

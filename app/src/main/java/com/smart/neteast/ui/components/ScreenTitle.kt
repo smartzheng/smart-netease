@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 
 /** Shared compact page heading for the three primary tabs. */
 @Composable
@@ -32,7 +32,7 @@ fun ScreenTitle(
                 .background(LocalMetroColors.current.primary, RoundedCornerShape(2.dp))
         )
         Spacer(Modifier.width(10.dp))
-        MetroText(
+        SaltText(
             text = text,
             color = LocalMetroColors.current.onBackground,
             style = LocalMetroTypography.current.pageHeading.copy(

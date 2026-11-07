@@ -3,6 +3,7 @@ import java.util.Properties
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 // ---------- 安全加载签名配置 ----------
@@ -67,9 +68,6 @@ android {
         // 避免每次发版忘记同步硬编码。
         buildConfig = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
-    }
     testOptions {
         // JVM 单测里 android.jar 的 org.json 是抛异常的桩；写接口的请求体构造 / 响应解析
         // 需要真实的 JSONObject/JSONArray（配合下面的 org.json 测试依赖）。
@@ -78,6 +76,9 @@ android {
 }
 
 dependencies {
+    // SaltUI 2.3.1 matches the app's Jetpack Compose 1.7.6 baseline.
+    implementation("io.github.moriafly:salt-ui:2.3.1")
+
     // Kanesumi —— Metro 组件库。通过组合构建从 ../Kanesumi-sec-a 接入
     // (见 settings.gradle.kts 的 includeBuild)。core/anim 由 controls/structure
     // 的 api 依赖自动带出,这里只列上游两件。

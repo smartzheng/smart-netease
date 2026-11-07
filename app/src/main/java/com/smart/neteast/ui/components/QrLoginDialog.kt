@@ -28,7 +28,7 @@ import com.smart.neteast.network.PlaylistApi
 import com.smart.neteast.ui.i18n.LocalStrings
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -163,7 +163,7 @@ fun QrLoginDialog(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            MetroText(
+            SaltText(
                 strings.qrLoginTitle,
                 color = LocalMetroColors.current.onBackground,
                 style = TextStyle(fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
@@ -185,12 +185,12 @@ fun QrLoginDialog(
                         modifier = Modifier.fillMaxSize().padding(8.dp),
                         contentScale = ContentScale.Fit
                     )
-                    state == QrState.Loading -> MetroText(
+                    state == QrState.Loading -> SaltText(
                         strings.loading,
                         color = LocalMetroColors.current.onSurfaceVariant,
                         style = LocalMetroTypography.current.bodyMedium,
                     )
-                    else -> MetroText(
+                    else -> SaltText(
                         hintFor(state),
                         color = LocalMetroColors.current.onSurfaceVariant,
                         style = LocalMetroTypography.current.bodySmall.copy(textAlign = TextAlign.Center),
@@ -200,7 +200,7 @@ fun QrLoginDialog(
             }
 
             Spacer(Modifier.height(12.dp))
-            MetroText(
+            SaltText(
                 hintFor(state),
                 color = if (state == QrState.Scanned) LocalMetroColors.current.primary
                 else LocalMetroColors.current.onSurfaceVariant,
@@ -218,7 +218,7 @@ fun QrLoginDialog(
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                MetroText(
+                SaltText(
                     strings.qrGenericLogin,
                     color = LocalMetroColors.current.primary,
                     style = TextStyle(fontSize = 14.sp),
@@ -234,7 +234,7 @@ fun QrLoginDialog(
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                MetroText(
+                SaltText(
                     strings.close,
                     color = LocalMetroColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 14.sp),

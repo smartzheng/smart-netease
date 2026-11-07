@@ -2,6 +2,7 @@ package com.smart.neteast.ui.components
 import androidx.compose.material.icons.rounded.*
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
@@ -15,12 +16,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.smart.neteast.ui.i18n.LocalStrings
-import io.github.takahashirinta.kanesumi.controls.MetroDialog
-import io.github.takahashirinta.kanesumi.controls.MetroDivider
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.smart.neteast.ui.design.SaltIcon
+import com.moriafly.salt.ui.Text as SaltText
+import com.moriafly.salt.ui.SaltTheme
 
 /**
  * 整列表操作对话框：替换队列并播放 / 插到下一首 / 追加到队尾。
@@ -37,19 +38,25 @@ fun PlayAllDialog(
     onAppendToQueue: (() -> Unit)? = null
 ) {
     val strings = LocalStrings.current
-    MetroDialog(onDismissRequest = onDismiss, cornerRadiusDp = 24.dp) {
+    Dialog(onDismissRequest = onDismiss) {
+      Column(
+        modifier = Modifier
+            .widthIn(max = 360.dp)
+            .fillMaxWidth()
+            .ncrustDialogSurface()
+      ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 14.dp)
         ) {
-            MetroText(
+            SaltText(
                 text = strings.songCountFormat(songCount),
                 color = LocalMetroColors.current.onSurfaceVariant,
                 style = TextStyle(fontSize = 13.sp)
             )
         }
-        MetroDivider()
+        SaltDivider()
 
         Row(
             modifier = Modifier
@@ -58,7 +65,7 @@ fun PlayAllDialog(
                 .padding(horizontal = 20.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            MetroIcon(
+            SaltIcon(
                 imageVector = Icons.Rounded.PlayArrow,
                 contentDescription = null,
                 tint = LocalMetroColors.current.primary,
@@ -66,19 +73,19 @@ fun PlayAllDialog(
             )
             Spacer(Modifier.width(16.dp))
             Column {
-                MetroText(
+                SaltText(
                     text = strings.playNowTitle,
                     color = LocalMetroColors.current.onBackground,
                     style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 )
-                MetroText(
+                SaltText(
                     text = strings.playNowDesc,
                     color = LocalMetroColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 12.sp)
                 )
             }
         }
-        MetroDivider()
+        SaltDivider()
 
         Row(
             modifier = Modifier
@@ -87,7 +94,7 @@ fun PlayAllDialog(
                 .padding(horizontal = 20.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            MetroIcon(
+            SaltIcon(
                 imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
                 contentDescription = null,
                 tint = LocalMetroColors.current.onBackground,
@@ -95,19 +102,19 @@ fun PlayAllDialog(
             )
             Spacer(Modifier.width(16.dp))
             Column {
-                MetroText(
+                SaltText(
                     text = strings.insertNextTitle,
                     color = LocalMetroColors.current.onBackground,
                     style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 )
-                MetroText(
+                SaltText(
                     text = strings.insertNextDesc,
                     color = LocalMetroColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 12.sp)
                 )
             }
         }
-        MetroDivider()
+        SaltDivider()
 
         if (onAppendToQueue != null) {
             Row(
@@ -117,7 +124,7 @@ fun PlayAllDialog(
                     .padding(horizontal = 20.dp, vertical = 18.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                MetroIcon(
+                SaltIcon(
                     imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                     contentDescription = null,
                     tint = LocalMetroColors.current.onBackground,
@@ -125,19 +132,19 @@ fun PlayAllDialog(
                 )
                 Spacer(Modifier.width(16.dp))
                 Column {
-                    MetroText(
+                    SaltText(
                         text = strings.appendQueueTitle,
                         color = LocalMetroColors.current.onBackground,
                         style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     )
-                    MetroText(
+                    SaltText(
                         text = strings.appendQueueDesc,
                         color = LocalMetroColors.current.onSurfaceVariant,
                         style = TextStyle(fontSize = 12.sp)
                     )
                 }
             }
-            MetroDivider()
+            SaltDivider()
         }
 
         Box(
@@ -147,11 +154,19 @@ fun PlayAllDialog(
                 .padding(vertical = 16.dp),
             contentAlignment = Alignment.Center
         ) {
-            MetroText(
+            SaltText(
                 text = strings.cancel,
                 color = LocalMetroColors.current.onSurfaceVariant,
                 style = TextStyle(fontSize = 15.sp)
             )
         }
+      }
     }
+}
+
+@Composable
+private fun SaltDivider() {
+    androidx.compose.foundation.layout.Box(
+        Modifier.fillMaxWidth().height(1.dp).background(SaltTheme.colors.stroke)
+    )
 }

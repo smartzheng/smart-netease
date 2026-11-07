@@ -24,7 +24,7 @@ import com.smart.neteast.ui.i18n.LocalStrings
 import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenu
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -64,7 +64,7 @@ fun ArtistSearchItem(
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                MetroText(
+                SaltText(
                     artist.name,
                     color = LocalMetroColors.current.onBackground,
                     style = LocalMetroTypography.current.bodyLarge,
@@ -72,7 +72,7 @@ fun ArtistSearchItem(
                     overflow = TextOverflow.Ellipsis
                 )
                 if (transStr.isNotEmpty()) {
-                    MetroText(
+                    SaltText(
                         " · $transStr",
                         color = LocalMetroColors.current.onSurfaceVariant,
                         style = LocalMetroTypography.current.bodySmall,
@@ -82,7 +82,7 @@ fun ArtistSearchItem(
                 }
             }
             if (aliasStr.isNotEmpty()) {
-                MetroText(
+                SaltText(
                     aliasStr,
                     color = LocalMetroColors.current.onSurfaceVariant,
                     style = LocalMetroTypography.current.bodySmall,
@@ -90,7 +90,7 @@ fun ArtistSearchItem(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            MetroText(
+            SaltText(
                 strings.artistStats(artist.albumSize ?: 0, artist.musicSize ?: 0),
                 color = LocalMetroColors.current.onSurfaceVariant,
                 style = LocalMetroTypography.current.bodySmall

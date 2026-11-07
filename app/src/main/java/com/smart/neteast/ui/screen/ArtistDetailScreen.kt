@@ -32,11 +32,10 @@ import com.smart.neteast.ui.components.SongCard
 import com.smart.neteast.ui.components.SongCardStyle
 import com.smart.neteast.ui.components.SongMenuAction
 import com.smart.neteast.ui.i18n.LocalStrings
-import io.github.takahashirinta.kanesumi.controls.MetroTabItem
-import io.github.takahashirinta.kanesumi.controls.MetroTabRow
+import com.smart.neteast.ui.components.SaltTabRow
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 import kotlinx.coroutines.launch
 import android.widget.Toast
 
@@ -142,7 +141,7 @@ fun ArtistDetailScreen(
             Column(modifier = Modifier.statusBarsPadding()) {
                 Spacer(Modifier.height(56.dp))
                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    MetroText(
+                    SaltText(
                         artist?.name ?: strings.unknownArtistName,
                         color = LocalMetroColors.current.onBackground,
                         style = TextStyle(fontSize = 25.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
@@ -150,18 +149,17 @@ fun ArtistDetailScreen(
                     Spacer(Modifier.height(6.dp))
                     Row {
                         artist?.albumSize?.let {
-                            MetroText(strings.artistAlbumCount(it), color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 14.sp))
+                            SaltText(strings.artistAlbumCount(it), color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 14.sp))
                             Spacer(Modifier.width(16.dp))
                         }
-                        artist?.musicSize?.let { MetroText(strings.artistSongCount(it), color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 14.sp)) }
+                        artist?.musicSize?.let { SaltText(strings.artistSongCount(it), color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 14.sp)) }
                     }
                 }
                 Spacer(Modifier.height(20.dp))
-                MetroTabRow(
-                    items = listOf(MetroTabItem(strings.categoryAlbums), MetroTabItem(strings.categoryTracks)),
+                SaltTabRow(
+                    items = listOf(strings.categoryAlbums, strings.categoryTracks),
                     selectedTabIndex = selectedTab,
                     onTabSelected = { index -> selectedTab = index },
-                    indicatorVisible = false,
                 )
                 Spacer(Modifier.height(12.dp))
             }
@@ -172,7 +170,7 @@ fun ArtistDetailScreen(
                     if (albums.isEmpty()) {
                         item {
                             Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                                MetroText(strings.noAlbums, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 16.sp))
+                                SaltText(strings.noAlbums, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 16.sp))
                             }
                         }
                     } else {
@@ -192,7 +190,7 @@ fun ArtistDetailScreen(
                     if (hotSongs.isEmpty()) {
                         item {
                             Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                                MetroText(strings.noHotSongs, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 16.sp))
+                                SaltText(strings.noHotSongs, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 16.sp))
                             }
                         }
                     } else {
@@ -230,10 +228,10 @@ fun ArtistAlbumGridItem(album: ArtistAlbumItem, modifier: Modifier = Modifier, o
     Column(modifier = modifier.clickable { onClick() }) {
         AsyncImage(model = CoverUrls.small(album.picUrl), contentDescription = strings.albumCoverDesc, modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(14.dp)), contentScale = ContentScale.Crop)
         Spacer(Modifier.height(6.dp))
-        MetroText(album.name, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
+        SaltText(album.name, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
         album.publishTime?.let {
             val year = java.text.SimpleDateFormat("yyyy", java.util.Locale.getDefault()).format(java.util.Date(it))
-            MetroText("$year · ${strings.trackCount(album.size ?: 0)}", color = LocalMetroColors.current.onSurfaceVariant, style = LocalMetroTypography.current.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
+            SaltText("$year · ${strings.trackCount(album.size ?: 0)}", color = LocalMetroColors.current.onSurfaceVariant, style = LocalMetroTypography.current.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
         }
         Spacer(Modifier.height(6.dp))
     }

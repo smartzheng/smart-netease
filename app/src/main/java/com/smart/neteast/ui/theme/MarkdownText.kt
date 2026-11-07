@@ -33,7 +33,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import io.github.takahashirinta.kanesumi.controls.MetroDivider
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 
 /**
  * 简易 Markdown 渲染器。
@@ -99,7 +99,7 @@ private fun MarkdownLine(line: String) {
         // 标题
         line.trimStart().startsWith("### ") -> {
             Spacer(Modifier.height(16.dp))
-            MetroText(
+            SaltText(
                 text = line.trimStart().removePrefix("### "),
                 color = LocalMetroColors.current.onBackground,
                 style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -108,7 +108,7 @@ private fun MarkdownLine(line: String) {
         }
         line.trimStart().startsWith("## ") -> {
             Spacer(Modifier.height(20.dp))
-            MetroText(
+            SaltText(
                 text = line.trimStart().removePrefix("## "),
                 color = LocalMetroColors.current.onBackground,
                 style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold)
@@ -117,7 +117,7 @@ private fun MarkdownLine(line: String) {
         }
         line.trimStart().startsWith("# ") -> {
             Spacer(Modifier.height(24.dp))
-            MetroText(
+            SaltText(
                 text = line.trimStart().removePrefix("# "),
                 color = LocalMetroColors.current.primary,
                 style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
@@ -127,7 +127,7 @@ private fun MarkdownLine(line: String) {
         // 无序列表：- item
         line.trimStart().startsWith("- ") -> {
             Row(modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)) {
-                MetroText("•", color = LocalMetroColors.current.primary, style = TextStyle(fontSize = 16.sp))
+                SaltText("•", color = LocalMetroColors.current.primary, style = TextStyle(fontSize = 16.sp))
                 Spacer(Modifier.width(8.dp))
                 BasicText(
                     text = parseInlineMarkdown(line.trimStart().removePrefix("- "), onBg, codeBg),

@@ -1,5 +1,9 @@
 package com.smart.neteast.ui.components
 
+import com.smart.neteast.ui.design.SaltIcon
+
+import com.moriafly.salt.ui.Text as SaltText
+
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -52,7 +56,7 @@ fun PlaylistCollectionContent(
             // 状态放在滚动区域之外，插入提示时不能被 LazyGrid 的锚点保留滚出视口。
             if (error != null || !collection.complete) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                    MetroText(error ?: s.playlists.incomplete, color = LocalMetroColors.current.onSurfaceVariant)
+                    SaltText(error ?: s.playlists.incomplete, color = LocalMetroColors.current.onSurfaceVariant)
                     if (error != null) PlaylistButton(s.retry, onRetry,
                         containerColor = LocalMetroColors.current.surfaceVariant,
                         contentColor = LocalMetroColors.current.onBackground)
@@ -77,7 +81,7 @@ fun PlaylistCollectionContent(
                 }
                 items(subscribed, key = { it.id }) { item -> PlaylistCollectionRow(item, { onOpen(item) }, { onPlay(item.id) }) }
                 if (collection.items.isEmpty() && error == null) item(span = { GridItemSpan(maxLineSpan) }, key = "empty") {
-                    MetroText(s.noPlaylists, color = LocalMetroColors.current.onSurfaceVariant,
+                    SaltText(s.noPlaylists, color = LocalMetroColors.current.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp))
                 }
             }
@@ -91,8 +95,8 @@ private fun PlaylistGroupHeading(title: String, count: Int, onCreate: (() -> Uni
     Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(Modifier.weight(1f)) {
-            MetroText(title, style = LocalMetroTypography.current.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            MetroText(count.toString(), style = LocalMetroTypography.current.caption, color = colors.onSurfaceVariant)
+            SaltText(title, style = LocalMetroTypography.current.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            SaltText(count.toString(), style = LocalMetroTypography.current.caption, color = colors.onSurfaceVariant)
         }
         if (onCreate != null) PlaylistButton(LocalStrings.current.playlists.create, onCreate,
             containerColor = colors.surfaceVariant, contentColor = colors.onBackground)
@@ -108,10 +112,10 @@ fun PlaylistCollectionRow(playlist: PlaylistInfo, onOpen: () -> Unit, onPlay: ()
         PlaylistArtwork(playlist.coverImgUrl, Modifier.size(72.dp))
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            MetroText(playlist.name, style = LocalMetroTypography.current.bodyLarge,
+            SaltText(playlist.name, style = LocalMetroTypography.current.bodyLarge,
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
             val count = if (playlist.trackCount >= 0) s.trackCount(playlist.trackCount) else s.playlists.unknown
-            MetroText(listOfNotNull(count, s.playlists.private.takeIf { playlist.privacy == 10 }).joinToString(" · "),
+            SaltText(listOfNotNull(count, s.playlists.private.takeIf { playlist.privacy == 10 }).joinToString(" · "),
                 style = LocalMetroTypography.current.caption, color = colors.onSurfaceVariant)
         }
         Spacer(Modifier.width(12.dp))
@@ -124,7 +128,7 @@ internal fun PlaylistArtwork(url: String?, modifier: Modifier = Modifier, large:
     val colors = LocalMetroColors.current
     Box(modifier.clip(RoundedCornerShape(14.dp)).background(colors.surfaceVariant), contentAlignment = Alignment.Center) {
         if (url.isNullOrBlank()) {
-            MetroIcon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = null, sizeDp = 32.dp,
+            SaltIcon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = null, sizeDp = 32.dp,
                 tint = colors.onSurfaceVariant)
         } else AsyncImage(if (large) CoverUrls.large(url) else CoverUrls.small(url), contentDescription = LocalStrings.current.playlistCoverDesc,
             placeholder = ColorPainter(colors.surfaceVariant), error = ColorPainter(colors.surfaceVariant),

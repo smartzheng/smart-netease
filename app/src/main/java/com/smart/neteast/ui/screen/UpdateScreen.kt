@@ -50,12 +50,12 @@ import com.smart.neteast.update.UpdateInfo
 import com.smart.neteast.update.UpdateService
 import com.smart.neteast.update.forTarget
 import com.smart.neteast.update.targetKey
-import io.github.takahashirinta.kanesumi.controls.MetroButton
+import com.moriafly.salt.ui.TextButton as SaltTextButton
 import io.github.takahashirinta.kanesumi.controls.MetroDivider
 import io.github.takahashirinta.kanesumi.controls.MetroProgressIndicator
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 
 /**
  * 更新页：版本号、发布日期、大小、release 正文，以及下载 / 安装。
@@ -218,13 +218,13 @@ private fun UpdateContent(info: UpdateInfo, modifier: Modifier) {
     val strings = LocalStrings.current
     val colors = LocalMetroColors.current
     Column(modifier = modifier) {
-        MetroText(
+        SaltText(
             strings.updateTitle,
             color = colors.onSurfaceVariant,
             style = TextStyle(fontSize = 13.sp)
         )
         Spacer(Modifier.height(4.dp))
-        MetroText(
+        SaltText(
             "v${info.version}",
             color = colors.primary,
             style = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
@@ -241,7 +241,7 @@ private fun UpdateContent(info: UpdateInfo, modifier: Modifier) {
         Spacer(Modifier.height(16.dp))
         MetroDivider(color = colors.divider)
         Spacer(Modifier.height(20.dp))
-        MetroText(
+        SaltText(
             strings.updateNotesLabel.uppercase(),
             color = colors.primary,
             style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
@@ -249,7 +249,7 @@ private fun UpdateContent(info: UpdateInfo, modifier: Modifier) {
         Spacer(Modifier.height(8.dp))
         val body = info.body?.trim().orEmpty()
         if (body.isEmpty()) {
-            MetroText(
+            SaltText(
                 strings.updateNoNotes,
                 color = colors.onSurfaceVariant,
                 style = LocalMetroTypography.current.bodyMedium
@@ -302,13 +302,13 @@ private fun UpdateMetaRow(label: String, value: String) {
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MetroText(
+        SaltText(
             label,
             color = colors.onSurfaceVariant,
             style = TextStyle(fontSize = 13.sp),
             modifier = Modifier.weight(1f)
         )
-        MetroText(
+        SaltText(
             value,
             color = colors.onBackground,
             style = TextStyle(fontSize = 13.sp, textAlign = TextAlign.End),
@@ -350,7 +350,7 @@ private fun UpdateActionBar(
                     val fraction = (state.downloaded.toFloat() / total).coerceIn(0f, 1f)
                     UpdateProgressBar(fraction = fraction, color = colors.primary, track = colors.surfaceVariant)
                     Spacer(Modifier.height(8.dp))
-                    MetroText(
+                    SaltText(
                         strings.updateDownloadingPercent((fraction * 100).toInt()),
                         color = colors.onBackground,
                         style = TextStyle(fontSize = 13.sp)
@@ -359,7 +359,7 @@ private fun UpdateActionBar(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         MetroProgressIndicator(sizeDp = 18.dp, strokeDp = 2.dp)
                         Spacer(Modifier.width(10.dp))
-                        MetroText(
+                        SaltText(
                             strings.updateDownloading,
                             color = colors.onBackground,
                             style = TextStyle(fontSize = 13.sp)
@@ -374,7 +374,7 @@ private fun UpdateActionBar(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     MetroProgressIndicator(sizeDp = 18.dp, strokeDp = 2.dp)
                     Spacer(Modifier.width(10.dp))
-                    MetroText(
+                    SaltText(
                         strings.updateVerifying,
                         color = colors.onBackground,
                         style = TextStyle(fontSize = 13.sp)
@@ -384,7 +384,7 @@ private fun UpdateActionBar(
             }
 
             is DownloadState.Failed -> {
-                MetroText(
+                SaltText(
                     failureText(state.reason),
                     color = colors.primary,
                     style = TextStyle(fontSize = 13.sp),
@@ -435,14 +435,12 @@ private fun failureText(reason: FailureReason): String {
 @Composable
 private fun ActionButton(text: String, secondary: Boolean, onClick: () -> Unit) {
     val colors = LocalMetroColors.current
-    MetroButton(
+    SaltTextButton(
         text = text,
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        containerColor = if (secondary) colors.surfaceVariant else colors.primary,
-        contentColor = if (secondary) colors.onBackground else colors.onPrimary,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 12.dp),
-        cornerRadiusDp = 14.dp,
+        backgroundColor = if (secondary) colors.surfaceVariant else colors.primary,
+        textColor = if (secondary) colors.onBackground else colors.onPrimary,
     )
 }
 

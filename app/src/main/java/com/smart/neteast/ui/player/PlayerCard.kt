@@ -63,8 +63,8 @@ import io.github.takahashirinta.kanesumi.controls.MetroDivider
 import io.github.takahashirinta.kanesumi.controls.MetroIconButton
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.smart.neteast.ui.design.SaltIcon
+import com.moriafly.salt.ui.Text as SaltText
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
@@ -566,14 +566,14 @@ fun PlayerCard(
                                     },
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                MetroText(
+                                SaltText(
                                     strings.queueTitle,
                                     color = LocalMetroColors.current.onBackground,
                                     style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold),
                                     modifier = Modifier.weight(1f)
                                 )
                                 MetroIconButton(onClick = onTogglePlayMode) {
-                                    MetroIcon(
+                                    SaltIcon(
                                         imageVector = when (playMode) {
                                             QueueModes.SINGLE -> Icons.Rounded.RepeatOne
                                             QueueModes.SHUFFLE -> Icons.Rounded.Shuffle
@@ -587,7 +587,7 @@ fun PlayerCard(
                                     )
                                 }
                                 MetroIconButton(onClick = onSavePlaylist) {
-                                    MetroIcon(
+                                    SaltIcon(
                                         imageVector = Icons.Rounded.Add,
                                         contentDescription = strings.saveAsPlaylist,
                                         tint = LocalMetroColors.current.onBackground,
@@ -596,7 +596,7 @@ fun PlayerCard(
                                 }
                                 // 清空队列: 停播并回到暂无播放态
                                 MetroIconButton(onClick = onClearQueue) {
-                                    MetroIcon(
+                                    SaltIcon(
                                         imageVector = Icons.Rounded.DeleteSweep,
                                         contentDescription = strings.clearQueue,
                                         tint = LocalMetroColors.current.onBackground,
@@ -655,14 +655,14 @@ fun PlayerCard(
                                         .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
                                         .clickable { onSongInfoClick() }
                                 ) {
-                                    MetroText(
+                                    SaltText(
                                         s.name,
                                         color = LocalMetroColors.current.onBackground,
                                         style = LocalMetroTypography.current.titleLarge,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
-                                    MetroText(
+                                    SaltText(
                                         s.artists?.joinToString("/") { it.name } ?: "",
                                         color = LocalMetroColors.current.primary,
                                         style = LocalMetroTypography.current.bodyLarge,
@@ -722,7 +722,7 @@ fun PlayerCard(
                             // 大封面模式时它看不见，但无限跑马灯照样以 60fps 驱动重绘——Xperia 10 VII 实测
                             // 长标题时静止首页 53 帧/秒、CPU 40~60%（2026-10-15）。
                             ThresholdScope(titleVisible) { visible ->
-                                MetroText(
+                                SaltText(
                                     s.name,
                                     color = LocalMetroColors.current.onBackground,
                                     style = LocalMetroTypography.current.titleMedium,
@@ -737,7 +737,7 @@ fun PlayerCard(
                                     ) else Modifier
                                 )
                             }
-                            MetroText(
+                            SaltText(
                                 s.artists?.joinToString("/") { it.name } ?: "",
                                 color = LocalMetroColors.current.onSurfaceVariant,
                                 style = LocalMetroTypography.current.bodyMedium,
@@ -768,14 +768,14 @@ fun PlayerCard(
                                 // 歌名区域可点: 上拉"转到歌手/转到专辑"菜单(类 Apple Music)
                                 .clickable { onSongInfoClick() }
                         ) {
-                            MetroText(
+                            SaltText(
                                 s.name,
                                 color = LocalMetroColors.current.onBackground,
                                 style = LocalMetroTypography.current.titleLarge,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            MetroText(
+                            SaltText(
                                 s.artists?.joinToString("/") { it.name } ?: "",
                                 color = LocalMetroColors.current.primary,
                                 style = LocalMetroTypography.current.bodyLarge,
@@ -843,14 +843,14 @@ fun PlayerCard(
                             .weight(1f)
                             .padding(horizontal = 12.dp)
                     ) {
-                        MetroText(
+                        SaltText(
                             s.name,
                             color = LocalMetroColors.current.onBackground,
                             style = LocalMetroTypography.current.bodyMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        MetroText(
+                        SaltText(
                             s.artists?.joinToString("/") { it.name } ?: "",
                             color = LocalMetroColors.current.onSurfaceVariant,
                             style = LocalMetroTypography.current.bodySmall,
@@ -869,7 +869,7 @@ fun PlayerCard(
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onPlayPause()
                         }) {
-                            MetroIcon(
+                            SaltIcon(
                                 imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                                 contentDescription = null,
                                 tint = LocalMetroColors.current.onBackground
@@ -879,7 +879,7 @@ fun PlayerCard(
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onPlayNext()
                         }) {
-                            MetroIcon(Icons.Rounded.SkipNext, null, tint = LocalMetroColors.current.onBackground)
+                            SaltIcon(Icons.Rounded.SkipNext, null, tint = LocalMetroColors.current.onBackground)
                         }
                     } else {
                         Spacer(modifier = Modifier.width(96.dp))
@@ -887,7 +887,7 @@ fun PlayerCard(
                 } else {
                     // 暂无播放: 卡片仍不可拉起(保持既有约束), 但给一个播放键
                     // 直接开始 Infinity——取每日推荐开播, 无需先有队列
-                    MetroText(
+                    SaltText(
                         strings.noSongPlaying,
                         color = LocalMetroColors.current.onSurfaceVariant,
                         style = LocalMetroTypography.current.bodyMedium,
@@ -900,7 +900,7 @@ fun PlayerCard(
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onPlayNothing()
                         }) {
-                            MetroIcon(
+                            SaltIcon(
                                 imageVector = Icons.Rounded.PlayArrow,
                                 contentDescription = LocalStrings.current.playButton,
                                 tint = LocalMetroColors.current.onBackground
@@ -995,7 +995,7 @@ fun PlayerCard(
                                     Modifier.size(44.dp).clickable { onDismiss() },
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    MetroIcon(Icons.Rounded.KeyboardArrowDown, strings.collapsePlayer,
+                                    SaltIcon(Icons.Rounded.KeyboardArrowDown, strings.collapsePlayer,
                                         tint = LocalMetroColors.current.onBackground)
                                 }
                             }
@@ -1005,7 +1005,7 @@ fun PlayerCard(
                     ThresholdScope(dismissEnabled) { enabled ->
                         if (enabled) {
                             MetroIconButton(onClick = onDismiss) {
-                                MetroIcon(Icons.Rounded.KeyboardArrowDown, strings.collapsePlayer, tint = LocalMetroColors.current.onBackground)
+                                SaltIcon(Icons.Rounded.KeyboardArrowDown, strings.collapsePlayer, tint = LocalMetroColors.current.onBackground)
                             }
                         }
                     }

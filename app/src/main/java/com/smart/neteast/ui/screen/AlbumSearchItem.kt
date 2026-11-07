@@ -23,7 +23,7 @@ import com.smart.neteast.ui.i18n.LocalStrings
 import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenu
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -59,14 +59,14 @@ fun AlbumSearchItem(
         )
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            MetroText(
+            SaltText(
                 album.name,
                 color = LocalMetroColors.current.onBackground,
                 style = LocalMetroTypography.current.bodyLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            MetroText(
+            SaltText(
                 "${album.artist?.name ?: strings.unknownArtist}${
                     if (publishYear.isNotEmpty()) " · $publishYear" else ""
                 }${album.company?.let { " · $it" } ?: ""}",
@@ -77,7 +77,7 @@ fun AlbumSearchItem(
             )
         }
         album.size?.let {
-            MetroText(
+            SaltText(
                 strings.trackCount(it),
                 color = LocalMetroColors.current.onSurfaceVariant,
                 style = LocalMetroTypography.current.bodySmall

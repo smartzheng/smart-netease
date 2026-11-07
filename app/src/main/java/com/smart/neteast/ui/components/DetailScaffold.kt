@@ -37,7 +37,7 @@ import io.github.takahashirinta.kanesumi.anim.sokuou.SokuouTweens
 import io.github.takahashirinta.kanesumi.anim.sokuou.rememberMetroFlingBehavior
 import io.github.takahashirinta.kanesumi.controls.MetroProgressIndicator
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 import io.github.takahashirinta.kanesumi.structure.MetroTopScrim
 import com.smart.neteast.ui.i18n.LocalStrings
 
@@ -92,7 +92,7 @@ fun DetailScaffold(
                 DetailScaffoldState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            MetroText(error ?: "", color = Color.Red, style = TextStyle(fontSize = 16.sp))
+                            SaltText(error ?: "", color = Color.Red, style = TextStyle(fontSize = 16.sp))
                             if (onRetry != null) {
                                 Spacer(Modifier.height(16.dp))
                                 Box(
@@ -106,7 +106,7 @@ fun DetailScaffold(
                                         .padding(horizontal = 24.dp, vertical = 8.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    MetroText(strings.retry, color = Color.Black)
+                                    SaltText(strings.retry, color = Color.Black)
                                 }
                             }
                         }
@@ -275,7 +275,7 @@ private fun DetailHeaderInfoRow(
         verticalAlignment = Alignment.Top
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            MetroText(
+            SaltText(
                 title,
                 color = LocalMetroColors.current.onBackground,
                 style = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.Normal),
@@ -284,7 +284,7 @@ private fun DetailHeaderInfoRow(
             )
             if (subtitle != null) {
                 Spacer(Modifier.height(6.dp))
-                MetroText(
+                SaltText(
                     subtitle,
                     color = LocalMetroColors.current.primary,
                     style = TextStyle(fontSize = 14.sp),
@@ -299,7 +299,7 @@ private fun DetailHeaderInfoRow(
             }
             infoLines.forEach { line ->
                 Spacer(Modifier.height(3.dp))
-                MetroText(line, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 13.sp))
+                SaltText(line, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 13.sp))
             }
         }
         if (onPlayAll != null) {

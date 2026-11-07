@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.graphicsLayer
 import com.smart.neteast.warmup.AppWarmup
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -45,20 +45,20 @@ fun SplashScreen(onFinished: () -> Unit) {
             modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            MetroText(
+            SaltText(
                 "Ncrust",
                 color = Color(0xFF1DB954),
                 style = TextStyle(fontSize = 48.sp, fontWeight = FontWeight.ExtraBold)
             )
             Spacer(Modifier.height(8.dp))
-            MetroText(
+            SaltText(
                 "A Re-defined Music Player",
                 color = LocalMetroColors.current.onBackground,
                 style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Normal)
             )
         }
 
-        MetroText(
+        SaltText(
             "Artwork by Project Arcturius",
             color = LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.5f),
             style = TextStyle(fontSize = 12.sp, textAlign = TextAlign.Center),

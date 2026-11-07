@@ -47,8 +47,8 @@ import com.smart.neteast.auth.QrPair
 import com.smart.neteast.auth.QrPairClient
 import com.smart.neteast.ui.i18n.LocalStrings
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.smart.neteast.ui.design.SaltIcon
+import com.moriafly.salt.ui.Text as SaltText
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -184,7 +184,7 @@ fun QrAuthorizeScreen(
             if (hasPermission) {
                 AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
             } else {
-                MetroText(
+                SaltText(
                     strings.scanPermissionNeeded,
                     color = Color.White,
                     modifier = Modifier.align(Alignment.Center)
@@ -192,7 +192,7 @@ fun QrAuthorizeScreen(
             }
 
             if (status is ScanStatus.Scanning) {
-                MetroText(
+                SaltText(
                     strings.scanPrompt,
                     color = Color.White,
                     style = TextStyle(fontSize = 15.sp),
@@ -204,13 +204,13 @@ fun QrAuthorizeScreen(
             }
 
             when (val s = status) {
-                ScanStatus.Connecting -> MetroText(
+                ScanStatus.Connecting -> SaltText(
                     strings.scanConnecting,
                     color = Color.White,
                     style = TextStyle(fontSize = 16.sp),
                     modifier = Modifier.align(Alignment.Center)
                 )
-                ScanStatus.Success -> MetroText(
+                ScanStatus.Success -> SaltText(
                     strings.scanSuccess,
                     color = LocalMetroColors.current.primary,
                     style = TextStyle(fontSize = 16.sp),
@@ -222,7 +222,7 @@ fun QrAuthorizeScreen(
                         .padding(horizontal = 40.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    MetroText(
+                    SaltText(
                         s.message,
                         color = Color.White,
                         style = TextStyle(fontSize = 15.sp, textAlign = TextAlign.Center)
@@ -238,7 +238,7 @@ fun QrAuthorizeScreen(
                             }
                             .padding(horizontal = 24.dp, vertical = 10.dp)
                     ) {
-                        MetroText(
+                        SaltText(
                             strings.retry,
                             color = LocalMetroColors.current.primary,
                             style = TextStyle(fontSize = 14.sp)
@@ -248,7 +248,7 @@ fun QrAuthorizeScreen(
                 ScanStatus.Scanning -> Unit
             }
 
-            MetroIcon(
+            SaltIcon(
                 Icons.Rounded.Close,
                 contentDescription = strings.close,
                 tint = Color.White,

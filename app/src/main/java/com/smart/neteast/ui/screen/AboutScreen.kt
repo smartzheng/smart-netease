@@ -34,7 +34,7 @@ import com.smart.neteast.ui.ResponsiveContent
 import io.github.takahashirinta.kanesumi.anim.sokuou.MetroDefault
 import io.github.takahashirinta.kanesumi.controls.MetroDivider
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 import com.smart.neteast.ui.components.TopScrimIconButton
 import com.smart.neteast.ui.components.rememberManualUpdateCheck
 import com.smart.neteast.ui.i18n.LocalStrings
@@ -80,10 +80,10 @@ fun AboutScreen(onBack: () -> Unit, onOpenUpdate: () -> Unit = {}) {
                             contentScale = ContentScale.Fit
                         )
                         Spacer(Modifier.height(16.dp))
-                        MetroText("Ncrust", color = accent, style = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.Bold))
-                        MetroText(VERSION, color = accent.copy(alpha = 0.72f), style = TextStyle(fontSize = 14.sp))
+                        SaltText("Ncrust", color = accent, style = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.Bold))
+                        SaltText(VERSION, color = accent.copy(alpha = 0.72f), style = TextStyle(fontSize = 14.sp))
                         Spacer(Modifier.height(6.dp))
-                        MetroText(s.aboutAppSubtitle, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 13.sp))
+                        SaltText(s.aboutAppSubtitle, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 13.sp))
                         Spacer(Modifier.height(28.dp))
                         MetroDivider(color = LocalMetroColors.current.divider)
                         Spacer(Modifier.height(20.dp))
@@ -172,7 +172,7 @@ private fun CascadeBlock(delayMillis: Int, content: @Composable () -> Unit) {
 
 @Composable
 private fun AboutSection(title: String, accent: Color) {
-    MetroText(
+    SaltText(
         title,
         color = accent,
         style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp),
@@ -191,13 +191,13 @@ private fun AboutRow(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MetroText(
+        SaltText(
             label,
             color = LocalMetroColors.current.onSurfaceVariant,
             style = TextStyle(fontSize = 13.sp),
             modifier = Modifier.weight(1f)
         )
-        MetroText(
+        SaltText(
             value,
             color = LocalMetroColors.current.onBackground,
             style = TextStyle(fontSize = 13.sp, textAlign = TextAlign.End),
@@ -225,13 +225,13 @@ private fun AboutActionRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MetroText(
+        SaltText(
             label,
             color = LocalMetroColors.current.primary,
             style = TextStyle(fontSize = 13.sp),
             modifier = Modifier.weight(1f)
         )
-        MetroText(
+        SaltText(
             value,
             color = LocalMetroColors.current.onSurfaceVariant,
             style = TextStyle(fontSize = 13.sp, textAlign = TextAlign.End),

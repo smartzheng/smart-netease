@@ -64,12 +64,11 @@ import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenu
 import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenuItem
 import io.github.takahashirinta.kanesumi.controls.MetroIconButton
 import io.github.takahashirinta.kanesumi.controls.MetroProgressIndicator
-import io.github.takahashirinta.kanesumi.controls.MetroTabItem
-import io.github.takahashirinta.kanesumi.controls.MetroTabRow
+import com.smart.neteast.ui.components.SaltTabRow
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.smart.neteast.ui.design.SaltIcon
+import com.moriafly.salt.ui.Text as SaltText
 import android.widget.Toast
 
 enum class BatchQueueAction { PLAY_NOW, INSERT_NEXT, APPEND }
@@ -168,7 +167,7 @@ fun SearchScreen(
                             contentAlignment = Alignment.CenterStart
                         ) {
                             if (query.isEmpty()) {
-                                MetroText(
+                                SaltText(
                                     text = strings.searchPlaceholder,
                                     color = LocalMetroColors.current.onBackground.copy(alpha = 0.5f),
                                     style = TextStyle(fontSize = 18.sp),
@@ -184,7 +183,7 @@ fun SearchScreen(
                                     color = currentThemeColor,
                                 )
                                 if (query.isNotEmpty()) MetroIconButton(onClick = { viewModel.clearQuery() }) {
-                                    MetroIcon(
+                                    SaltIcon(
                                         imageVector = Icons.Rounded.Clear,
                                         contentDescription = strings.clearSearchButton,
                                         tint = LocalMetroColors.current.onBackground.copy(alpha = 0.7f),
@@ -346,8 +345,8 @@ fun SearchScreen(
                     }
                     SearchContentState.Results -> {
                         Column(modifier = Modifier.fillMaxSize()) {
-                            MetroTabRow(
-                                items = categories.map { MetroTabItem(it) },
+                            SaltTabRow(
+                                items = categories,
                                 selectedTabIndex = when (currentType) {
                                     1 -> 0
                                     10 -> 1
@@ -364,11 +363,10 @@ fun SearchScreen(
                                         }
                                     )
                                 },
-                                indicatorVisible = false,
                             )
 
                 error?.let {
-                    MetroText(
+                    SaltText(
                         text = strings.loadFailed(it),
                         color = Color.Red,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -382,7 +380,7 @@ fun SearchScreen(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                MetroText(
+                                SaltText(
                                     text = strings.searchSongsEmpty,
                                     color = LocalMetroColors.current.onSurfaceVariant,
                                     style = TextStyle(fontSize = 16.sp),
@@ -432,7 +430,7 @@ fun SearchScreen(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                MetroText(
+                                SaltText(
                                     text = strings.searchAlbumsEmpty,
                                     color = LocalMetroColors.current.onSurfaceVariant,
                                     style = TextStyle(fontSize = 16.sp),
@@ -489,7 +487,7 @@ fun SearchScreen(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                MetroText(
+                                SaltText(
                                     text = strings.searchArtistsEmpty,
                                     color = LocalMetroColors.current.onSurfaceVariant,
                                     style = TextStyle(fontSize = 16.sp),
@@ -562,7 +560,7 @@ private fun SearchHistorySectionHeader(title: String, clearLabel: String, onClea
             .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MetroText(
+        SaltText(
             text = title,
             color = LocalMetroColors.current.onBackground,
             style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold),
@@ -575,7 +573,7 @@ private fun SearchHistorySectionHeader(title: String, clearLabel: String, onClea
                 .clickable(onClick = onClear)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
-            MetroText(
+            SaltText(
                 text = clearLabel,
                 color = LocalMetroColors.current.onSurfaceVariant,
                 style = TextStyle(fontSize = 12.sp),
@@ -611,7 +609,7 @@ private fun SearchHistoryItemCard(
             )
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                MetroText(
+                SaltText(
                     text = item.title,
                     color = LocalMetroColors.current.onBackground,
                     style = LocalMetroTypography.current.bodyLarge,
@@ -619,7 +617,7 @@ private fun SearchHistoryItemCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (!item.subtitle.isNullOrEmpty()) {
-                    MetroText(
+                    SaltText(
                         text = item.subtitle,
                         color = LocalMetroColors.current.onSurfaceVariant,
                         style = LocalMetroTypography.current.bodySmall,
@@ -664,21 +662,21 @@ fun SongSearchItem(
         onClick = onPlay,
         actions = {
             MetroIconButton(onClick = onAddToLibrary) {
-                MetroIcon(
+                SaltIcon(
                     imageVector = Icons.Rounded.Add,
                     contentDescription = strings.actionAddToLibrary,
                     tint = LocalMetroColors.current.onBackground,
                 )
             }
             MetroIconButton(onClick = onInsertNext) {
-                MetroIcon(
+                SaltIcon(
                     imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
                     contentDescription = strings.actionInsertNext,
                     tint = LocalMetroColors.current.onBackground,
                 )
             }
             MetroIconButton(onClick = onAppendToQueue) {
-                MetroIcon(
+                SaltIcon(
                     imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                     contentDescription = strings.actionAddToPlaylist,
                     tint = LocalMetroColors.current.onBackground,

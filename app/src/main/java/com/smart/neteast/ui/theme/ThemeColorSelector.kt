@@ -16,8 +16,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.smart.neteast.ui.design.SaltIcon
+import com.moriafly.salt.ui.Text as SaltText
 
 /**
  * 主题色选择器 —— Groove 风：一行 6 个方形色块 + 下方选中色名。
@@ -60,7 +60,7 @@ fun ThemeColorSelector(
                     contentAlignment = Alignment.Center
                 ) {
                     if (isSelected) {
-                        MetroIcon(
+                        SaltIcon(
                             imageVector = Icons.Rounded.Check,
                             contentDescription = null,
                             tint = checkColor,
@@ -71,7 +71,7 @@ fun ThemeColorSelector(
             }
         }
         Spacer(Modifier.height(10.dp))
-        MetroText(
+        SaltText(
             text = colorNames.getOrElse(selectedIndex) {
                 presets.getOrElse(selectedIndex) { presets[0] }.label
             },

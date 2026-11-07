@@ -6,6 +6,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color as ComposeColor
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.moriafly.salt.ui.SaltColors
+import com.moriafly.salt.ui.SaltDimens
+import com.moriafly.salt.ui.SaltShapes
+import com.moriafly.salt.ui.SaltTextStyles
+import com.moriafly.salt.ui.SaltTheme
+import com.moriafly.salt.ui.saltConfigs
 
 /**
  * 主题色预设条目
@@ -86,11 +97,54 @@ fun NcrustTheme(
     val colors = remember(primaryColor, isDark) {
         (if (isDark) DefaultNcrustColors else LightNcrustColors).copy(primary = primaryColor)
     }
-    CompositionLocalProvider(
-        LocalNcrustColors provides colors,
-        LocalNcrustTypography provides DefaultNcrustTypography,
-        content = content
-    )
+    val saltColors = remember(colors, isDark) {
+        SaltColors(
+            highlight = colors.primary,
+            text = colors.onSurface,
+            subText = colors.onSurfaceVariant,
+            background = colors.background,
+            subBackground = colors.surfaceVariant,
+            popup = colors.surface,
+            stroke = if (isDark) Color(0xFF2A2A2A) else Color(0xFFE2DACB),
+        )
+    }
+    val saltTextStyles = remember {
+        SaltTextStyles(
+            main = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal),
+            sub = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Normal),
+            paragraph = TextStyle(fontSize = 15.sp, lineHeight = 22.sp, fontWeight = FontWeight.Normal),
+        )
+    }
+    val saltShapes = remember {
+        SaltShapes(
+            small = RoundedCornerShape(10.dp),
+            medium = RoundedCornerShape(16.dp),
+            large = RoundedCornerShape(24.dp),
+        )
+    }
+    val saltDimens = remember {
+        SaltDimens(
+            item = 56.dp,
+            itemIcon = 24.dp,
+            corner = 16.dp,
+            dialogCorner = 24.dp,
+            padding = 16.dp,
+            subPadding = 8.dp,
+        )
+    }
+    SaltTheme(
+        configs = saltConfigs(isDarkTheme = isDark),
+        colors = saltColors,
+        textStyles = saltTextStyles,
+        dimens = saltDimens,
+        shapes = saltShapes,
+    ) {
+        CompositionLocalProvider(
+            LocalNcrustColors provides colors,
+            LocalNcrustTypography provides DefaultNcrustTypography,
+            content = content,
+        )
+    }
 }
 
 /**

@@ -18,7 +18,7 @@ import androidx.compose.ui.window.Dialog
 import com.smart.neteast.ui.i18n.LocalStrings
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 
 /**
  * 后台活动授权弹窗（首次启动、且尚未加入电池优化白名单时弹出）。
@@ -37,13 +37,13 @@ fun BackgroundActivityDialog(
                 .ncrustDialogSurface()
                 .padding(24.dp)
         ) {
-            MetroText(
+            SaltText(
                 strings.batteryTitle,
                 color = LocalMetroColors.current.onBackground,
                 style = TextStyle(fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
             )
             Spacer(Modifier.height(12.dp))
-            MetroText(
+            SaltText(
                 strings.batteryMessage,
                 color = LocalMetroColors.current.onSurfaceVariant,
                 style = LocalMetroTypography.current.bodyMedium,
@@ -59,7 +59,7 @@ fun BackgroundActivityDialog(
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                MetroText(
+                SaltText(
                     strings.batteryAllow,
                     color = Color.Black,
                     style = TextStyle(fontSize = 14.sp),
@@ -75,7 +75,7 @@ fun BackgroundActivityDialog(
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                MetroText(
+                SaltText(
                     strings.batteryLater,
                     color = LocalMetroColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 14.sp),

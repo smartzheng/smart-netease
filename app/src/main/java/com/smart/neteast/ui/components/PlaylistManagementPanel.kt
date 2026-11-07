@@ -1,5 +1,8 @@
 package com.smart.neteast.ui.components
 
+import com.moriafly.salt.ui.Text as SaltText
+import com.moriafly.salt.ui.TextButton as SaltTextButton
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -60,7 +63,7 @@ fun PlaylistManagementPanel(
         horizontalAlignment = Alignment.CenterHorizontally) {
         Row(Modifier.widthIn(max = 640.dp).fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            MetroText(when (mode) {
+            SaltText(when (mode) {
                 PlaylistPanelMode.ADD -> p.add
                 PlaylistPanelMode.CREATE -> p.create
                 PlaylistPanelMode.EDIT -> p.edit
@@ -73,15 +76,15 @@ fun PlaylistManagementPanel(
             state.loading -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { MetroProgressIndicator() }
             state.result != null -> Column(Modifier.weight(1f).widthIn(max = 640.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp)) {
                 val result = state.result
-                MetroText(when (result.outcome) {
+                SaltText(when (result.outcome) {
                     PlaylistOutcome.CONFIRMED -> p.confirmed
                     PlaylistOutcome.PENDING -> if (result.playlistId == null) p.unknownCreate else p.pending
                     PlaylistOutcome.PARTIAL -> if (state.request.songIds.isNotEmpty()) p.partial(result.confirmedIds.size, result.unresolvedIds.size)
                         else p.partial(result.confirmedFields.count { it != PlaylistAction.CREATE }, 3 - result.confirmedFields.count { it != PlaylistAction.CREATE })
                     PlaylistOutcome.FAILED -> p.failed
                 }, style = LocalMetroTypography.current.bodyLarge)
-                result.problem?.let { Spacer(Modifier.height(12.dp)); MetroText(playlistProblemText(it, p)) }
-                state.backupFile?.let { Spacer(Modifier.height(12.dp)); MetroText(p.backup(it.absolutePath)) }
+                result.problem?.let { Spacer(Modifier.height(12.dp)); SaltText(playlistProblemText(it, p)) }
+                state.backupFile?.let { Spacer(Modifier.height(12.dp)); SaltText(p.backup(it.absolutePath)) }
                 Spacer(Modifier.height(20.dp))
                 if (result.outcome in listOf(PlaylistOutcome.PENDING, PlaylistOutcome.PARTIAL) && result.playlistId != null) {
                     PlaylistButton(p.verify, onVerify, enabled = !state.busy, modifier = Modifier.fillMaxWidth())
@@ -100,27 +103,27 @@ fun PlaylistManagementPanel(
                     containerColor = colors.surfaceVariant, contentColor = colors.onBackground)
             }
             state.problem != null -> Column(Modifier.weight(1f).widthIn(max = 640.dp).fillMaxWidth().padding(20.dp)) {
-                MetroText(playlistProblemText(state.problem, p))
+                SaltText(playlistProblemText(state.problem, p))
                 Spacer(Modifier.height(16.dp))
                 PlaylistButton(strings.retry, onReload)
             }
             mode == PlaylistPanelMode.ADD -> LazyColumn(Modifier.weight(1f).widthIn(max = 640.dp).fillMaxWidth(), contentPadding = PaddingValues(20.dp)) {
                 item { PlaylistButton(p.create, onCreate, enabled = !state.busy, modifier = Modifier.fillMaxWidth()); Spacer(Modifier.height(16.dp)) }
                 val owned = state.collection.items.filter { it.isOwnedBy(state.ownerId) }
-                if (owned.isEmpty()) item { MetroText(strings.noPlaylists) }
+                if (owned.isEmpty()) item { SaltText(strings.noPlaylists) }
                 items(owned, key = { it.id }) { playlist ->
                     Column(Modifier.fillMaxWidth().clickable(enabled = !state.busy) { onSubmit(playlist.id) }.padding(vertical = 16.dp)) {
-                        MetroText(playlist.name, style = LocalMetroTypography.current.bodyLarge)
-                        MetroText("${strings.trackCount(playlist.trackCount.coerceAtLeast(0))} · ${if (playlist.privacy == 10) p.private else if (playlist.privacy == 0) p.public else p.unknown}", color = colors.onSurfaceVariant)
+                        SaltText(playlist.name, style = LocalMetroTypography.current.bodyLarge)
+                        SaltText("${strings.trackCount(playlist.trackCount.coerceAtLeast(0))} · ${if (playlist.privacy == 10) p.private else if (playlist.privacy == 0) p.public else p.unknown}", color = colors.onSurfaceVariant)
                     }
                     MetroDivider()
                 }
-                if (!state.collection.complete) item { MetroText(p.incomplete); PlaylistButton(strings.retry, onReload, enabled = !state.busy) }
+                if (!state.collection.complete) item { SaltText(p.incomplete); PlaylistButton(strings.retry, onReload, enabled = !state.busy) }
             }
             else -> PlaylistEditorBody(state, onDraft, onSubmit, Modifier.weight(1f))
         }
         if (state.busy) Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-            MetroProgressIndicator(sizeDp = 20.dp); Spacer(Modifier.width(12.dp)); MetroText(strings.loading)
+            MetroProgressIndicator(sizeDp = 20.dp); Spacer(Modifier.width(12.dp)); SaltText(strings.loading)
         }
     }
 }
@@ -156,7 +159,7 @@ private fun PlaylistEditorBody(state: PlaylistPanelState, onDraft: ((PlaylistDra
                     }
                 }
             } else {
-                MetroText(if (mode == PlaylistPanelMode.DELETE) p.deleteHint(state.snapshot?.info?.name.orEmpty()) else p.removeHint(state.request.songIds.size))
+                SaltText(if (mode == PlaylistPanelMode.DELETE) p.deleteHint(state.snapshot?.info?.name.orEmpty()) else p.removeHint(state.request.songIds.size))
             }
         }
         val editing = mode == PlaylistPanelMode.CREATE || mode == PlaylistPanelMode.EDIT
@@ -175,9 +178,9 @@ private fun PlaylistEditorBody(state: PlaylistPanelState, onDraft: ((PlaylistDra
 @Composable
 private fun PlaylistFieldLabel(label: String, value: String? = null) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        MetroText(label, modifier = Modifier.weight(1f), color = LocalMetroColors.current.onSurfaceVariant,
+        SaltText(label, modifier = Modifier.weight(1f), color = LocalMetroColors.current.onSurfaceVariant,
             style = LocalMetroTypography.current.caption)
-        if (value != null) MetroText(value, color = LocalMetroColors.current.onSurfaceVariant,
+        if (value != null) SaltText(value, color = LocalMetroColors.current.onSurfaceVariant,
             style = LocalMetroTypography.current.caption)
     }
 }
@@ -198,7 +201,7 @@ fun PlaylistSelectionActions(count: Int, owned: Boolean, onAll: () -> Unit, onCa
     onAdd: () -> Unit, onRemove: () -> Unit) {
     val s = LocalStrings.current
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        MetroText(s.playlists.selectionCount(count))
+        SaltText(s.playlists.selectionCount(count))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PlaylistButton(s.playlists.selectAll, onAll, Modifier.weight(1f),
                 containerColor = LocalMetroColors.current.surfaceVariant, contentColor = LocalMetroColors.current.onBackground)
@@ -220,12 +223,12 @@ internal fun playlistTextColor(background: Color): Color {
 fun PlaylistButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
     containerColor: Color = LocalMetroColors.current.primary, contentColor: Color? = null, selected: Boolean? = null) {
     val latestClick by rememberUpdatedState(onClick)
-    MetroButton(text, onClick, modifier.clearAndSetSemantics {
+    SaltTextButton(onClick = onClick, text = text, modifier = modifier.clearAndSetSemantics {
         this.text = AnnotatedString(text)
         role = Role.Button
         selected?.let { this.selected = it }
         if (!enabled) disabled() else onClick { latestClick(); true }
-    }, enabled, containerColor,
-        contentColor = contentColor ?: playlistTextColor(containerColor),
-        cornerRadiusDp = 14.dp)
+    }, enabled = enabled,
+        backgroundColor = containerColor,
+        textColor = contentColor ?: playlistTextColor(containerColor))
 }

@@ -3,6 +3,7 @@ package com.smart.neteast.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,11 +29,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import io.github.takahashirinta.kanesumi.anim.sokuou.rememberMetroFlingBehavior
 import io.github.takahashirinta.kanesumi.controls.MetroSelectorFlyout
-import io.github.takahashirinta.kanesumi.controls.MetroSwitch
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.smart.neteast.ui.design.SaltIcon
+import com.moriafly.salt.ui.Text as SaltText
+import com.moriafly.salt.ui.Switcher as SaltSwitcher
 import coil.compose.AsyncImage
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.smart.neteast.account.SessionMonitor
@@ -270,7 +272,7 @@ fun UserScreen(
             // 会员状态（有效 / 已过期 / 未开通 / 未知）。会话不是 Valid 时不显示——
             // 那时该说的是「登录已失效」，不是会员状态。
             if (vipText != null) {
-                MetroText(
+                SaltText(
                     vipText,
                     color = LocalMetroColors.current.onSurfaceVariant,
                     style = LocalMetroTypography.current.bodySmall,
@@ -414,13 +416,13 @@ fun UserScreen(
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                MetroText(
+                SaltText(
                     strings.batteryTitle,
                     color = LocalMetroColors.current.onBackground,
                     style = TextStyle(fontSize = 15.sp),
                     modifier = Modifier.weight(1f)
                 )
-                MetroIcon(
+                SaltIcon(
                     Icons.Rounded.ChevronRight,
                     contentDescription = null,
                     tint = LocalMetroColors.current.onSurfaceVariant,
@@ -440,13 +442,13 @@ fun UserScreen(
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                MetroText(
+                SaltText(
                     strings.cacheSizeLabel(cacheSize),
                     color = LocalMetroColors.current.onBackground,
                     style = TextStyle(fontSize = 15.sp),
                     modifier = Modifier.weight(1f)
                 )
-                MetroText(
+                SaltText(
                     strings.clearCache,
                     color = LocalMetroColors.current.primary,
                     style = TextStyle(fontSize = 15.sp)
@@ -474,13 +476,13 @@ fun UserScreen(
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                MetroText(
+                SaltText(
                     strings.updateCheckNow,
                     color = LocalMetroColors.current.onBackground,
                     style = TextStyle(fontSize = 15.sp),
                     modifier = Modifier.weight(1f)
                 )
-                MetroText(
+                SaltText(
                     if (updateState.checking) strings.updateChecking else "",
                     color = LocalMetroColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 13.sp)
@@ -498,13 +500,13 @@ fun UserScreen(
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                MetroText(
+                SaltText(
                     strings.aboutButton,
                     color = LocalMetroColors.current.onBackground,
                     style = TextStyle(fontSize = 15.sp),
                     modifier = Modifier.weight(1f)
                 )
-                MetroIcon(
+                SaltIcon(
                     Icons.Rounded.ChevronRight,
                     contentDescription = null,
                     tint = LocalMetroColors.current.onSurfaceVariant,
@@ -552,7 +554,7 @@ private fun ProfileBlock(
                     contentScale = ContentScale.Crop
                 )
             } else {
-                MetroIcon(
+                SaltIcon(
                     Icons.Outlined.Person,
                     strings.userIconDesc,
                     tint = LocalMetroColors.current.primary,
@@ -564,13 +566,13 @@ private fun ProfileBlock(
         // 文字列 weight(1f)：任何语言的昵称/提示都能换行不撑破。
         Column(modifier = Modifier.weight(1f)) {
             when {
-                isLoading -> MetroText(
+                isLoading -> SaltText(
                     strings.loading,
                     color = LocalMetroColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.SemiBold),
                 )
                 profile != null -> {
-                    MetroText(
+                    SaltText(
                         profile.nickname,
                         color = LocalMetroColors.current.onBackground,
                         style = LocalMetroTypography.current.title.copy(
@@ -582,7 +584,7 @@ private fun ProfileBlock(
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(Modifier.height(2.dp))
-                    MetroText(
+                    SaltText(
                         uidLabel,
                         color = LocalMetroColors.current.onSurfaceVariant,
                         style = LocalMetroTypography.current.bodySmall,
@@ -591,7 +593,7 @@ private fun ProfileBlock(
                     )
                 }
                 else -> {
-                    MetroText(
+                    SaltText(
                         notLoggedInText,
                         color = LocalMetroColors.current.onSurfaceVariant,
                         style = LocalMetroTypography.current.title.copy(
@@ -603,7 +605,7 @@ private fun ProfileBlock(
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(Modifier.height(2.dp))
-                    MetroText(
+                    SaltText(
                         loginHintText,
                         color = LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.6f),
                         style = LocalMetroTypography.current.bodySmall,
@@ -614,7 +616,7 @@ private fun ProfileBlock(
             }
         }
         Spacer(Modifier.width(8.dp))
-        MetroIcon(
+        SaltIcon(
             Icons.Rounded.ChevronRight,
             contentDescription = null,
             tint = LocalMetroColors.current.onSurfaceVariant,
@@ -639,7 +641,7 @@ private fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
 /** Groove 风分区标题：16sp semi-bold、上留白 4dp、左 16dp。 */
 @Composable
 private fun SectionTitle(text: String) {
-    MetroText(
+    SaltText(
         text,
         color = LocalMetroColors.current.onBackground,
         style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
@@ -664,20 +666,25 @@ private fun SettingSwitchRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .toggleable(
+                value = checked,
+                role = Role.Switch,
+                onValueChange = onCheckedChange,
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MetroText(
+        SaltText(
             title,
             color = LocalMetroColors.current.onBackground,
             style = LocalMetroTypography.current.bodyMedium,
             modifier = Modifier.weight(1f)
         )
         Spacer(Modifier.width(16.dp))
-        MetroSwitch(checked = checked, onCheckedChange = onCheckedChange, rounded = true)
+        SaltSwitcher(state = checked)
     }
     if (description != null) {
-        MetroText(
+        SaltText(
             description,
             color = LocalMetroColors.current.onSurfaceVariant,
             style = LocalMetroTypography.current.caption,
@@ -687,7 +694,7 @@ private fun SettingSwitchRow(
         )
     }
     if (note != null) {
-        MetroText(
+        SaltText(
             note,
             color = LocalMetroColors.current.primary,
             style = LocalMetroTypography.current.caption,
@@ -736,7 +743,7 @@ private fun ThemeModeSelector(
                     .padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center
             ) {
-                MetroText(
+                SaltText(
                     label,
                     color = if (active) LocalMetroColors.current.primary
                     else LocalMetroColors.current.onSurfaceVariant,
@@ -763,13 +770,13 @@ private fun ClearCacheConfirmDialog(
                 .ncrustDialogSurface()
                 .padding(24.dp)
         ) {
-            MetroText(
+            SaltText(
                 strings.clearCache,
                 color = LocalMetroColors.current.onBackground,
                 style = TextStyle(fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
             )
             Spacer(Modifier.height(12.dp))
-            MetroText(
+            SaltText(
                 strings.clearCacheConfirm,
                 color = LocalMetroColors.current.onSurfaceVariant,
                 style = LocalMetroTypography.current.bodyMedium,
@@ -811,14 +818,14 @@ private fun MetroDropdownRow(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            MetroText(
+            SaltText(
                 label,
                 color = LocalMetroColors.current.onBackground,
                 style = TextStyle(fontSize = 15.sp),
                 modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(12.dp))
-            MetroText(
+            SaltText(
                 options.getOrElse(selectedIndex) { "" },
                 color = LocalMetroColors.current.primary,
                 style = TextStyle(fontSize = 15.sp),
@@ -826,7 +833,7 @@ private fun MetroDropdownRow(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.widthIn(max = 160.dp)
             )
-            MetroIcon(
+            SaltIcon(
                 Icons.Rounded.ArrowDropDown,
                 contentDescription = null,
                 tint = LocalMetroColors.current.onSurfaceVariant,
@@ -861,7 +868,7 @@ private fun AccountDialog(
                 .ncrustDialogSurface()
                 .padding(24.dp)
         ) {
-            MetroText(
+            SaltText(
                 strings.accountDialogTitle,
                 color = LocalMetroColors.current.onBackground,
                 style = TextStyle(fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
@@ -869,14 +876,14 @@ private fun AccountDialog(
             Spacer(Modifier.height(16.dp))
 
             if (userProfile != null) {
-                MetroText(
+                SaltText(
                     strings.nicknameLabel(userProfile.nickname),
                     color = LocalMetroColors.current.onBackground,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(4.dp))
-                MetroText(
+                SaltText(
                     strings.uidLabel(userProfile.userId.toString()),
                     color = LocalMetroColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 13.sp),
@@ -938,7 +945,7 @@ private fun DialogButton(
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 10.dp)
     ) {
-        MetroText(
+        SaltText(
             text,
             color = if (accent) Color.Black else LocalMetroColors.current.onSurfaceVariant,
             style = TextStyle(fontSize = 14.sp),
@@ -969,7 +976,7 @@ private fun FullWidthDialogButton(
             .padding(horizontal = 12.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
-        MetroText(
+        SaltText(
             text,
             color = if (accent) Color.Black else textColor,
             style = TextStyle(fontSize = 14.sp),
@@ -1004,7 +1011,7 @@ fun MetroLanguageDropdown(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            MetroText(
+            SaltText(
                 selected.displayName,
                 color = LocalMetroColors.current.onBackground,
                 style = TextStyle(fontSize = 14.sp),
@@ -1013,7 +1020,7 @@ fun MetroLanguageDropdown(
                 modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(8.dp))
-            MetroIcon(
+            SaltIcon(
                 Icons.Rounded.ArrowDropDown,
                 contentDescription = null,
                 tint = LocalMetroColors.current.onSurfaceVariant,

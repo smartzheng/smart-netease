@@ -1,5 +1,7 @@
 package com.smart.neteast.ui.components
 
+import com.moriafly.salt.ui.Text as SaltText
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.runtime.*
@@ -28,10 +30,10 @@ fun PlaylistDetailHeader(
     val metadata: @Composable ColumnScope.() -> Unit = {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
-                MetroText(title, style = LocalMetroTypography.current.title.copy(fontSize = 26.sp),
+                SaltText(title, style = LocalMetroTypography.current.title.copy(fontSize = 26.sp),
                     maxLines = 3, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(8.dp))
-                MetroText(listOfNotNull(privacy, s.trackCountSongs(trackCount)).joinToString(" · "),
+                SaltText(listOfNotNull(privacy, s.trackCountSongs(trackCount)).joinToString(" · "),
                     style = LocalMetroTypography.current.caption, color = colors.onSurfaceVariant)
             }
             if (onPlay != null) {
@@ -41,11 +43,11 @@ fun PlaylistDetailHeader(
         }
         if (description.isNotBlank()) {
             Spacer(Modifier.height(12.dp))
-            MetroText(description, style = LocalMetroTypography.current.bodyMedium, color = colors.onSurfaceVariant)
+            SaltText(description, style = LocalMetroTypography.current.bodyMedium, color = colors.onSurfaceVariant)
         }
         if (!complete) {
             Spacer(Modifier.height(12.dp))
-            MetroText(s.playlists.incomplete, style = LocalMetroTypography.current.caption,
+            SaltText(s.playlists.incomplete, style = LocalMetroTypography.current.caption,
                 color = colors.onSurfaceVariant)
         }
         if (management) {

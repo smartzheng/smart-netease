@@ -28,8 +28,8 @@ import androidx.compose.ui.unit.sp
 import com.smart.neteast.ui.i18n.LocalStrings
 import com.smart.neteast.update.UpdateService
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.smart.neteast.ui.design.SaltIcon
+import com.moriafly.salt.ui.Text as SaltText
 
 /**
  * 「发现新版本 X.Y.Z · 查看」横幅（用户页顶部）。
@@ -54,7 +54,7 @@ fun UpdateAvailableBanner(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MetroIcon(
+        SaltIcon(
             Icons.Rounded.SystemUpdate,
             contentDescription = null,
             tint = LocalMetroColors.current.primary,
@@ -63,7 +63,7 @@ fun UpdateAvailableBanner(
         Spacer(Modifier.width(10.dp))
         // 不设 maxLines=1：8 种语言的这句话长度差很大，宁可折行也不能被截成
         // 「发现新版本 1.4…」——截断后用户读不到版本号。
-        MetroText(
+        SaltText(
             strings.updateAvailableBanner(version),
             color = LocalMetroColors.current.primary,
             style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium),

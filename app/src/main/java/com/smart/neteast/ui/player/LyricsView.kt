@@ -26,7 +26,7 @@ import com.smart.neteast.ui.LocalHeightClass
 import io.github.takahashirinta.kanesumi.controls.MetroLyricLine
 import io.github.takahashirinta.kanesumi.controls.MetroLyricsPanel
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -63,7 +63,7 @@ fun LyricsView(
     if (lyrics.isEmpty()) {
         if (!isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                MetroText(strings.noLyrics, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 18.sp))
+                SaltText(strings.noLyrics, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 18.sp))
             }
         }
         return

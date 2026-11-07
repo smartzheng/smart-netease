@@ -32,8 +32,8 @@ import com.smart.neteast.network.CoverUrls
 import io.github.takahashirinta.kanesumi.anim.sokuou.SokuouPresets
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.smart.neteast.ui.design.SaltIcon
+import com.moriafly.salt.ui.Text as SaltText
 import com.smart.neteast.ui.i18n.LocalStrings
 import kotlinx.coroutines.launch
 
@@ -96,14 +96,14 @@ fun SongCard(
                 }
 
                 Column(Modifier.weight(1f)) {
-                    MetroText(
+                    SaltText(
                         song.name,
                         color = if (isCurrentPlaying) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
                         style = LocalMetroTypography.current.bodyLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    MetroText(
+                    SaltText(
                         buildString {
                             append(artistStr)
                             if (albumName.isNotEmpty()) append(" · $albumName")
@@ -159,14 +159,14 @@ fun SongCard(
                     contentScale = ContentScale.Crop
                 )
                 Spacer(Modifier.height(8.dp))
-                MetroText(
+                SaltText(
                     song.name,
                     color = LocalMetroColors.current.onBackground,
                     style = LocalMetroTypography.current.bodyMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                MetroText(
+                SaltText(
                     "$artistStr · $albumName",
                     color = LocalMetroColors.current.onSurfaceVariant,
                     style = LocalMetroTypography.current.bodySmall,
@@ -210,7 +210,7 @@ fun PlayAllButton(
                 .graphicsLayer { scaleX = scale; scaleY = scale },
             contentAlignment = Alignment.Center
         ) {
-            MetroIcon(
+            SaltIcon(
                 imageVector = Icons.Rounded.PlayArrow,
                 contentDescription = LocalStrings.current.playAllButton,
                 tint = LocalMetroColors.current.primary,

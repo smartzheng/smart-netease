@@ -29,8 +29,9 @@ Toolchain:
 | minSdk | 24 |
 | Gradle daemon JDK | 21 (`gradle/gradle-daemon-jvm.properties`: `toolchainVersion=21`; AGP 8.5 itself requires at least 17) |
 | Java source/target / Kotlin jvmTarget | 11 |
-| Kotlin | 1.9.24 |
-| Compose BOM | 2024.12.01 (compiler ext 1.5.14) |
+| Kotlin | 2.1.0 (Compose compiler plugin) |
+| Compose BOM | 2024.12.01 (Jetpack Compose 1.7.6) |
+| SaltUI | 2.3.1 (compatible with Jetpack Compose 1.7.6) |
 | Android Gradle Plugin | 8.5.0 |
 | Gradle | wrapper 9.3.1 |
 

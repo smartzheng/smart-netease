@@ -55,11 +55,10 @@ import io.github.takahashirinta.kanesumi.anim.sokuou.MetroDefault
 import io.github.takahashirinta.kanesumi.anim.sokuou.rememberMetroFlingBehavior
 import io.github.takahashirinta.kanesumi.controls.MetroProgressIndicator
 import com.smart.neteast.ui.components.PlaylistCollectionContent
-import io.github.takahashirinta.kanesumi.controls.MetroTabItem
-import io.github.takahashirinta.kanesumi.controls.MetroTabRow
+import com.smart.neteast.ui.components.SaltTabRow
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.moriafly.salt.ui.Text as SaltText
 import com.smart.neteast.ui.components.PlayAllButton
 import com.smart.neteast.ui.components.PlayAllDialog
 import com.smart.neteast.ui.components.ScreenTitle
@@ -290,11 +289,10 @@ fun LibraryScreen(
                 SessionExpiredBanner(onRelogin = onRelogin)
                 Spacer(Modifier.height(4.dp))
             }
-            MetroTabRow(
+            SaltTabRow(
                 selectedTabIndex = selectedCategory,
-                items = categories.map { MetroTabItem(it) },
+                items = categories,
                 onTabSelected = { index -> selectedCategory = index },
-                indicatorVisible = false,
             )
 
             // Tab 切换用 AnimatedContent 做方向感知的横向滑入。
@@ -338,7 +336,7 @@ fun LibraryScreen(
                         val playAllCount = if (likedIdCount > 0) likedIdCount else savedSongs.size
                         if (savedSongs.isEmpty() && likedIdCount == 0) {
                             Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
-                                MetroText(strings.noSavedSongs, color = LocalMetroColors.current.onSurfaceVariant, style = LocalMetroTypography.current.bodyLarge)
+                                SaltText(strings.noSavedSongs, color = LocalMetroColors.current.onSurfaceVariant, style = LocalMetroTypography.current.bodyLarge)
                             }
                         } else {
                             LibraryPlayAllRow(
@@ -402,7 +400,7 @@ fun LibraryScreen(
                 1 -> {
                     if (savedAlbums.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            MetroText(strings.noSavedAlbums, color = LocalMetroColors.current.onSurfaceVariant, style = LocalMetroTypography.current.bodyLarge)
+                            SaltText(strings.noSavedAlbums, color = LocalMetroColors.current.onSurfaceVariant, style = LocalMetroTypography.current.bodyLarge)
                         }
                     } else {
                         // 自适应栅格：列数随内容栏宽度变化（宽屏多列），取代写死的 2 列。
@@ -475,12 +473,12 @@ private fun LibraryPlayAllRow(
         )
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            MetroText(
+            SaltText(
                 strings.playAllButton,
                 color = LocalMetroColors.current.onBackground,
                 style = LocalMetroTypography.current.bodyLarge
             )
-            MetroText(
+            SaltText(
                 if (isLoading) loadingLabel else strings.songCountFormat(songCount),
                 color = LocalMetroColors.current.onSurfaceVariant,
                 style = LocalMetroTypography.current.bodySmall
@@ -509,7 +507,7 @@ private fun PendingSyncNotice(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MetroText(
+        SaltText(
             message,
             color = LocalMetroColors.current.onSurfaceVariant,
             style = LocalMetroTypography.current.bodySmall,
@@ -520,7 +518,7 @@ private fun PendingSyncNotice(
                 .clickable(onClick = onRetry)
                 .padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
-            MetroText(
+            SaltText(
                 retryLabel,
                 color = LocalMetroColors.current.primary,
                 style = LocalMetroTypography.current.bodyMedium
@@ -551,8 +549,8 @@ fun LibraryAlbumGridItem(
             )
         }
         Spacer(Modifier.height(6.dp))
-        MetroText(album.name, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
-        MetroText(strings.albumArtistAndCount(album.artist, album.songCount), color = LocalMetroColors.current.onSurfaceVariant, style = LocalMetroTypography.current.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
+        SaltText(album.name, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
+        SaltText(strings.albumArtistAndCount(album.artist, album.songCount), color = LocalMetroColors.current.onSurfaceVariant, style = LocalMetroTypography.current.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
         Spacer(Modifier.height(6.dp))
     }
 }

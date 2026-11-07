@@ -45,8 +45,8 @@ import io.github.takahashirinta.kanesumi.anim.sokuou.sokuouSpring
 import io.github.takahashirinta.kanesumi.controls.MetroDivider
 import io.github.takahashirinta.kanesumi.controls.MetroIconButton
 import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
+import com.smart.neteast.ui.design.SaltIcon
+import com.moriafly.salt.ui.Text as SaltText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -123,7 +123,7 @@ fun QueueView(
 
     if (rows.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            MetroText(strings.emptyQueue, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 16.sp))
+            SaltText(strings.emptyQueue, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 16.sp))
         }
         return
     }
@@ -437,7 +437,7 @@ fun QueueView(
                                             modifier = Modifier.size(32.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            MetroIcon(
+                                            SaltIcon(
                                                 imageVector = Icons.Rounded.DragHandle,
                                                 contentDescription = null,
                                                 tint = LocalMetroColors.current.onSurfaceVariant,
@@ -452,7 +452,7 @@ fun QueueView(
                                             onRemoveIndex(qi)
                                         }
                                     ) {
-                                        MetroIcon(
+                                        SaltIcon(
                                             imageVector = Icons.Rounded.Close,
                                             contentDescription = null,
                                             tint = LocalMetroColors.current.onSurfaceVariant,
@@ -550,7 +550,7 @@ private fun SectionHeader(title: String) {
             .padding(top = 12.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MetroText(
+        SaltText(
             title,
             color = LocalMetroColors.current.primary,
             style = TextStyle(fontSize = 13.sp)
@@ -568,14 +568,14 @@ private fun InfinityPlaceholder(text: String) {
             .padding(vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MetroIcon(
+        SaltIcon(
             imageVector = Icons.Rounded.AllInclusive,
             contentDescription = null,
             tint = LocalMetroColors.current.primary,
             sizeDp = 20.dp
         )
         Spacer(Modifier.width(8.dp))
-        MetroText(text, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 14.sp))
+        SaltText(text, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 14.sp))
     }
 }
 

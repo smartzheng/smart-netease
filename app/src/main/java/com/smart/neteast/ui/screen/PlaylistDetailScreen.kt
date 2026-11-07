@@ -32,8 +32,8 @@ import com.smart.neteast.ui.i18n.LocalStrings
 import kotlinx.coroutines.launch
 import android.widget.Toast
 import kotlinx.coroutines.CancellationException
-import io.github.takahashirinta.kanesumi.core.theme.MetroText
-import io.github.takahashirinta.kanesumi.core.theme.MetroIcon
+import com.moriafly.salt.ui.Text as SaltText
+import com.smart.neteast.ui.design.SaltIcon
 import com.smart.neteast.ui.components.PlaylistSelectionActions
 
 @Composable
@@ -150,7 +150,7 @@ fun PlaylistDetailScreen(
                     style = SongCardStyle.COMPACT,
                     modifier = Modifier.semantics { if (selecting) selected = song.id in selectedIds },
                     actions = if (selecting) ({
-                        MetroIcon(if (song.id in selectedIds) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
+                        SaltIcon(if (song.id in selectedIds) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
                             contentDescription = null, sizeDp = 24.dp)
                     }) else null,
                     onClick = {
@@ -178,7 +178,7 @@ fun PlaylistDetailScreen(
                     }
                 )
             }
-            if (songs.isEmpty() && snapshot != null) item { MetroText(strings.trackCountSongs(0), modifier = Modifier.padding(20.dp)) }
+            if (songs.isEmpty() && snapshot != null) item { SaltText(strings.trackCountSongs(0), modifier = Modifier.padding(20.dp)) }
         }
     )
 }
