@@ -4,8 +4,6 @@ import androidx.compose.material.icons.rounded.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -194,9 +192,7 @@ fun PlayAllButton(
         animationSpec = tween(durationMillis = 120),
         label = "PlayAllButtonPress"
     )
-    val corner = if (size >= 40.dp) 14.dp else 12.dp
-
-    // Keep a 48dp touch target while the visible control stays compact and flat.
+    // Keep a 48dp touch target while the play symbol stays visually light.
     Box(
         modifier = modifier
             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
@@ -211,17 +207,14 @@ fun PlayAllButton(
         Box(
             modifier = Modifier
                 .size(size)
-                .graphicsLayer { scaleX = scale; scaleY = scale }
-                .clip(RoundedCornerShape(corner))
-                .background(LocalMetroColors.current.surfaceVariant)
-                .border(1.dp, LocalMetroColors.current.divider, RoundedCornerShape(corner)),
+                .graphicsLayer { scaleX = scale; scaleY = scale },
             contentAlignment = Alignment.Center
         ) {
             MetroIcon(
                 imageVector = Icons.Rounded.PlayArrow,
                 contentDescription = LocalStrings.current.playAllButton,
                 tint = LocalMetroColors.current.primary,
-                sizeDp = if (size >= 40.dp) 24.dp else 20.dp
+                sizeDp = if (size >= 40.dp) 28.dp else 22.dp
             )
         }
     }
