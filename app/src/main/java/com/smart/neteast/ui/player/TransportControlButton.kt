@@ -1,19 +1,28 @@
 package com.smart.neteast.ui.player
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -42,14 +51,26 @@ fun TransportControlButton(
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (pressed && enabled) 0.88f else 1f,
-        animationSpec = spring(dampingRatio = 0.62f, stiffness = 520f),
+        targetValue = if (pressed && enabled) 0.93f else 1f,
+        animationSpec = spring(dampingRatio = 0.76f, stiffness = 520f),
         label = "transportPressScale",
+    )
+    val pressShadow by androidx.compose.animation.core.animateDpAsState(
+        targetValue = if (pressed && enabled) 4.dp else 0.dp,
+        animationSpec = spring(dampingRatio = 0.82f, stiffness = 520f),
+        label = "transportPressShadow",
     )
 
     Box(
         modifier = modifier
             .size(touchSize.coerceAtLeast(NcrustSpacing.touchTarget))
+            .shadow(
+                elevation = pressShadow,
+                shape = CircleShape,
+                clip = false,
+                ambientColor = Color.Black.copy(alpha = 0.12f),
+                spotColor = Color.Black.copy(alpha = 0.22f),
+            )
             .scale(scale)
             .clickable(
                 enabled = enabled,
@@ -61,8 +82,17 @@ fun TransportControlButton(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(Modifier.size(iconSize)) {
-            drawTransportGlyph(glyph, tint)
+        AnimatedContent(
+            targetState = glyph,
+            transitionSpec = {
+                (fadeIn(tween(110)) + scaleIn(initialScale = 0.84f, animationSpec = tween(140))) togetherWith
+                    (fadeOut(tween(80)) + scaleOut(targetScale = 0.92f, animationSpec = tween(100)))
+            },
+            label = "transportGlyphChange",
+        ) { visibleGlyph ->
+            Canvas(Modifier.size(iconSize)) {
+                drawTransportGlyph(visibleGlyph, tint)
+            }
         }
     }
 }

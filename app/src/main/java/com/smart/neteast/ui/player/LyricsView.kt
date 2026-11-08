@@ -59,13 +59,18 @@ fun LyricsView(
     onUserScrolled: () -> Unit = {},
     // 歌词是否仍在加载：加载中且暂无内容时留空，避免切歌瞬间闪一下"暂无歌词"。
     isLoading: Boolean = false,
+    artworkStyle: Boolean = false,
 ) {
     val strings = LocalStrings.current
     val heightClass = LocalHeightClass.current
     if (lyrics.isEmpty()) {
         if (!isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                SaltText(strings.noLyrics, color = LocalNcrustColors.current.onSurfaceVariant, style = TextStyle(fontSize = 18.sp))
+                SaltText(
+                    strings.noLyrics,
+                    color = if (artworkStyle) Color.White.copy(alpha = 0.76f) else LocalNcrustColors.current.onSurfaceVariant,
+                    style = TextStyle(fontSize = 18.sp),
+                )
             }
         }
         return
@@ -149,10 +154,10 @@ fun LyricsView(
                 onSeekToMs(ms)
             } else { _ -> },
             onUserScrolled = onUserScrolled,
-            // 已播/未播行颜色随主题适配：旧实现默认写死 White@0.6 / Gray@0.4，
-            // 浅色底上白色已播行会看不见。这里改用语义色。
-            pastLineColor = LocalNcrustColors.current.onBackground.copy(alpha = 0.6f),
-            futureLineColor = LocalNcrustColors.current.onSurfaceVariant.copy(alpha = 0.4f),
+            // Full player lyrics float over the same cover-derived dark backdrop. Keep the active
+            // line bright and future lines legible; the regular app screen remains theme-adaptive.
+            pastLineColor = if (artworkStyle) Color.White else LocalNcrustColors.current.onBackground.copy(alpha = 0.72f),
+            futureLineColor = if (artworkStyle) Color.White.copy(alpha = 0.48f) else LocalNcrustColors.current.onSurfaceVariant.copy(alpha = 0.5f),
             fontSize = when (heightClass) {
                 HeightClass.Regular -> 32.sp
                 HeightClass.Compact -> 24.sp
@@ -185,7 +190,10 @@ fun LyricsView(
                 .height(100.dp)
                 .align(Alignment.TopCenter)
                 .background(
-                    Brush.verticalGradient(listOf(LocalNcrustColors.current.background, Color.Transparent))
+                    Brush.verticalGradient(
+                        if (artworkStyle) listOf(Color.Black.copy(alpha = 0.32f), Color.Transparent)
+                        else listOf(LocalNcrustColors.current.background, Color.Transparent)
+                    )
                 )
         )
         Box(
@@ -194,7 +202,10 @@ fun LyricsView(
                 .height(100.dp)
                 .align(Alignment.BottomCenter)
                 .background(
-                    Brush.verticalGradient(listOf(Color.Transparent, LocalNcrustColors.current.background))
+                    Brush.verticalGradient(
+                        if (artworkStyle) listOf(Color.Transparent, Color.Black.copy(alpha = 0.32f))
+                        else listOf(Color.Transparent, LocalNcrustColors.current.background)
+                    )
                 )
         )
     }

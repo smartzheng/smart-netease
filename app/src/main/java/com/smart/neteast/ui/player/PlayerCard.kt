@@ -11,6 +11,7 @@ import com.smart.neteast.ui.design.*
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.Image
@@ -31,10 +32,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.draw.blur
+import androidx.palette.graphics.Palette
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -47,6 +51,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -71,6 +77,8 @@ import com.moriafly.salt.ui.Text as SaltText
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -104,16 +112,28 @@ fun PlayerCard(
     onNavigateToUser: () -> Unit = {}
 ) {
     val hasSong = song != null
+    val artworkBackdropState = remember { mutableStateOf<Color?>(null) }
+    val artworkBitmapState = remember { mutableStateOf<Bitmap?>(null) }
     // 初始落大封面；切歌和歌词异步加载不会改变用户当前选中的封面/歌词/队列模式。
     var showLyrics by remember { mutableStateOf(false) }
     var showQueue by remember { mutableStateOf(false) }
     var showQualityPanel by remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val context = LocalContext.current
+    val view = LocalView.current
     val coroutineScope = rememberCoroutineScope()
 
     val strings = LocalStrings.current
     val playerViewModel: PlayerViewModel = viewModel()
+    val artworkFullscreen = progress.value > 0.5f
+    val backgroundIsLight = LocalNcrustColors.current.background.luminance() > 0.5f
+    LaunchedEffect(artworkFullscreen, backgroundIsLight, view) {
+        val activity = view.context as? android.app.Activity ?: return@LaunchedEffect
+        val controller = WindowCompat.getInsetsController(activity.window, view)
+        val useLightSystemIcons = !artworkFullscreen && backgroundIsLight
+        controller.isAppearanceLightStatusBars = useLightSystemIcons
+        controller.isAppearanceLightNavigationBars = useLightSystemIcons
+    }
     LaunchedEffect(song?.id) { showQualityPanel = false }
     val lyrics by playerViewModel.lyrics.collectAsState()
     val translatedLyrics by playerViewModel.translatedLyrics.collectAsState()
@@ -186,7 +206,8 @@ fun PlayerCard(
                 controlsHeightPx = narrowControlsHeight.floatValue + controlsGapPx,
                 titleReservePx = narrowTitleHeight.floatValue,
                 minGapPx = coverGapPx,
-                preferredCenterYPx = screenHeightPx * 0.3f + dp24px
+                preferredCenterYPx = screenHeightPx * 0.47f + dp24px,
+                coverWidthFraction = 0.84f,
             )
         }
     }
@@ -198,8 +219,6 @@ fun PlayerCard(
     // 完全收起时才激活迷你播放栏
     val miniBarEnabled = remember { derivedStateOf { progress.value < 0.01f } }
     val miniBarInteractionSource = remember { MutableInteractionSource() }
-    // 完全展开时才激活收起按钮
-    val dismissEnabled = remember { derivedStateOf { progress.value > 0.99f } }
     // 展开态子树常挂载（无 gate）：LyricsView / QueueView / FullPlayerControls / 大封面
     // 信息在 MainScreen 首次 composition 时即挂载，交互只切 graphicsLayer alpha，不再
     // 走 mount/dispose。这是"Apple Music 手感"的关键——原生 View 系统里 player subview
@@ -213,6 +232,7 @@ fun PlayerCard(
     // 两个 Animatable 均只在 graphicsLayer { } draw 阶段读取，动画帧内零 recompose
     // 初始 0（大封面）：冷启动/splash 后若当前歌无歌词，首帧即大封面，不会"停"在歌词位
     val lyricAnimProgress = remember { Animatable(0f) }
+    val lyricHeaderInset = remember { derivedStateOf { if (lyricAnimProgress.value > 0.5f) 72.dp else 24.dp } }
     val queueSlideProgress = remember { Animatable(0f) }
     // 仅在歌词模式下歌词可交互；阈值穿越处各触发一次重组，其余帧零重组
     val lyricsEnabled by remember { derivedStateOf { lyricAnimProgress.value > 0.5f && queueSlideProgress.value < 0.5f } }
@@ -224,7 +244,7 @@ fun PlayerCard(
     // 歌词面板可交互 = 歌词模式 && 卡片基本展开；合成一个 State，免得 LyricsView 外层为两个布尔各重组一次。
     val lyricsInteractive = remember { derivedStateOf { lyricsEnabled && cardExpandedForInput.value } }
     // 窄屏顶栏歌名可见 = 卡片展开到顶栏淡入（> 0.7）且处于小封面 / 歌词模式（歌名区 alpha 跟随 lyricAnimProgress）。
-    val titleVisible = remember { derivedStateOf { progress.value > 0.7f && lyricAnimProgress.value > 0.5f } }
+    val titleVisible = remember { derivedStateOf { progress.value > 0.7f } }
     // 卡片收起时，歌词 / 进度条 / 时间文本都看不见，但它们常挂载在一个整屏大小的图层里：2Hz 的位置更新
     // 会让歌词滚动、进度条重绘，RenderThread 每次都要重画整块 1080x2520（Xperia 10 VII 实测每帧 ~14ms，
     // 静止页面 6 帧/秒）。收起时冻结喂给它们的位置 / 进度，展开一越过 0.01 就追上当前值。
@@ -422,8 +442,13 @@ fun PlayerCard(
                 .graphicsLayer {
                     translationY = statusBarPx * (1f - progress.value)
                 }
-                .background(LocalNcrustColors.current.background)
-        )
+        ) {
+            PlayerArtworkBackdrop(
+                bitmapState = artworkBitmapState,
+                colorState = artworkBackdropState,
+                fallbackColor = LocalNcrustColors.current.background,
+            )
+        }
         // 折叠态卡背：卡片整体下移后，miniBar 下方露出的是这张主题底色（原底部导航/系统栏
         // 位置）。折叠时用 surface 盖住，与 miniBar 同色，避免底部黑块；展开时透明。
         Box(
@@ -465,6 +490,7 @@ fun PlayerCard(
                         onPlayNext = onPlayNext,
                         onToggleLyrics = onToggleLyricsAction,
                         onToggleQueue = onToggleQueueAction,
+                        onTogglePlayMode = onTogglePlayMode,
                         onAddToLibrary = onAddToLibraryAction,
                         isInLibrary = isSongSaved,
                         isBufferingFlow = playerViewModel.isBuffering,
@@ -478,6 +504,7 @@ fun PlayerCard(
                         onShowQualityPanel = { showQualityPanel = true },
                         lyricsUnavailable = lyricsUnavailable,
                         previousEnabled = playMode != QueueModes.INFINITY,
+                        artworkStyle = true,
                         landscape = isWidePlayer,
                         compact = !isWidePlayer && heightClass != HeightClass.Regular,
                         tiny = tinyPlayer
@@ -521,6 +548,7 @@ fun PlayerCard(
                                     enabled = interactive,
                                     onUserScrolled = {},
                                     isLoading = lyricsLoading,
+                                    artworkStyle = true,
                                 )
                                 }
                             }
@@ -685,46 +713,49 @@ fun PlayerCard(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp)
+                            .height(80.dp)
                             .onSizeChanged { narrowTopBarHeight.floatValue = it.height.toFloat() }
                             .graphicsLayer { alpha = playerContentReveal(progress.value) }
-                            // Tiny 右侧固定预留 4×44dp 按键 + 8dp 边距。320dp 宽时标题
-                            // 仍有 68dp，长歌名用既有跑马灯，绝不伸到按键下方。
-                            .padding(start = 68.dp, end = if (tinyPlayer) 184.dp else 56.dp),
-                        contentAlignment = Alignment.CenterStart
+                            .padding(start = lyricHeaderInset.value, end = 24.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .graphicsLayer { alpha = lyricAnimProgress.value }
-                                // 歌名区域可点: 上拉"转到歌手/转到专辑"菜单(类 Apple Music)
-                                .clickable { onSongInfoClick() }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            // 跑马灯只在标题真正可见时挂：这一层只在 graphicsLayer 里调 alpha，卡片收起或处于
-                            // 大封面模式时它看不见，但无限跑马灯照样以 60fps 驱动重绘——Xperia 10 VII 实测
-                            // 长标题时静止首页 53 帧/秒、CPU 40~60%（2026-10-15）。
-                            ThresholdScope(titleVisible) { visible ->
+                            Column(
+                                modifier = Modifier.weight(1f)
+                                    .clickable { onSongInfoClick() }
+                            ) {
+                                ThresholdScope(titleVisible) { visible ->
+                                    SaltText(
+                                        s.name,
+                                        color = Color.White,
+                                        style = LocalNcrustTypography.current.titleLarge,
+                                        maxLines = 1,
+                                        overflow = if (visible) TextOverflow.Clip else TextOverflow.Ellipsis,
+                                        modifier = if (visible) Modifier.basicMarquee(
+                                            iterations = Int.MAX_VALUE,
+                                            animationMode = MarqueeAnimationMode.Immediately,
+                                            initialDelayMillis = 2000,
+                                            repeatDelayMillis = 2500,
+                                            velocity = 48.dp
+                                        ) else Modifier
+                                    )
+                                }
                                 SaltText(
-                                    s.name,
-                                    color = LocalNcrustColors.current.onBackground,
-                                    style = LocalNcrustTypography.current.titleMedium,
+                                    s.artists?.joinToString("/") { it.name } ?: "",
+                                    color = Color.White.copy(alpha = 0.68f),
+                                    style = LocalNcrustTypography.current.bodyMedium,
                                     maxLines = 1,
-                                    overflow = if (visible) TextOverflow.Clip else TextOverflow.Ellipsis,
-                                    modifier = if (visible) Modifier.basicMarquee(
-                                        iterations = Int.MAX_VALUE,
-                                        animationMode = MarqueeAnimationMode.Immediately,
-                                        initialDelayMillis = 2000,
-                                        repeatDelayMillis = 2500,
-                                        velocity = 48.dp
-                                    ) else Modifier
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
-                            SaltText(
-                                s.artists?.joinToString("/") { it.name } ?: "",
-                                color = LocalNcrustColors.current.onSurfaceVariant,
-                                style = LocalNcrustTypography.current.bodyMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                            SaltIcon(
+                                imageVector = Icons.Rounded.Cast,
+                                contentDescription = "输出设备",
+                                tint = Color.White,
+                                sizeDp = 24.dp,
                             )
                         }
                     }
@@ -735,38 +766,8 @@ fun PlayerCard(
                             .graphicsLayer { alpha = playerContentReveal(progress.value) }
                     ) {
                         playerPanels(Modifier.fillMaxSize())
-                        // 大封面模式下的曲名/歌手信息：overlay 在面板底部；不挤占歌词
-                        // 布局，但其完整实测高度会从大封面可用带中扣除。
-                        Column(
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .fillMaxWidth()
-                                .onSizeChanged { narrowTitleHeight.floatValue = it.height.toFloat() }
-                                .padding(horizontal = 24.dp, vertical = 8.dp)
-                                .graphicsLayer {
-                                    alpha = playerContentReveal(progress.value) *
-                                            (1f - lyricAnimProgress.value)
-                                }
-                                // 歌名区域可点: 上拉"转到歌手/转到专辑"菜单(类 Apple Music)
-                                .clickable { onSongInfoClick() }
-                        ) {
-                            SaltText(
-                                s.name,
-                                color = LocalNcrustColors.current.onBackground,
-                                style = LocalNcrustTypography.current.titleLarge,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            SaltText(
-                                s.artists?.joinToString("/") { it.name } ?: "",
-                                color = LocalNcrustColors.current.primary,
-                                style = LocalNcrustTypography.current.bodyLarge,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
                     }
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(12.dp))
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -906,6 +907,24 @@ fun PlayerCard(
                 model = CoverUrls.large(s.album?.picUrl),
                 contentDescription = null,
                 placeholderColor = LocalNcrustColors.current.surfaceVariant,
+                onBitmapLoaded = { bitmap ->
+                    coroutineScope.launch(Dispatchers.Default) {
+                        val sampled = runCatching {
+                            val readableBitmap = if (bitmap.config == Bitmap.Config.HARDWARE) {
+                                bitmap.copy(Bitmap.Config.ARGB_8888, false) ?: bitmap
+                            } else bitmap
+                            val palette = Palette.from(readableBitmap).clearFilters().generate()
+                            val argb = palette.mutedSwatch?.rgb
+                                ?: palette.dominantSwatch?.rgb
+                                ?: palette.vibrantSwatch?.rgb
+                            argb?.let { Color(it) }
+                        }.getOrNull()
+                        withContext(Dispatchers.Main) {
+                            artworkBitmapState.value = bitmap
+                            if (sampled != null) artworkBackdropState.value = sampled
+                        }
+                    }
+                },
                 modifier = Modifier
                     .then(
                         if (isWidePlayer) Modifier.size(coverSizeDp)
@@ -957,47 +976,6 @@ fun PlayerCard(
             )
         }
 
-        // 收起按钮叠加层：z 序最高，保证触摸事件不被任何下层元素拦截
-        if (hasSong) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .height(56.dp)
-                    .graphicsLayer { alpha = playerContentReveal(progress.value) }
-                    .padding(end = 8.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                if (tinyPlayer) {
-                    ThresholdScope(dismissEnabled) { enabled ->
-                        if (enabled) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                PlayerPanelToggles(
-                                    showLyrics, showQueue, isSongSaved, lyricsUnavailable,
-                                    onToggleLyricsAction, onToggleQueueAction, onAddToLibraryAction,
-                                    44.dp, 24.dp
-                                )
-                                Box(
-                                    Modifier.size(44.dp).clickable { onDismiss() },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    SaltIcon(Icons.Rounded.KeyboardArrowDown, strings.collapsePlayer,
-                                        tint = LocalNcrustColors.current.onBackground)
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    ThresholdScope(dismissEnabled) { enabled ->
-                        if (enabled) {
-                            NcrustIconButton(onClick = onDismiss) {
-                                SaltIcon(Icons.Rounded.KeyboardArrowDown, strings.collapsePlayer, tint = LocalNcrustColors.current.onBackground)
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
     if (showQualityPanel && hasSong) {
         QualitySelectionPanel(
@@ -1039,6 +1017,47 @@ private fun ThresholdScope(state: State<Boolean>, content: @Composable (Boolean)
 // 新封面超过该阈值仍未就绪，才退化为纯色占位（"实在不出来再禁用"）。
 private const val COVER_HOLD_MS = 400L
 
+/** Tint the full-player surface with cover art while keeping text contrast in both themes. */
+private fun blendArtworkBackdrop(artwork: Color, base: Color): Color = Color(
+    red = artwork.red * 0.20f + base.red * 0.80f,
+    green = artwork.green * 0.20f + base.green * 0.80f,
+    blue = artwork.blue * 0.20f + base.blue * 0.80f,
+    alpha = 1f,
+)
+
+@Composable
+private fun PlayerArtworkBackdrop(
+    bitmapState: State<Bitmap?>,
+    colorState: State<Color?>,
+    fallbackColor: Color,
+) {
+    val bitmap = bitmapState.value
+    val artworkColor = colorState.value
+    val baseColor = artworkColor?.let { blendArtworkBackdrop(it, Color(0xFF17191A)) } ?: fallbackColor
+    val animatedColor by animateColorAsState(
+        targetValue = baseColor,
+        animationSpec = tween(durationMillis = 500, easing = NcrustMotion.StandardEasing),
+        label = "saltArtworkBackdropColor",
+    )
+    Box(Modifier.fillMaxSize().background(animatedColor)) {
+        if (bitmap != null) {
+            Image(
+                painter = remember(bitmap) { BitmapPainter(bitmap.asImageBitmap()) },
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = 1.18f
+                        scaleY = 1.18f
+                        alpha = 0.32f
+                    }
+                    .blur(54.dp),
+            )
+        }
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.52f)))
+    }
+}
+
 /** Fade player controls in alongside the shared-cover expansion instead of waiting until the end. */
 private fun playerContentReveal(progress: Float): Float =
     ((progress - 0.45f) / 0.55f).coerceIn(0f, 1f)
@@ -1055,6 +1074,7 @@ private fun StableCover(
     model: Any?,
     contentDescription: String?,
     placeholderColor: Color,
+    onBitmapLoaded: (Bitmap) -> Unit = {},
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
 ) {
@@ -1072,7 +1092,10 @@ private fun StableCover(
     LaunchedEffect(state) {
         val s = state
         if (s is AsyncImagePainter.State.Success) {
-            (s.result.drawable as? BitmapDrawable)?.bitmap?.let { lastBitmap = it }
+            (s.result.drawable as? BitmapDrawable)?.bitmap?.let {
+                lastBitmap = it
+                onBitmapLoaded(it)
+            }
             timedOut = false
         }
     }

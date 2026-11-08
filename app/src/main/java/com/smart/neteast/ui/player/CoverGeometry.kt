@@ -16,13 +16,14 @@ fun narrowCoverGeometry(
     controlsHeightPx: Float,
     titleReservePx: Float,
     minGapPx: Float,
-    preferredCenterYPx: Float
+    preferredCenterYPx: Float,
+    coverWidthFraction: Float = 1f,
 ): CoverGeometry {
     val top = topBarBottomPx.coerceAtLeast(0f)
     val bottom = (contentHeightPx - controlsHeightPx.coerceAtLeast(0f) -
         titleReservePx.coerceAtLeast(0f) - minGapPx.coerceAtLeast(0f)).coerceAtLeast(top)
     val width = availableWidthPx.coerceAtLeast(0f)
-    val size = minOf(width, bottom - top)
+    val size = minOf(width * coverWidthFraction.coerceIn(0f, 1f), bottom - top)
     val minCenter = top + size / 2f
     // 封面恰好占满高度带时，小数像素的加减舍入可能让上界比下界小一个 ULP。
     // coerceIn 不接受倒置区间；保持同一锚点下界，避免非整数 density 下布局崩溃。

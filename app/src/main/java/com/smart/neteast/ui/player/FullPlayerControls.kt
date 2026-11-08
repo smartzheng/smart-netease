@@ -2,11 +2,14 @@ package com.smart.neteast.ui.player
 
 import com.smart.neteast.ui.theme.LocalNcrustColors
 
+import androidx.compose.animation.core.spring
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.*
@@ -18,6 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
@@ -51,6 +56,7 @@ fun FullPlayerControls(
     onPlayNext: () -> Unit = {},
     onToggleLyrics: () -> Unit,
     onToggleQueue: () -> Unit,
+    onTogglePlayMode: () -> Unit = {},
     onAddToLibrary: () -> Unit = {},
     // 当前歌是否已在收藏库: true 显示对号, 按下走"移出库"分支
     isInLibrary: Boolean = false,
@@ -65,18 +71,20 @@ fun FullPlayerControls(
     // 时间与进度合行，面板切换交给顶栏。
     tiny: Boolean = false,
     // 宽屏横向布局：进度行 + 操作行扁平铺开，替代手机的竖向大按钮堆叠。
-    landscape: Boolean = false
+    landscape: Boolean = false,
+    artworkStyle: Boolean = false,
 ) {
     val strings = LocalStrings.current
+    val controlColor = if (artworkStyle) Color.White else LocalNcrustColors.current.onBackground
     // 触觉反馈:播放/暂停/切歌/开关面板给一个轻振,补足无 ripple 时代的确认感
     val haptic = LocalHapticFeedback.current
     fun tick() = haptic.performHapticFeedback(HapticFeedbackType.LongPress)
 
     val hPad = if (compact) 16.dp else 24.dp
-    val bottomPad = if (compact) 8.dp else 32.dp
+    val bottomPad = if (compact) 8.dp else 18.dp
     val gapTight = if (compact) 4.dp else 8.dp
-    val gapLoose = if (compact) 8.dp else 16.dp
-    val ctrlRowPad = if (compact) 2.dp else 16.dp
+    val gapLoose = if (compact) 8.dp else 12.dp
+    val ctrlRowPad = if (compact) 2.dp else 8.dp
     val sideBtn = if (compact) 48.dp else 56.dp
     val sideIcon = if (compact) 27.dp else 32.dp
     val playBtn = if (compact) 52.dp else 64.dp
@@ -97,7 +105,7 @@ fun FullPlayerControls(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                PositionText(positionFlow = positionFlow, modifier = Modifier)
+                PositionText(positionFlow = positionFlow, modifier = Modifier, color = controlColor)
                 Spacer(Modifier.width(8.dp))
                 SlimProgressBar(
                     progressFlow = progressFlow,
@@ -106,9 +114,11 @@ fun FullPlayerControls(
                     onSeek = onSeek,
                     modifier = Modifier.weight(1f),
                     horizontalPadding = 0.dp,
+                    activeColor = if (artworkStyle) Color.White else null,
+                    inactiveColor = if (artworkStyle) Color.White.copy(alpha = 0.34f) else null,
                 )
                 Spacer(Modifier.width(8.dp))
-                DurationText(durationFlow = durationFlow, modifier = Modifier)
+                DurationText(durationFlow = durationFlow, modifier = Modifier, color = controlColor)
             }
             Spacer(Modifier.height(6.dp))
             // 对称三段：左=面板开关，中=传输（主控居中），右=音质。
@@ -223,7 +233,7 @@ fun FullPlayerControls(
                 Modifier.fillMaxWidth().padding(horizontal = hPad),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                PositionText(positionFlow, Modifier.widthIn(max = 48.dp))
+                PositionText(positionFlow, Modifier.widthIn(max = 48.dp), controlColor)
                 Spacer(Modifier.width(8.dp))
                 SlimProgressBar(
                     progressFlow = progressFlow,
@@ -231,10 +241,12 @@ fun FullPlayerControls(
                     isBufferingFlow = isBufferingFlow,
                     onSeek = onSeek,
                     modifier = Modifier.weight(1f),
-                    horizontalPadding = 0.dp
+                    horizontalPadding = 0.dp,
+                    activeColor = if (artworkStyle) Color.White else null,
+                    inactiveColor = if (artworkStyle) Color.White.copy(alpha = 0.34f) else null,
                 )
                 Spacer(Modifier.width(8.dp))
-                DurationText(durationFlow, Modifier.widthIn(max = 48.dp))
+                DurationText(durationFlow, Modifier.widthIn(max = 48.dp), controlColor)
                 Spacer(Modifier.width(8.dp))
                 // 最长多语言音质名也只占 64dp；省略号截断，不侵占进度条的权重空间。
                 Box(
@@ -246,43 +258,26 @@ fun FullPlayerControls(
                 }
             }
         } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = hPad)
-            ) {
-                // 高频位置文本仅在叶子订阅，不牵连按钮 / 进度条区域。
-                PositionText(
-                    positionFlow = positionFlow,
-                    modifier = Modifier.align(Alignment.CenterStart)
-                )
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        ) { onShowQualityPanel() }
-                        .padding(horizontal = 8.dp, vertical = 8.dp)
-                ) {
-                    QualityLabel(
-                        qualityIndexFlow = qualityIndexFlow,
-                        trialFlow = trialFlow,
-                        options = qualityOptions
-                    )
-                }
-                DurationText(
-                    durationFlow = durationFlow,
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                )
-            }
-            Spacer(Modifier.height(gapTight))
             SlimProgressBar(
                 progressFlow = progressFlow,
                 durationFlow = durationFlow,
                 isBufferingFlow = isBufferingFlow,
-                onSeek = onSeek
+                onSeek = onSeek,
+                modifier = Modifier.padding(horizontal = hPad),
+                horizontalPadding = 0.dp,
             )
+            Spacer(Modifier.height(6.dp))
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = hPad),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PositionText(positionFlow, Modifier.weight(1f), controlColor)
+                DurationText(
+                    durationFlow,
+                    Modifier.weight(1f).wrapContentWidth(Alignment.End),
+                    controlColor,
+                )
+            }
         }
         Spacer(Modifier.height(gapLoose))
         Row(
@@ -295,7 +290,7 @@ fun FullPlayerControls(
             TransportControlButton(
                 glyph = TransportGlyph.Previous,
                 contentDescription = strings.prevButton,
-                tint = if (previousEnabled) LocalNcrustColors.current.onBackground else LocalNcrustColors.current.onSurfaceVariant.copy(alpha = 0.5f),
+                tint = if (previousEnabled) controlColor else controlColor.copy(alpha = 0.4f),
                 onClick = { tick(); onPlayPrevious() },
                 touchSize = sideBtn,
                 iconSize = sideIcon,
@@ -305,7 +300,7 @@ fun FullPlayerControls(
             TransportControlButton(
                 glyph = if (isPlaying) TransportGlyph.Pause else TransportGlyph.Play,
                 contentDescription = if (isPlaying) strings.pauseButton else strings.playButton,
-                tint = LocalNcrustColors.current.primary,
+                tint = controlColor,
                 onClick = { tick(); onPlayPause() },
                 touchSize = playBtn,
                 iconSize = playIcon,
@@ -314,18 +309,106 @@ fun FullPlayerControls(
             TransportControlButton(
                 glyph = TransportGlyph.Next,
                 contentDescription = strings.nextButton,
-                tint = LocalNcrustColors.current.onBackground,
+                tint = controlColor,
                 onClick = { tick(); onPlayNext() },
                 touchSize = sideBtn,
                 iconSize = sideIcon,
             )
         }
         if (!tiny) {
-            PlayerPanelToggles(
-                showLyrics, showQueue, isInLibrary, lyricsUnavailable,
-                onToggleLyrics, onToggleQueue, onAddToLibrary,
-                toggleBtn, toggleIcon, Modifier.fillMaxWidth()
+            PlayerActionRow(
+                showLyrics = showLyrics,
+                showQueue = showQueue,
+                isInLibrary = isInLibrary,
+                lyricsUnavailable = lyricsUnavailable,
+                onTogglePlayMode = onTogglePlayMode,
+                onToggleLyrics = onToggleLyrics,
+                onShowQualityPanel = onShowQualityPanel,
+                onToggleQueue = onToggleQueue,
+                onAddToLibrary = onAddToLibrary,
+                artworkStyle = artworkStyle,
             )
+        }
+    }
+}
+
+@Composable
+private fun PlayerActionRow(
+    showLyrics: Boolean,
+    showQueue: Boolean,
+    isInLibrary: Boolean,
+    lyricsUnavailable: Boolean,
+    onTogglePlayMode: () -> Unit,
+    onToggleLyrics: () -> Unit,
+    onShowQualityPanel: () -> Unit,
+    onToggleQueue: () -> Unit,
+    onAddToLibrary: () -> Unit,
+    artworkStyle: Boolean,
+) {
+    val strings = LocalStrings.current
+    val colors = LocalNcrustColors.current
+    val haptic = LocalHapticFeedback.current
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val actions = listOf(
+            Triple(Icons.Rounded.Repeat, strings.playModeButton, onTogglePlayMode),
+            Triple(Icons.Rounded.Lyrics, strings.lyricsButton, onToggleLyrics),
+            Triple(Icons.Rounded.GraphicEq, strings.qualitySectionTitle, onShowQualityPanel),
+            Triple(Icons.AutoMirrored.Filled.PlaylistPlay, strings.queueButton, onToggleQueue),
+            Triple(if (isInLibrary) Icons.Rounded.Check else Icons.Rounded.Add, strings.addToLibraryButton, onAddToLibrary),
+        )
+        actions.forEachIndexed { index, (icon, description, action) ->
+            val interaction = remember(icon) { MutableInteractionSource() }
+            val pressed by interaction.collectIsPressedAsState()
+            val pressShadow by androidx.compose.animation.core.animateDpAsState(
+                targetValue = if (pressed) 4.dp else 0.dp,
+                animationSpec = spring(dampingRatio = 0.82f, stiffness = 520f),
+                label = "playerActionPressShadow",
+            )
+            val pressScale by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (pressed) 0.94f else 1f,
+                animationSpec = spring(dampingRatio = 0.78f, stiffness = 520f),
+                label = "playerActionPressScale",
+            )
+            val selected = when (index) {
+                1 -> showLyrics
+                3 -> showQueue
+                4 -> isInLibrary
+                else -> false
+            }
+            Box(
+                modifier = Modifier.size(48.dp)
+                    .shadow(
+                        elevation = pressShadow,
+                        shape = CircleShape,
+                        clip = false,
+                        ambientColor = Color.Black.copy(alpha = 0.12f),
+                        spotColor = Color.Black.copy(alpha = 0.22f),
+                    )
+                    .scale(pressScale)
+                    .clickable(
+                    interactionSource = interaction,
+                    indication = null,
+                    enabled = index != 1 || !lyricsUnavailable,
+                    role = androidx.compose.ui.semantics.Role.Button,
+                    onClickLabel = description,
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        action()
+                    },
+                ),
+                contentAlignment = Alignment.Center,
+            ) {
+                SaltIcon(
+                    imageVector = icon,
+                    contentDescription = description,
+                    tint = if (artworkStyle) Color.White else if (selected) colors.primary else colors.onBackground,
+                    sizeDp = 24.dp,
+                )
+            }
         }
     }
 }
@@ -403,12 +486,12 @@ fun PlayerPanelToggles(
 }
 
 @Composable
-private fun PositionText(positionFlow: StateFlow<Long>, modifier: Modifier) {
+private fun PositionText(positionFlow: StateFlow<Long>, modifier: Modifier, color: Color = LocalNcrustColors.current.onSurfaceVariant) {
     // 按生命周期收集：熄屏 / 后台时 2Hz 的位置更新不再推动重组。
     val position by positionFlow.collectAsStateWithLifecycle()
     SaltText(
         formatDuration(position),
-        color = LocalNcrustColors.current.onSurfaceVariant,
+        color = color,
         style = TextStyle(fontSize = 12.sp),
         maxLines = 1,
         softWrap = false,
@@ -418,11 +501,11 @@ private fun PositionText(positionFlow: StateFlow<Long>, modifier: Modifier) {
 }
 
 @Composable
-private fun DurationText(durationFlow: StateFlow<Long>, modifier: Modifier) {
+private fun DurationText(durationFlow: StateFlow<Long>, modifier: Modifier, color: Color = LocalNcrustColors.current.onSurfaceVariant) {
     val duration by durationFlow.collectAsStateWithLifecycle()
     SaltText(
         formatDuration(duration),
-        color = LocalNcrustColors.current.onSurfaceVariant,
+        color = color,
         style = TextStyle(fontSize = 12.sp),
         maxLines = 1,
         softWrap = false,

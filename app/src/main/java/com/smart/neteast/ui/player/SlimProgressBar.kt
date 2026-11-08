@@ -66,7 +66,9 @@ fun SlimProgressBar(
     isBufferingFlow: StateFlow<Boolean>,
     onSeek: (Float) -> Unit,
     modifier: Modifier = Modifier,
-    horizontalPadding: Dp = 24.dp
+    horizontalPadding: Dp = 24.dp,
+    activeColor: Color? = null,
+    inactiveColor: Color? = null,
 ) {
     // isBufferingFlow 由内部叶子 collect：SlimProgressBar 常驻在 FullPlayerControls，
     // isBuffering 每次抖动都会走到这里，避免让父层因布尔值变化而重组
@@ -104,8 +106,8 @@ fun SlimProgressBar(
     // 让 Canvas 每帧重跑一次 draw block（即便分支不进入）。低端机上纯浪费。
     val bufferingPhases: BufferingPhases? = if (showBuffering) rememberBufferingPhases() else null
 
-    val accent = LocalNcrustColors.current.primary
-    val trackColor = LocalNcrustColors.current.divider
+    val accent = activeColor ?: LocalNcrustColors.current.primary
+    val trackColor = inactiveColor ?: LocalNcrustColors.current.divider
     // Canvas draw scope 内不能读 CompositionLocal，先在此处取好。
     val thumbColor = LocalNcrustColors.current.onBackground
     val bubbleTextColor = LocalNcrustColors.current.onSurfaceVariant
