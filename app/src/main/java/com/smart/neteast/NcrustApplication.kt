@@ -21,7 +21,7 @@ import com.smart.neteast.cache.ContentCache
  *
  * 磁盘缓存统一 100MB，足够覆盖首页 + 几个详情页的封面。
  *
- * crossfade 默认关闭--Metro 不需要淡入，直接显示更利落。
+ * crossfade 默认关闭--当前 Salt UI 页面关闭默认淡入，直接显示更利落。
  *
  * onTrimMemory 分级响应：内存紧张时先清 ContentCache，再清 Coil 内存缓存，
  * 避免低端机后台被杀。

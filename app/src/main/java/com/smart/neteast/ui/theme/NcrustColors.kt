@@ -1,9 +1,10 @@
 package com.smart.neteast.ui.theme
 
+
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
-import io.github.takahashirinta.kanesumi.core.theme.MetroColors
+import androidx.compose.ui.graphics.luminance
 
 /**
  * Ncrust 自有配色板。替代 MD3 的 ColorScheme。
@@ -14,12 +15,15 @@ import io.github.takahashirinta.kanesumi.core.theme.MetroColors
 @Immutable
 data class NcrustColors(
     val primary: Color,
+    val onPrimary: Color,
     val background: Color,
     val surface: Color,
     val surfaceVariant: Color,
     val onBackground: Color,
     val onSurface: Color,
-    val onSurfaceVariant: Color
+    val onSurfaceVariant: Color,
+    val divider: Color = Color(0xFF2A2A2A),
+    val error: Color = Color(0xFFFF6B6B),
 )
 
 /**
@@ -28,12 +32,14 @@ data class NcrustColors(
  */
 val DefaultNcrustColors = NcrustColors(
     primary = Color(0xFF1DB954),
+    onPrimary = Color.Black,
     background = Color(0xFF000000),
     surface = Color(0xFF1A1A1A),
     surfaceVariant = Color(0xFF1A1A1A),
     onBackground = Color(0xFFFFFFFF),
     onSurface = Color(0xFFFFFFFF),
-    onSurfaceVariant = Color(0xFFB3B3B3)
+    onSurfaceVariant = Color(0xFFB3B3B3),
+    divider = Color(0xFF2A2A2A),
 )
 
 /**
@@ -42,29 +48,23 @@ val DefaultNcrustColors = NcrustColors(
  */
 val LightNcrustColors = NcrustColors(
     primary = Color(0xFF1DB954),
+    onPrimary = Color.Black,
     background = Color(0xFFF6F2E9),
     surface = Color(0xFFFFFDF8),
     surfaceVariant = Color(0xFFEDE6D8),
     onBackground = Color(0xFF1C1A16),
     onSurface = Color(0xFF1C1A16),
-    onSurfaceVariant = Color(0xFF6E6658)
+    onSurfaceVariant = Color(0xFF6E6658),
+    divider = Color(0xFFE2DACB),
+    error = Color(0xFFB42318),
 )
+
+/** Pick black or white foreground by WCAG contrast for arbitrary user-selected accent colors. */
+fun contrastingColor(background: Color): Color {
+    val luminance = background.luminance()
+    val blackContrast = (luminance + 0.05f) / 0.05f
+    val whiteContrast = 1.05f / (luminance + 0.05f)
+    return if (blackContrast >= whiteContrast) Color.Black else Color.White
+}
 
 val LocalNcrustColors = compositionLocalOf { DefaultNcrustColors }
-
-/**
- * 由 Ncrust 调色板派生 Kanesumi MetroColors，补齐 MetroColors 独有字段
- * （divider / onPrimary / pressTint），保证两套主题源视觉一致。
- */
-fun NcrustColors.toMetroColors(isDark: Boolean): MetroColors = MetroColors(
-    background = background,
-    surface = surface,
-    surfaceVariant = surfaceVariant,
-    primary = primary,
-    onPrimary = Color(0xFFFFFFFF),
-    onBackground = onBackground,
-    onSurface = onSurface,
-    onSurfaceVariant = onSurfaceVariant,
-    divider = if (isDark) Color(0xFF2A2A2A) else Color(0xFFE2DACB),
-    pressTint = if (isDark) Color(0x22FFFFFF) else Color(0x14000000),
-)

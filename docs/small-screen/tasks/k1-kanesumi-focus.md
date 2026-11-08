@@ -1,5 +1,7 @@
 # 任务 K1（Kanesumi 仓库）：MetroIndication 焦点态 + MetroBottomNav 标签策略
 
+> 已归档：Ncrust Android UI 于 2026-11-07 迁移到 Salt UI。此任务针对旧外部 UI 库，不属于当前 Android 构建。
+
 ## 背景
 
 Ncrust 要适配按键小屏机（荣悦 E5 一类，方向键 + 数字键），调研见 Ncrust 仓库 `docs/small-screen/research.md`。实测按方向键时**看不到任何焦点**——

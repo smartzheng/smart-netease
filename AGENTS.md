@@ -35,7 +35,7 @@ Toolchain:
 | Android Gradle Plugin | 8.5.0 |
 | Gradle | wrapper 9.3.1 |
 
-**Composite build:** `settings.gradle.kts` does `includeBuild("../Kanesumi-sec-a")` with explicit `dependencySubstitution`, so the app builds against the sibling `Kanesumi-sec-a` checkout (not a published artifact). Cloning Ncrust alone is not enough — `Kanesumi-sec-a` must sit next to it. Delete the `includeBuild` block once Kanesumi is on Maven Central; the coordinates in `app/build.gradle.kts` then work unchanged.
+**Android UI dependencies:** Salt UI is integrated in `app/build.gradle.kts`. Android no longer includes or depends on the sibling Kanesumi checkout; a clean clone of this repository is sufficient for Gradle configuration.
 
 ## Repository Layout
 
@@ -49,7 +49,7 @@ Ncrust/
 ├── spec/                 # cross-platform source of truth: API docs, test fixtures, design tokens
 ├── ncrust-api/           # standalone Go reverse proxy — orphaned, not wired into the app
 ├── build.gradle.kts      # top-level plugin declarations
-├── settings.gradle.kts   # :app, :benchmark + Kanesumi composite build
+├── settings.gradle.kts   # :app and :benchmark
 ├── gradle.properties     # jvmargs, AndroidX, suppressUnsupportedCompileSdk=36
 ├── keystore.properties   # gitignored, release signing (storeFile/storePassword/keyAlias/keyPassword)
 └── local.properties      # gitignored, sdk.dir
@@ -98,19 +98,15 @@ Conventional Commits, lowercase type prefix, Chinese subject:
 
 Ncrust is a third-party NetEase Cloud Music (网易云音乐) Android client built around three design priorities:
 
-1. **Kanesumi Design** — right-angle cuts, no curves, no rounded corners, information-first.
+1. **Salt UI** — restrained surfaces, consistent spacing and typography, rounded artwork and clear touch targets.
 2. **GPU zero-recomposition** — animations driven by a single `progress: Float` through `graphicsLayer`, not state-driven recomposition.
 3. **Three-layer graphics architecture** — main page / player card / navigation bar are independent composable layers, enabling gesture transitions without interference.
 
 Feature surface at v1.4.0: home discovery (daily songs / recommended playlists / new songs / private FM), three-type search with 500 ms debounce + history, cloud-synced library (liked songs / subscribed albums / user playlists), song share + external link receiving, full-screen player with a 7-level quality ladder (gapless preload is opt-in and experimental as of 1.4.0), 5 playback modes, bilingual lyrics, system media controls + Android Auto / Automotive, WebView + QR login, runtime theming (6 colors × 3 modes), and 8 runtime languages.
 
-## Terminology: Kanesumi Design
+## Android UI: Salt UI
 
-The design language is **Kanesumi Design** (canon: Ether monorepo root `KANESUMI_DESIGN.md`), historically "Metro Design". Notes for agents:
-
-- `Metro*` identifiers (`MetroText`, `MetroTheme`, `MetroIndication`, easing constants `MetroDefault`/`MetroCubic`…) are code/component names — **keep, do not rename**.
-- New docs/comments: write 「Kanesumi Design / Kanesumi 风格」, not 「Metro Design / Metro 风格」. The easing family is 「UWP 缓动」 (`UwpEasing`), from the Metro era.
-- The `Metro*` UI components now live in the external **Kanesumi** library (see below), not in this repo.
+The Android app uses Salt UI (`io.github.moriafly:salt-ui`) for its theme and text primitives. Ncrust-specific components and motion tokens live in `ui/design/NcrustDesign.kt`; color and typography tokens are in `ui/theme/`. Keep the app UI on this design system and do not reintroduce Kanesumi/Metro dependencies.
 
 ## Architecture
 
@@ -121,7 +117,7 @@ The design language is **Kanesumi Design** (canon: Ether monorepo root `KANESUMI
 - applies the orientation policy (phones `< 600dp` locked portrait; large screens unlocked) via `smallestScreenWidthDp`, re-run in `onConfigurationChanged`;
 - requests `POST_NOTIFICATIONS` on API 33+;
 - calls `RetrofitClient.init(this)` and `AppWarmup.start(this)`;
-- builds the theme stack: `LocalStrings` + `metroViewConfiguration` → `NcrustTheme` → `MetroTheme` → `MainScreen` + `SplashScreen` + first-run battery prompt.
+- builds the theme stack: `LocalStrings` → `NcrustTheme` (which configures `SaltTheme`) → `MainScreen` + `SplashScreen` + first-run battery prompt.
 
 `MainScreen()` owns all app-level orchestration: bottom navigation / wide-screen sidebar, the `progress: Animatable<Float>` that drives the player card, the playback queue, the 5 playback modes, the global song menu sheet, clipboard link handling, and the About / WebView-login overlays.
 
@@ -148,32 +144,24 @@ Under `com.smart.neteast/`:
 | `ui/screen/` | One file per screen (Home, Search, Library, User, Album/Artist/Playlist/Song detail, About, Splash) |
 | `ui/viewmodel/` | `PlayerViewModel`, `SearchViewModel`, `SongViewModel` |
 | `ui/components/` | Reusable composables (`SongCard`, `DetailScaffold`, `SongMenuSheet`, `PlayAllDialog`, `QrLoginDialog`, `QrScannerScreen`, `ArtistSearchItem`, `BackgroundActivityDialog`) |
+| `ui/design/` | Salt UI theme-backed app controls, motion tokens, and shared navigation / lyric primitives |
 | `ui/theme/` | `NcrustColors`, `NcrustTypography`, `ThemeManager`, `ThemeColorSelector`, `MarkdownText` |
 | `ui/i18n/` | Runtime i18n: `Strings` data class, per-language files, `LanguageManager` |
 | `ui/ResponsiveContent.kt` | 360dp (phone) / configurable (wide) max-width centre container |
 | `ui/BottomOverlayInset.kt` | `BottomOverlayInsetDp` constant (144dp narrow / 64dp wide) |
 
-### Kanesumi Library (external)
+### Android UI components
 
-The app's shared UI components and animation vocabulary have **migrated out of this repo** into `Kanesumi-sec-a` (Apache-2.0), consumed via composite build:
-
-- `kanesumi-core` — `MetroTheme`/`MetroColors`/`MetroTypography`, `MetroText`/`MetroIcon`, `MetroInsets`, `MetroIndication`.
-- `kanesumi-anim` — `sokuou` package: `UwpEasing`, `SokuouPresets`/`SokuouTweens`, `sokuouSpring`, `MetroFling`/`MetroScroll`, `metroViewConfiguration`.
-- `kanesumi-controls` — `MetroSurface`, `MetroButton`, `MetroTabRow`, `MetroSwitch`, `MetroIconButton`, `MetroDropdownMenu`, `MetroBottomSheet`, `MetroLyricsPanel`, `MetroDialog`, …
-- `kanesumi-structure` — `MetroShell`, `MetroAppBar`, `MetroDetailScaffold`, `MetroTopScrim`, `MetroBottomNav`, `MetroSidebar`.
-
-**There is no `androidx.compose.material3` dependency in the app** and no `material3` import anywhere. The only Material artifact left is `androidx.compose.material:material-icons-extended` (icons only). The former in-repo `ui/anim/sokuou/` directory no longer exists.
-
-When editing UI, prefer Kanesumi components/presets. **Do not batch-refactor existing hand-tuned player-card animations** — they are load-bearing.
+`ui/design/NcrustDesign.kt` contains app-owned Salt-styled icon buttons, menus, selectors, loading indicators, lyric rows, side navigation, and motion tokens. `NcrustTheme` configures Salt UI colors, text styles, shapes, and dimensions while exposing Ncrust palette locals to app components. Avoid adding another UI toolkit dependency for controls that can use these primitives.
 
 ### Player Card Component Tree
 
 - **`PlayerCardOverlay`** — positions the card via `graphicsLayer { translationY = collapsedOffsetY + (0 - collapsedOffsetY) * progress.value }`. Thin wrapper, no animation logic.
 - **`PlayerCard`** — gesture handling (vertical drag, 25% snap threshold), cover-art animation, mini bar, lyrics/queue toggle, wide-screen two-column layout. Owns `lyricAnimProgress` (0 = large cover → 1 = small cover), `queueSlideProgress` (0 = lyrics → 1 = queue), and `wideSplit`. `StableCover` holds the previous cover across song changes (`COVER_HOLD_MS = 400L`). All animation values are read inside `graphicsLayer`.
 - **`FullPlayerControls`** — transport buttons, seekable progress bar, position/duration/quality leaf composables (each collects its own StateFlow), lyrics/queue/library toggles, `compact`/`landscape` variants.
-- **`LyricsView`** — wraps Kanesumi `MetroLyricsPanel`. Golden-section positioning, 5 s manual-scroll pause, tap-to-seek, bilingual `tlyric` merge.
+- **`LyricsView`** — uses the app-owned Salt-styled lyric list. It keeps position extrapolation, tap-to-seek, and bilingual `tlyric` merge.
 - **`QueueView`** — three-zone queue (past / current / upcoming), drag-reorder limited to the upcoming zone, INFINITY placeholder, auto-centre on open.
-- **`SlimProgressBar`** — Canvas-drawn 40dp-touch progress bar with a lazily-started buffering pulse.
+- **`SlimProgressBar`** — Canvas-drawn 48dp-touch progress bar with a lazily-started buffering pulse.
 
 `progress: Animatable<Float>` (0 = mini, 1 = full) is owned by `MainScreen` and passed through `PlayerCardOverlay` → `PlayerCard`. Card expand/collapse: 400 ms `CubicBezierEasing(0.2, 0, 0, 1)` / 260 ms `FastOutSlowInEasing`.
 
@@ -181,7 +169,7 @@ When editing UI, prefer Kanesumi components/presets. **Do not batch-refactor exi
 
 The player card uses a single `progress: Float` driven by `Animatable`. All visual properties (card size, position, opacity) are computed inside `graphicsLayer { }` — **never `animateFloatAsState`**. This is the core GPU zero-recomposition pattern. Easing is `tween + CubicBezierEasing` (controlled deceleration, no spring/bounce). Narrow-player covers remain full-width at the original anchor on Regular phones with sufficient space; Compact / Tiny covers shrink to the measured available height and are horizontally centred. All tiers reserve the measured title and controls; transitions retain centre-based `TransformOrigin(0.5f, 0.5f)` and the existing interpolation formulas and timings.
 
-For anything that is *not* the player card, use the Kanesumi `sokuou` presets (`SokuouTweens.CoverFade`, `SokuouPresets.*`, `mapRange`/`mapRangeClamped`) instead of ad-hoc `tween(...)`.
+For anything that is *not* the player card, use `NcrustMotion` tokens from `ui/design/NcrustDesign.kt` instead of ad-hoc animation timing.
 
 ### Network Layer
 
@@ -278,7 +266,7 @@ Load pattern for any network screen:
 2. If present, render immediately; do not show a loader.
 3. Regardless, kick off a background refresh and write back on success.
 4. Let `LazyColumn` diff by key.
-5. Wrap loading↔content in `Crossfade(animationSpec = SokuouTweens.CoverFade)` — never a hard `if (isLoading) return Loader()`.
+5. Wrap loading↔content in `Crossfade(animationSpec = NcrustMotion.CoverFade)` — never a hard `if (isLoading) return Loader()`.
 
 `DetailScaffold` takes `hasCachedContent: Boolean`; when `true` it suppresses the loader even if `isLoading`. Detail screens pass `hasCachedContent = (data != null)`.
 
@@ -325,17 +313,17 @@ To add a locale: create `xx_XX.kt` with a `Strings(...)` and add a `LanguagePres
 
 - **6 theme colors** (`themeColorPresets`): 云杉 `#1DB954`, 钴蓝 `#3B82F6`, 绯红 `#EF4444`, 琥珀 `#F59E0B`, 堇紫 `#8B5CF6`, 素白 `#FFFFFF`.
 - **3 theme modes** (`ThemeMode`): `SYSTEM`, `DARK`, `LIGHT`. Dark base is OLED black `#000000`; light base is warm off-white `#F6F2E9`.
-- `NcrustTheme(primaryColor, isDark)` derives `NcrustColors`; `toMetroColors(isDark)` bridges them into Kanesumi `MetroColors` so `Ncrust*` and `Metro*` components stay visually consistent.
+- `NcrustTheme(primaryColor, isDark)` derives `NcrustColors` and configures `SaltTheme`; app controls use the same palette through `LocalNcrustColors`.
 - `ResponsiveContent`: `< 600dp` → centred `widthIn(max = 360.dp)`; `>= 600dp` with `maxWidth` → centred at that width; without → fills with 24dp horizontal padding.
-- Wide screens (`windowWidthDp >= 600`) replace the bottom nav with a 200dp `MetroSidebar`; the content column gets `padding(start = 200.dp)`.
+- Wide screens (`windowWidthDp >= 600`) replace the bottom nav with a 200dp `NcrustSidebar`; the content column gets `padding(start = 200.dp)`.
 - `BottomOverlayInsetDp` = **144dp** narrow (80 nav + 56 mini + 8 buffer) / **64dp** wide (56 mini + 8). All scrollable content must use it as `contentPadding`; **never** append a manual end-of-list `Spacer`.
 
 ## Key Constraints & Pitfalls
 
-- **Kanesumi Design / height adaptation**: no rounded corners in the player; no spring/bounce. `LocalHeightClass` is provided across MainScreen's content tree from the same `contentHeightPx` as `collapsedOffsetY` (Regular ≥720dp, Compact ≥560dp, Tiny <560dp). Regular narrow-player covers stay full-width where space permits (384×896 keeps the original anchor); Compact / Tiny shrink and centre using measured content, top bar, controls and title heights. Measurements are read in layout / graphicsLayer, never per-frame composition. Compact uses compact controls; Tiny merges time / progress and moves panel toggles to the top bar. Lyrics typography is 32/42/20/26, 24/32/16/21, 20/27/14/18sp respectively.
+- **Salt UI / height adaptation**: `LocalHeightClass` is provided across MainScreen's content tree from the same `contentHeightPx` as `collapsedOffsetY` (Regular ≥720dp, Compact ≥560dp, Tiny <560dp). Regular narrow-player covers stay full-width where space permits (384×896 keeps the original anchor); Compact / Tiny shrink and centre using measured content, top bar, controls and title heights. Measurements are read in layout / graphicsLayer, never per-frame composition. Compact uses compact controls; Tiny merges time / progress and moves panel toggles to the top bar. Lyrics typography is 32/42/20/26, 24/32/16/21, 20/27/14/18sp respectively.
 - **GPU zero-recomposition**: read animation values only inside `graphicsLayer`; never `animateFloatAsState` for the player card. High-frequency StateFlows are subscribed in leaf composables / `draw` scope, not in the parent.
 - **PlayerCard collapsed state**: LyricsView / QueueView / FullPlayerControls remain mounted; visibility is graphicsLayer alpha, input is threshold-gated. Below `progress = 0.01`, the position / progress flows feeding the hidden children are frozen; expansion resumes current values. Do not restore mount/dispose gating on expansion.
-- **Borderless list style**: `SongCard` LIST/COMPACT rows have `0dp` left padding (72dp cover flush to the edge); only the right keeps 16dp. `DetailScaffold` has no `TopAppBar` Surface — a floating back arrow (`MetroTopScrim`) overlays the content. Grid tiles use `spacedBy(2.dp)`. Home/Library use a 34sp page header instead of an app bar.
+- **Borderless list style**: `SongCard` LIST/COMPACT rows have `0dp` left padding (72dp cover flush to the edge); only the right keeps 16dp. `DetailScaffold` has no `TopAppBar` Surface — a floating back arrow (`NcrustTopScrim`) overlays the content. Grid tiles use `spacedBy(2.dp)`. Home/Library use a 34sp page header instead of an app bar.
 - **Bottom overlay inset**: the mini bar (56dp) sits above the M3-era 80dp nav bar, drawn as a sibling overlay, so `Scaffold.innerPadding.bottom` does **not** reserve space for them. Use `BottomOverlayInsetDp` as `contentPadding`.
 - **System-bar compensation**: `collapsedOffsetY = contentHeightPx - sysNavPx - navBarHeightPx(56/0) - miniBarHeightPx(56) - sysStatusPx`. `sysStatusPx` cancels the `.statusBarsPadding()` applied inside `PlayerCard` to the mini-bar overlay. **Automotive (AAOS) caveat**: CarSystemUI does not deliver WindowInsets, so on `UI_MODE_TYPE_CAR` the content height comes from the measured root height (`rootHeightPx`), not `screenHeightDp`; phone/tablet keep `screenHeightDp` so car changes don't leak. Touch any of these values carefully.
 - **Search debounce**: 500 ms in `SearchViewModel` — do not remove.

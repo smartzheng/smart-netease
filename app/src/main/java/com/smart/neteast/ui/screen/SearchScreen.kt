@@ -1,4 +1,13 @@
 package com.smart.neteast.ui.screen
+
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+import com.smart.neteast.ui.theme.NcrustShape
+
+
+
+import com.smart.neteast.ui.design.*
 import androidx.compose.material.icons.rounded.*
 
 import androidx.compose.animation.Crossfade
@@ -58,15 +67,7 @@ import com.smart.neteast.ui.i18n.LocalStrings
 import com.smart.neteast.ui.theme.desaturateColor
 import com.smart.neteast.ui.theme.themeColorForIndex
 import com.smart.neteast.ui.viewmodel.SearchViewModel
-import io.github.takahashirinta.kanesumi.anim.sokuou.SokuouTweens
-import io.github.takahashirinta.kanesumi.anim.sokuou.rememberMetroFlingBehavior
-import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenu
-import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenuItem
-import io.github.takahashirinta.kanesumi.controls.MetroIconButton
-import io.github.takahashirinta.kanesumi.controls.MetroProgressIndicator
 import com.smart.neteast.ui.components.SaltTabRow
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import com.smart.neteast.ui.design.SaltIcon
 import com.moriafly.salt.ui.Text as SaltText
 import android.widget.Toast
@@ -101,7 +102,7 @@ fun SearchScreen(
     val currentThemeColor = themeColorForIndex(themeIndex)
     val desaturatedFill = desaturateColor(
         currentThemeColor,
-        darkTheme = LocalMetroColors.current.background.luminance() < 0.5f
+        darkTheme = LocalNcrustColors.current.background.luminance() < 0.5f
     )
 
     // 键盘治理: 点结果进详情/切 tab 后键盘不该还浮着
@@ -146,7 +147,7 @@ fun SearchScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(18.dp))
+                    .clip(NcrustShape.pill)
                     .background(desaturatedFill)
             ) {
                 BasicTextField(
@@ -156,8 +157,8 @@ fun SearchScreen(
                     singleLine = true,
                     keyboardActions = KeyboardActions(onDone = { dismissKeyboard() }),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    textStyle = TextStyle(color = LocalMetroColors.current.onBackground, fontSize = 18.sp),
-                    cursorBrush = SolidColor(LocalMetroColors.current.onBackground),
+                    textStyle = TextStyle(color = LocalNcrustColors.current.onBackground, fontSize = 18.sp),
+                    cursorBrush = SolidColor(LocalNcrustColors.current.onBackground),
                     decorationBox = { innerTextField ->
                         Box(
                             modifier = Modifier
@@ -169,7 +170,7 @@ fun SearchScreen(
                             if (query.isEmpty()) {
                                 SaltText(
                                     text = strings.searchPlaceholder,
-                                    color = LocalMetroColors.current.onBackground.copy(alpha = 0.5f),
+                                    color = LocalNcrustColors.current.onBackground.copy(alpha = 0.5f),
                                     style = TextStyle(fontSize = 18.sp),
                                 )
                             }
@@ -178,15 +179,15 @@ fun SearchScreen(
                                 modifier = Modifier.align(Alignment.CenterEnd),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                if (isLoading) MetroProgressIndicator(
+                                if (isLoading) NcrustProgressIndicator(
                                     sizeDp = 24.dp,
                                     color = currentThemeColor,
                                 )
-                                if (query.isNotEmpty()) MetroIconButton(onClick = { viewModel.clearQuery() }) {
+                                if (query.isNotEmpty()) NcrustIconButton(onClick = { viewModel.clearQuery() }) {
                                     SaltIcon(
                                         imageVector = Icons.Rounded.Clear,
                                         contentDescription = strings.clearSearchButton,
-                                        tint = LocalMetroColors.current.onBackground.copy(alpha = 0.7f),
+                                        tint = LocalNcrustColors.current.onBackground.copy(alpha = 0.7f),
                                     )
                                 }
                             }
@@ -196,7 +197,7 @@ fun SearchScreen(
             }
 
             // 三态过渡：History（有历史时空 query）/ Results（输入非空）/ Empty（空 query 无历史）。
-                // 用 Crossfade + SokuouTweens.CoverFade 消除清空搜索框时"结果列表 → 历史"的硬切。
+                // 用 Crossfade + NcrustMotion.CoverFade 消除清空搜索框时"结果列表 → 历史"的硬切。
                 val searchContentState = when {
                     showHistory -> SearchContentState.History
                     query.isNotEmpty() -> SearchContentState.Results
@@ -209,7 +210,7 @@ fun SearchScreen(
                 ) {
                 Crossfade(
                     targetState = searchContentState,
-                    animationSpec = SokuouTweens.CoverFade,
+                    animationSpec = NcrustMotion.CoverFade,
                     modifier = Modifier.widthIn(max = 760.dp).fillMaxHeight(),
                     label = "SearchContentCrossfade"
                 ) { state -> when (state) {
@@ -217,7 +218,7 @@ fun SearchScreen(
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = BottomOverlayInsetDp),
-                            flingBehavior = rememberMetroFlingBehavior()
+                            flingBehavior = rememberNcrustFlingBehavior()
                         ) {
                     if (songHistory.isNotEmpty()) {
                         item {
@@ -238,28 +239,28 @@ fun SearchScreen(
                                     onSongClick(song)
                                 },
                                 menuContent = { onDismiss ->
-                                    MetroDropdownMenuItem(
+                                    NcrustDropdownMenuItem(
                                         text = strings.playButton,
-                                        textColor = LocalMetroColors.current.onBackground,
+                                        textColor = LocalNcrustColors.current.onBackground,
                                         onClick = { onDismiss(); onSongClick(song) },
                                     )
-                                    MetroDropdownMenuItem(
+                                    NcrustDropdownMenuItem(
                                         text = strings.actionInsertNext,
-                                        textColor = LocalMetroColors.current.onBackground,
+                                        textColor = LocalNcrustColors.current.onBackground,
                                         onClick = { onDismiss(); onInsertNext(song) },
                                     )
-                                    MetroDropdownMenuItem(
+                                    NcrustDropdownMenuItem(
                                         text = strings.actionAddToLibrary,
-                                        textColor = LocalMetroColors.current.onBackground,
+                                        textColor = LocalNcrustColors.current.onBackground,
                                         onClick = {
                                             onDismiss()
                                             LibraryManager.saveSong(context, song)
                                             Toast.makeText(context, strings.addedToLibrary, Toast.LENGTH_SHORT).show()
                                         },
                                     )
-                                    MetroDropdownMenuItem(
+                                    NcrustDropdownMenuItem(
                                         text = strings.searchHistoryDelete,
-                                        textColor = Color.Red.copy(alpha = 0.85f),
+                                        textColor = LocalNcrustColors.current.error.copy(alpha = 0.85f),
                                         onClick = {
                                             onDismiss()
                                             SearchHistoryManager.remove(context, SearchHistoryManager.TYPE_SONG, item.id)
@@ -287,14 +288,14 @@ fun SearchScreen(
                                 item = item,
                                 onClick = { onAlbumClick(item.id) },
                                 menuContent = { onDismiss ->
-                                    MetroDropdownMenuItem(
+                                    NcrustDropdownMenuItem(
                                         text = strings.albumDetailTitle,
-                                        textColor = LocalMetroColors.current.onBackground,
+                                        textColor = LocalNcrustColors.current.onBackground,
                                         onClick = { onDismiss(); onAlbumClick(item.id) },
                                     )
-                                    MetroDropdownMenuItem(
+                                    NcrustDropdownMenuItem(
                                         text = strings.searchHistoryDelete,
-                                        textColor = Color.Red.copy(alpha = 0.85f),
+                                        textColor = LocalNcrustColors.current.error.copy(alpha = 0.85f),
                                         onClick = {
                                             onDismiss()
                                             SearchHistoryManager.remove(context, SearchHistoryManager.TYPE_ALBUM, item.id)
@@ -322,14 +323,14 @@ fun SearchScreen(
                                 item = item,
                                 onClick = { dismissKeyboard(); onArtistClick(item.id) },
                                 menuContent = { onDismiss ->
-                                    MetroDropdownMenuItem(
+                                    NcrustDropdownMenuItem(
                                         text = strings.artistDetailTitle,
-                                        textColor = LocalMetroColors.current.onBackground,
+                                        textColor = LocalNcrustColors.current.onBackground,
                                         onClick = { dismissKeyboard(); onDismiss(); onArtistClick(item.id) },
                                     )
-                                    MetroDropdownMenuItem(
+                                    NcrustDropdownMenuItem(
                                         text = strings.searchHistoryDelete,
-                                        textColor = Color.Red.copy(alpha = 0.85f),
+                                        textColor = LocalNcrustColors.current.error.copy(alpha = 0.85f),
                                         onClick = {
                                             onDismiss()
                                             SearchHistoryManager.remove(context, SearchHistoryManager.TYPE_ARTIST, item.id)
@@ -368,7 +369,7 @@ fun SearchScreen(
                 error?.let {
                     SaltText(
                         text = strings.loadFailed(it),
-                        color = Color.Red,
+                        color = LocalNcrustColors.current.error,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
@@ -382,7 +383,7 @@ fun SearchScreen(
                             ) {
                                 SaltText(
                                     text = strings.searchSongsEmpty,
-                                    color = LocalMetroColors.current.onSurfaceVariant,
+                                    color = LocalNcrustColors.current.onSurfaceVariant,
                                     style = TextStyle(fontSize = 16.sp),
                                 )
                             }
@@ -390,7 +391,7 @@ fun SearchScreen(
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(bottom = BottomOverlayInsetDp),
-                                flingBehavior = rememberMetroFlingBehavior()
+                                flingBehavior = rememberNcrustFlingBehavior()
                             ) {
                                 items(songs, key = { it.id }) { item ->
                                     SongCard(
@@ -432,7 +433,7 @@ fun SearchScreen(
                             ) {
                                 SaltText(
                                     text = strings.searchAlbumsEmpty,
-                                    color = LocalMetroColors.current.onSurfaceVariant,
+                                    color = LocalNcrustColors.current.onSurfaceVariant,
                                     style = TextStyle(fontSize = 16.sp),
                                 )
                             }
@@ -440,7 +441,7 @@ fun SearchScreen(
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(bottom = BottomOverlayInsetDp),
-                                flingBehavior = rememberMetroFlingBehavior()
+                                flingBehavior = rememberNcrustFlingBehavior()
                             ) {
                                 items(albums, key = { it.id }) { album ->
                                     AlbumSearchItem(
@@ -450,7 +451,7 @@ fun SearchScreen(
                                             dismissKeyboard(); onAlbumClick(album.id)
                                         },
                                         menuContent = { onDismiss ->
-                                            MetroDropdownMenuItem(
+                                            NcrustDropdownMenuItem(
                                                 text = strings.playAllButton,
                                                 onClick = {
                                                     SearchHistoryManager.addAlbum(context, album)
@@ -458,7 +459,7 @@ fun SearchScreen(
                                                     onDismiss()
                                                 }
                                             )
-                                            MetroDropdownMenuItem(
+                                            NcrustDropdownMenuItem(
                                                 text = strings.actionInsertNext,
                                                 onClick = {
                                                     SearchHistoryManager.addAlbum(context, album)
@@ -466,7 +467,7 @@ fun SearchScreen(
                                                     onDismiss()
                                                 }
                                             )
-                                            MetroDropdownMenuItem(
+                                            NcrustDropdownMenuItem(
                                                 text = strings.actionAppendToQueue,
                                                 onClick = {
                                                     SearchHistoryManager.addAlbum(context, album)
@@ -489,7 +490,7 @@ fun SearchScreen(
                             ) {
                                 SaltText(
                                     text = strings.searchArtistsEmpty,
-                                    color = LocalMetroColors.current.onSurfaceVariant,
+                                    color = LocalNcrustColors.current.onSurfaceVariant,
                                     style = TextStyle(fontSize = 16.sp),
                                 )
                             }
@@ -497,7 +498,7 @@ fun SearchScreen(
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(bottom = BottomOverlayInsetDp),
-                                flingBehavior = rememberMetroFlingBehavior()
+                                flingBehavior = rememberNcrustFlingBehavior()
                             ) {
                                 items(artists, key = { it.id }) { artist ->
                                     ArtistSearchItem(
@@ -507,7 +508,7 @@ fun SearchScreen(
                                             dismissKeyboard(); onArtistClick(artist.id)
                                         },
                                         menuContent = { onDismiss ->
-                                            MetroDropdownMenuItem(
+                                            NcrustDropdownMenuItem(
                                                 text = strings.playAllButton,
                                                 onClick = {
                                                     SearchHistoryManager.addArtist(context, artist)
@@ -515,7 +516,7 @@ fun SearchScreen(
                                                     onDismiss()
                                                 }
                                             )
-                                            MetroDropdownMenuItem(
+                                            NcrustDropdownMenuItem(
                                                 text = strings.actionInsertNext,
                                                 onClick = {
                                                     SearchHistoryManager.addArtist(context, artist)
@@ -523,7 +524,7 @@ fun SearchScreen(
                                                     onDismiss()
                                                 }
                                             )
-                                            MetroDropdownMenuItem(
+                                            NcrustDropdownMenuItem(
                                                 text = strings.actionAppendToQueue,
                                                 onClick = {
                                                     SearchHistoryManager.addArtist(context, artist)
@@ -562,11 +563,11 @@ private fun SearchHistorySectionHeader(title: String, clearLabel: String, onClea
     ) {
         SaltText(
             text = title,
-            color = LocalMetroColors.current.onBackground,
+            color = LocalNcrustColors.current.onBackground,
             style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold),
             modifier = Modifier.weight(1f),
         )
-        // TextButton 替换:直角矩形 tap target,无背景 -- 与 Metro 的 "borderless"
+        // TextButton 替换:直角矩形 tap target,无背景 -- 与无边框交互风格
         // 原则契合。padding 补齐视觉高度。
         Box(
             modifier = Modifier
@@ -575,7 +576,7 @@ private fun SearchHistorySectionHeader(title: String, clearLabel: String, onClea
         ) {
             SaltText(
                 text = clearLabel,
-                color = LocalMetroColors.current.onSurfaceVariant,
+                color = LocalNcrustColors.current.onSurfaceVariant,
                 style = TextStyle(fontSize = 12.sp),
             )
         }
@@ -595,6 +596,7 @@ private fun SearchHistoryItemCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(
+                    role = androidx.compose.ui.semantics.Role.Button,
                     onClick = onClick,
                     onLongClick = { showMenu = true }
                 )
@@ -604,33 +606,33 @@ private fun SearchHistoryItemCard(
             AsyncImage(
                 model = CoverUrls.small(item.coverUrl),
                 contentDescription = null,
-                modifier = Modifier.size(64.dp).clip(RoundedCornerShape(10.dp)),
+                modifier = Modifier.size(64.dp).clip(NcrustShape.thumbnail),
                 contentScale = ContentScale.Crop
             )
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 SaltText(
                     text = item.title,
-                    color = LocalMetroColors.current.onBackground,
-                    style = LocalMetroTypography.current.bodyLarge,
+                    color = LocalNcrustColors.current.onBackground,
+                    style = LocalNcrustTypography.current.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (!item.subtitle.isNullOrEmpty()) {
                     SaltText(
                         text = item.subtitle,
-                        color = LocalMetroColors.current.onSurfaceVariant,
-                        style = LocalMetroTypography.current.bodySmall,
+                        color = LocalNcrustColors.current.onSurfaceVariant,
+                        style = LocalNcrustTypography.current.bodySmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
         }
-        MetroDropdownMenu(
+        NcrustDropdownMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
-            containerColor = LocalMetroColors.current.surface,
+            containerColor = LocalNcrustColors.current.surface,
             cornerRadiusDp = 18.dp,
         ) {
             menuContent { showMenu = false }
@@ -661,25 +663,25 @@ fun SongSearchItem(
         coverSize = 56.dp,
         onClick = onPlay,
         actions = {
-            MetroIconButton(onClick = onAddToLibrary) {
+            NcrustIconButton(onClick = onAddToLibrary) {
                 SaltIcon(
                     imageVector = Icons.Rounded.Add,
                     contentDescription = strings.actionAddToLibrary,
-                    tint = LocalMetroColors.current.onBackground,
+                    tint = LocalNcrustColors.current.onBackground,
                 )
             }
-            MetroIconButton(onClick = onInsertNext) {
+            NcrustIconButton(onClick = onInsertNext) {
                 SaltIcon(
                     imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
                     contentDescription = strings.actionInsertNext,
-                    tint = LocalMetroColors.current.onBackground,
+                    tint = LocalNcrustColors.current.onBackground,
                 )
             }
-            MetroIconButton(onClick = onAppendToQueue) {
+            NcrustIconButton(onClick = onAppendToQueue) {
                 SaltIcon(
                     imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                     contentDescription = strings.actionAddToPlaylist,
-                    tint = LocalMetroColors.current.onBackground,
+                    tint = LocalNcrustColors.current.onBackground,
                 )
             }
         }

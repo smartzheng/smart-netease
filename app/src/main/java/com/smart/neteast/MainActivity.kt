@@ -1,5 +1,11 @@
 package com.smart.neteast
+
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
 import com.smart.neteast.ui.theme.LocalNcrustColors
+
+
+import com.smart.neteast.ui.design.*
 
 import android.Manifest
 import android.content.Intent
@@ -44,7 +50,6 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -70,8 +75,6 @@ import com.moriafly.salt.ui.BottomBar as SaltBottomBar
 import com.moriafly.salt.ui.BottomBarItem as SaltBottomBarItem
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.UnstableSaltUiApi
-import io.github.takahashirinta.kanesumi.structure.sidebar.MetroSidebar
-import io.github.takahashirinta.kanesumi.structure.sidebar.MetroSidebarItem
 import com.smart.neteast.ui.components.SongMenuAction
 import com.smart.neteast.ui.components.SongMenuSheet
 import com.smart.neteast.ui.components.PlaylistManagementOverlay
@@ -97,17 +100,12 @@ import com.smart.neteast.ui.theme.getSavedThemeMode
 import com.smart.neteast.ui.theme.saveThemeIndex
 import com.smart.neteast.ui.theme.saveThemeMode
 import com.smart.neteast.ui.theme.themeColorForIndex
-import com.smart.neteast.ui.theme.toMetroColors
 import com.smart.neteast.ui.viewmodel.PlayerViewModel
 import com.smart.neteast.share.NeteaseLink
 import com.smart.neteast.share.NeteaseLinkParser
-import io.github.takahashirinta.kanesumi.anim.sokuou.metroViewConfiguration
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroTheme
 import com.smart.neteast.warmup.AppWarmup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -128,8 +126,7 @@ class MainActivity : ComponentActivity() {
         // 会话判定：启动时一次。必须在 RetrofitClient.init 之后（要读已加载的 cookie），
         // 且在 AppWarmup 之前（预热里的收藏/推荐请求会带上 cookie）。
         SessionMonitor.init(this)
-        // 冷启动即刻并发启动预热：Home 三条网络 + 封面 Coil 预取。
-        // splash 期间跑完，进入主页时 ContentCache 已就位，无 loader 闪烁。
+        // 冷启动即刻并发启动预热：首页数据与封面缓存都在后台处理，不阻塞首帧。
         AppWarmup.start(this)
         PlaylistManager.init(this)
         enableEdgeToEdge()
@@ -149,47 +146,28 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.LIGHT -> false
             }
 
-            val baseViewConfig = LocalViewConfiguration.current
-            val metroConfig = remember(baseViewConfig) { metroViewConfiguration(baseViewConfig) }
             CompositionLocalProvider(
                 LocalStrings provides stringsForCode(languageCode),
-                // Metro 起始阈值：touchSlop ≈8dp → ≈12dp。按下时的手指微抖不会立即滚动，
-                // 消除"神经质"输入印象。配合 MetroFlingBehavior 覆盖 fling 阶段。
-                LocalViewConfiguration provides metroConfig,
             ) {
                 NcrustTheme(primaryColor = themeColorForIndex(themeIndex), isDark = isDark) {
-                    // Kanesumi Metro* 组件读 LocalMetroColors / LocalMetroTypography,
-                    // 并通过 MetroTheme 注入的 LocalIndication -> MetroIndication 拿到直角
-                    // 闪切反馈。这里从 NcrustColors 派生 MetroColors,让两套主题源共享同一
-                    // 组配色 -- Ncrust* 与 Metro* 组件可以并存,视觉一致。
-                    val ncrust = LocalNcrustColors.current
-                    val metroColors = remember(ncrust, isDark) { ncrust.toMetroColors(isDark) }
-                    MetroTheme(colors = metroColors) {
-                    var showSplash by remember { mutableStateOf(true) }
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        MainScreen(
-                            themeIndex = themeIndex,
-                            onThemeChange = { newIndex ->
-                                themeIndex = newIndex
-                                saveThemeIndex(this@MainActivity, newIndex)
-                            },
-                            themeMode = themeMode,
-                            onThemeModeChange = { newMode ->
-                                themeMode = newMode
-                                saveThemeMode(this@MainActivity, newMode)
-                            },
-                            onLanguageChange = { newCode ->
-                                saveLanguageCode(this@MainActivity, newCode)
-                                languageCode = newCode
-                                showSplash = true
-                            },
-                            externalLink = incomingLink.value,
-                            onExternalLinkConsumed = { incomingLink.value = null }
-                        )
-                        if (showSplash) {
-                            SplashScreen(onFinished = { showSplash = false })
-                        }
-                    }
+                    MainScreen(
+                        themeIndex = themeIndex,
+                        onThemeChange = { newIndex ->
+                            themeIndex = newIndex
+                            saveThemeIndex(this@MainActivity, newIndex)
+                        },
+                        themeMode = themeMode,
+                        onThemeModeChange = { newMode ->
+                            themeMode = newMode
+                            saveThemeMode(this@MainActivity, newMode)
+                        },
+                        onLanguageChange = { newCode ->
+                            saveLanguageCode(this@MainActivity, newCode)
+                            languageCode = newCode
+                        },
+                        externalLink = incomingLink.value,
+                        onExternalLinkConsumed = { incomingLink.value = null }
+                    )
 
                     // 首次启动（splash 结束后）申请后台活动白名单：ColorOS/MIUI 等
                     // 会在熄屏后清理后台，导致播放服务被杀、重进又走一遍 splash。
@@ -197,9 +175,10 @@ class MainActivity : ComponentActivity() {
                     val batteryPrefs = remember {
                         getSharedPreferences("ncrust_settings", 0)
                     }
-                    LaunchedEffect(showSplash) {
-                        if (!showSplash &&
-                            !batteryPrefs.getBoolean("battery_prompt_done", false) &&
+                    LaunchedEffect(Unit) {
+                        // Let the first app frame appear after the system splash before showing a prompt.
+                        kotlinx.coroutines.delay(400L)
+                        if (!batteryPrefs.getBoolean("battery_prompt_done", false) &&
                             !BackgroundActivity.isUnrestricted(this@MainActivity)
                         ) {
                             showBatteryPrompt = true
@@ -225,7 +204,6 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
-                    }  // MetroTheme
                 }
             }
         }
@@ -861,17 +839,6 @@ fun MainScreen(
         }
     }
 
-    // 在 Splash 遮挡期间渲染一帧全展开状态，提前编译 PlayerCard 所有 graphicsLayer 的 GPU Shader。
-    LaunchedEffect(Unit) {
-        // Shader 预热：只跨过 expandedEnough 阈值(0.05f)让 graphicsLayer 编译 GPU shader，
-        // 但不要 snapTo(1f)，那会让 LyricsView / QueueView / FullPlayerControls 全部 mount 再 unmount，
-        // 在低端机上撞在 warmup 阶段是数十毫秒的 layout burst。0.06f 只让展开态视觉属性触发一次绘制。
-        delay(50L)
-        progress.snapTo(0.06f)
-        delay(32L)
-        progress.snapTo(0f)
-    }
-
     // 歌曲结束后自动播放下一首。
     LaunchedEffect(songEnded) {
         if (songEnded) {
@@ -1420,7 +1387,7 @@ fun MainScreen(
             // 车机把应用窗口内容区 inset 到系统栏之间（实测内容区 620px，但
             // WindowInsets 全为 0），所以这里不再自己 padding，只让背景铺满内容区；
             // 位置计算用 contentHeightPx（扣掉系统栏的资源兜底值）。
-            .background(LocalMetroColors.current.background)
+            .background(LocalNcrustColors.current.background)
             .onSizeChanged { rootHeightPx = it.height.toFloat() }
     ) {
         // PlayerCardOverlay is FIRST child: processes first in Compose Main pass (siblings are
@@ -1499,8 +1466,8 @@ fun MainScreen(
                     .fillMaxHeight()
                 .background(SaltTheme.colors.subBackground)
             ) {
-                MetroSidebar(
-                    items = navTabs.map { MetroSidebarItem(it.first, it.second) },
+                NcrustSidebar(
+                    items = navTabs.map { NcrustSidebarItem(it.first, it.second) },
                     selectedIndex = selectedTab,
                     onSelected = onNavSelected,
                     width = sidebarWidthDp,
@@ -1650,12 +1617,12 @@ fun MainScreen(
                         translationY = navBarHideOffset * progress.value
                     }
                     .fillMaxWidth()
-                    .background(LocalMetroColors.current.surface)
+                    .background(LocalNcrustColors.current.surface)
                     .navigationBarsPadding()
                     .height(56.dp)
             ) {
                 // autoReserveBottomStack=false: Ncrust 用自己的 BottomOverlayInsetDp 常量管
-                // 底部预留,不接 MetroShell 的 MetroBottomStackScope,否则 rememberBottomStackReservation
+                // 底部预留,不使用额外的底部堆叠容器,否则 rememberBottomStackReservation
                 // 会因缺 CompositionLocal 而 crash。
                 SaltBottomBar(
                     modifier = Modifier.fillMaxSize(),

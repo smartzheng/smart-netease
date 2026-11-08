@@ -1,5 +1,16 @@
 package com.smart.neteast.ui.screen
 
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+import com.smart.neteast.ui.theme.NcrustShape
+import com.smart.neteast.ui.theme.NcrustIconSize
+import com.smart.neteast.ui.theme.contrastingColor
+
+
+
+import com.smart.neteast.ui.design.*
+
 import android.graphics.drawable.BitmapDrawable
 import android.content.Context
 import androidx.compose.animation.AnimatedContent
@@ -42,6 +53,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.TextStyle
@@ -56,6 +68,7 @@ import coil.request.SuccessResult
 import com.smart.neteast.account.SessionMonitor
 import com.smart.neteast.account.SessionState
 import com.smart.neteast.cache.ContentCache
+import com.smart.neteast.warmup.AppWarmup
 import com.smart.neteast.network.PlaylistApi
 import com.smart.neteast.network.SongItem
 import com.smart.neteast.network.CoverUrls
@@ -63,19 +76,13 @@ import com.smart.neteast.ui.BottomOverlayInsetDp
 import com.smart.neteast.ui.ResponsiveContent
 import com.smart.neteast.ui.components.SessionExpiredBanner
 import com.smart.neteast.library.LibraryManager
-import io.github.takahashirinta.kanesumi.anim.sokuou.SokuouTweens
-import io.github.takahashirinta.kanesumi.anim.sokuou.rememberMetroFlingBehavior
-import io.github.takahashirinta.kanesumi.controls.MetroIconButton
-import io.github.takahashirinta.kanesumi.controls.MetroProgressIndicator
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import com.smart.neteast.ui.design.SaltIcon
 import com.moriafly.salt.ui.Text as SaltText
 import com.smart.neteast.ui.components.PlayAllButton
+import kotlinx.coroutines.flow.first
 import com.smart.neteast.ui.components.SongCard
 import com.smart.neteast.ui.components.SongCardStyle
 import com.smart.neteast.ui.components.SongMenuAction
-import com.smart.neteast.ui.components.ScreenTitle
 import com.smart.neteast.ui.i18n.LocalStrings
 import com.smart.neteast.ui.viewmodel.SearchViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -130,11 +137,25 @@ fun HomeScreen(
     val searchFocusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+    val density = LocalDensity.current
+    val imeBottomState = rememberUpdatedState(WindowInsets.ime.getBottom(density))
     var isSearchActive by remember { mutableStateOf(false) }
     LaunchedEffect(isSearchActive) {
         if (isSearchActive) {
             searchFocusRequester.requestFocus()
             keyboard?.show()
+            // IME 的 Search/返回键、系统键盘收起按钮和触控手势都走同一条返回规则：
+            // 键盘至少显示过一次后，观察到 IME 完全收起就退出搜索回到首页。
+            var keyboardWasVisible = false
+            snapshotFlow { imeBottomState.value > 0 }
+                .collect { imeVisible ->
+                    if (imeVisible) {
+                        keyboardWasVisible = true
+                    } else if (keyboardWasVisible) {
+                        focusManager.clearFocus()
+                        isSearchActive = false
+                    }
+                }
         }
     }
     BackHandler(enabled = isSearchActive) {
@@ -208,8 +229,22 @@ fun HomeScreen(
     }
 
     LaunchedEffect(Unit) {
-        // AppWarmup 刚预取过同样三个接口时直接复用缓存，避免冷启动重复网络/耗电。
-        if (ContentCache.isHomeFresh()) return@LaunchedEffect
+        // 与 AppWarmup 共用首页请求，避免启动时并发打两遍接口；warmup 结果到达后显式灌入状态，
+        // 因为 ContentCache 是普通内存快照，不会自行触发 Compose 重组。
+        AppWarmup.ready.first { it }
+        val cachedDaily = ContentCache.homeDailySongs
+        val cachedPlaylists = ContentCache.homeRecommendPlaylists
+        val cachedNewSongs = ContentCache.homeNewSongs
+        if (ContentCache.isHomeFresh() &&
+            (cachedDaily != null || cachedPlaylists != null || cachedNewSongs != null)
+        ) {
+            dailySongs = cachedDaily.orEmpty()
+            playlists = cachedPlaylists.orEmpty()
+            newSongs.clear()
+            newSongs.addAll(cachedNewSongs.orEmpty())
+            isLoading = false
+            return@LaunchedEffect
+        }
         loadDailySongs()
         loadPlaylists()
         loadNewSongs()
@@ -249,19 +284,30 @@ fun HomeScreen(
                     Box(Modifier.weight(1f)) { searchContent() }
                 }
             }
-        } else Crossfade(
-            targetState = isLoading,
-            animationSpec = SokuouTweens.CoverFade,
-            modifier = Modifier.fillMaxSize(),
-            label = "HomeContentCrossfade"
-        ) { loading ->
-        if (loading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                MetroProgressIndicator(color = LocalMetroColors.current.primary)
-            }
-        } else {
-            ResponsiveContent {
-                LazyVerticalGrid(
+        } else ResponsiveContent {
+            Column(Modifier.fillMaxSize()) {
+                HomeSearchHeader(
+                    query = searchQuery,
+                    active = false,
+                    focusRequester = searchFocusRequester,
+                    horizontalInset = 16.dp,
+                    onActivate = { isSearchActive = true },
+                    onQueryChange = searchViewModel::onQueryChanged,
+                    onClear = searchViewModel::clearQuery,
+                    onClose = { isSearchActive = false },
+                    onSearch = { keyboard?.hide() }
+                )
+                Crossfade(
+                    targetState = isLoading,
+                    animationSpec = NcrustMotion.CoverFade,
+                    modifier = Modifier.weight(1f),
+                    label = "HomeContentCrossfade"
+                ) { loading ->
+                    if (loading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            NcrustProgressIndicator(color = LocalNcrustColors.current.primary)
+                        }
+                    } else LazyVerticalGrid(
                     state = gridState,
                     columns = GridCells.Adaptive(minSize = 148.dp),
                     // 背景由 MainScreen 外层 Box 统一填充，子屏不重复画一层（消除 overdraw）
@@ -269,22 +315,8 @@ fun HomeScreen(
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = BottomOverlayInsetDp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    flingBehavior = rememberMetroFlingBehavior()
+                    flingBehavior = rememberNcrustFlingBehavior()
                 ) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        HomeSearchHeader(
-                            query = searchQuery,
-                            active = false,
-                            focusRequester = searchFocusRequester,
-                            horizontalInset = 0.dp,
-                            onActivate = { isSearchActive = true },
-                            onQueryChange = searchViewModel::onQueryChanged,
-                            onClear = searchViewModel::clearQuery,
-                            onClose = { isSearchActive = false },
-                            onSearch = { keyboard?.hide() }
-                        )
-                    }
-
                     // 登录失效横幅：放在页头之下、内容之上（列表第一个内容项），点击进登录流程。
                     if (sessionExpired) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -300,11 +332,11 @@ fun HomeScreen(
                                 onPlayAll = { onPlayDailyAll?.invoke(dailySongs) },
                                 actions = {
                                     // 手动刷新每日推荐(#26):重新拉取并 diff 平滑替换
-                                    MetroIconButton(onClick = { loadDailySongs() }) {
+                                    NcrustIconButton(onClick = { loadDailySongs() }) {
                                         SaltIcon(
                                             Icons.Rounded.Refresh,
                                             contentDescription = strings.refreshLabel,
-                                            tint = LocalMetroColors.current.onSurfaceVariant,
+                                            tint = LocalNcrustColors.current.onSurfaceVariant,
                                             sizeDp = 24.dp
                                         )
                                     }
@@ -316,8 +348,8 @@ fun HomeScreen(
                             item(span = { GridItemSpan(maxLineSpan) }) {
                                 SaltText(
                                     strings.dailySongsLoginHint,
-                                    color = LocalMetroColors.current.onSurfaceVariant,
-                                    style = LocalMetroTypography.current.bodySmall,
+                                    color = LocalNcrustColors.current.onSurfaceVariant,
+                                    style = LocalNcrustTypography.current.bodySmall,
                                 )
                             }
                         }
@@ -326,9 +358,9 @@ fun HomeScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 contentPadding = PaddingValues(horizontal = 0.dp),
-                                flingBehavior = rememberMetroFlingBehavior()
+                                flingBehavior = rememberNcrustFlingBehavior()
                             ) {
-                                items(dailySongs.take(12), key = { it.id }) { song ->
+                                items(dailySongs.filter { it.id > 0 }.distinctBy { it.id }.take(12), key = { "daily-song-${it.id}" }) { song ->
                                     DailySongTile(
                                         song = song,
                                         onClick = { onSongClick(song) },
@@ -347,21 +379,21 @@ fun HomeScreen(
                         }
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             LazyRow(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().height(224.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                flingBehavior = rememberMetroFlingBehavior()
+                                flingBehavior = rememberNcrustFlingBehavior()
                             ) {
                                 item(key = "fm") {
                                     FmRadioTile(
                                         title = fmProfile?.nickname?.takeIf { it.isNotEmpty() }
                                             ?.let { strings.fmRadioTitle(it) }
                                             ?: strings.fmRadioTitleGeneric,
-                                        accent = fmAccent ?: LocalMetroColors.current.surfaceVariant,
+                                        accent = fmAccent ?: LocalNcrustColors.current.surfaceVariant,
                                         subtitle = strings.fmRadioSubtitle,
                                         onClick = { onPlayFm() }
                                     )
                                 }
-                                items(playlists, key = { it.id }) { pl ->
+                                items(playlists.filter { it.id > 0 }.distinctBy { it.id }, key = { "home-playlist-${it.id}" }) { pl ->
                                     PlaylistTile(
                                         playlist = pl,
                                         onClick = { onPlaylistClick(pl.id) },
@@ -376,9 +408,9 @@ fun HomeScreen(
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         SectionHeader(title = strings.newSongsTitle)
                     }
-                    items(
-                        items = newSongs,
-                        key = { it.id },
+                        items(
+                        items = newSongs.filter { it.id > 0 }.distinctBy { it.id },
+                        key = { "new-song-${it.id}" },
                         span = { if (isWide) GridItemSpan(1) else GridItemSpan(maxLineSpan) }
                     ) { song ->
                         if (isWide) {
@@ -398,11 +430,11 @@ fun HomeScreen(
                             )
                         }
                     }
-                }
+                    }
             }
         }
     }
-    }
+}
 }
 
 @Composable
@@ -421,10 +453,8 @@ private fun HomeSearchHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = horizontalInset, end = horizontalInset, top = 16.dp, bottom = 8.dp)
+            .padding(start = horizontalInset, end = horizontalInset, top = 12.dp, bottom = 8.dp)
     ) {
-        ScreenTitle(strings.tabHome)
-        Spacer(Modifier.height(8.dp))
         AnimatedContent(
             targetState = active,
             transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) },
@@ -434,48 +464,48 @@ private fun HomeSearchHeader(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(LocalMetroColors.current.surfaceVariant)
-                    .then(if (expanded) Modifier else Modifier.clickable(onClick = onActivate))
+                    .clip(NcrustShape.pill)
+                    .background(LocalNcrustColors.current.surfaceVariant)
+                    .then(if (expanded) Modifier else Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onActivate))
                     .padding(horizontal = if (expanded) 8.dp else 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (expanded) {
-                    MetroIconButton(onClick = onClose) {
+                    NcrustIconButton(onClick = onClose) {
                         SaltIcon(Icons.Rounded.ArrowBack, contentDescription = strings.tabHome,
-                            tint = LocalMetroColors.current.onSurfaceVariant, sizeDp = 22.dp)
+                            tint = LocalNcrustColors.current.onSurfaceVariant, sizeDp = NcrustIconSize.regular)
                     }
                     BasicTextField(
                         value = query,
                         onValueChange = onQueryChange,
                         modifier = Modifier.weight(1f).focusRequester(focusRequester),
                         singleLine = true,
-                        textStyle = TextStyle(color = LocalMetroColors.current.onBackground,
+                        textStyle = TextStyle(color = LocalNcrustColors.current.onBackground,
                             fontSize = 16.sp, lineHeight = 24.sp),
-                        cursorBrush = SolidColor(LocalMetroColors.current.primary),
+                        cursorBrush = SolidColor(LocalNcrustColors.current.primary),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = { onSearch() }),
                         decorationBox = { innerTextField ->
                             Box(contentAlignment = Alignment.CenterStart) {
                                 if (query.isEmpty()) SaltText(
                                     strings.searchPlaceholder,
-                                    color = LocalMetroColors.current.onSurfaceVariant,
-                                    style = LocalMetroTypography.current.bodyMedium
+                                    color = LocalNcrustColors.current.onSurfaceVariant,
+                                    style = LocalNcrustTypography.current.bodyMedium
                                 )
                                 innerTextField()
                             }
                         }
                     )
-                    if (query.isNotEmpty()) MetroIconButton(onClick = onClear) {
+                    if (query.isNotEmpty()) NcrustIconButton(onClick = onClear) {
                     SaltIcon(Icons.Rounded.Clear, contentDescription = strings.clearSearchButton,
-                            tint = LocalMetroColors.current.onSurfaceVariant, sizeDp = 20.dp)
+                            tint = LocalNcrustColors.current.onSurfaceVariant, sizeDp = 20.dp)
                     }
                 } else {
                     SaltIcon(Icons.Rounded.Search, contentDescription = null,
-                        tint = LocalMetroColors.current.onSurfaceVariant, sizeDp = 22.dp)
+                        tint = LocalNcrustColors.current.onSurfaceVariant, sizeDp = NcrustIconSize.regular)
                     Spacer(Modifier.width(12.dp))
-                    SaltText(strings.searchPlaceholder, color = LocalMetroColors.current.onSurfaceVariant,
-                        style = LocalMetroTypography.current.bodyMedium)
+                    SaltText(strings.searchPlaceholder, color = LocalNcrustColors.current.onSurfaceVariant,
+                        style = LocalNcrustTypography.current.bodyMedium)
                 }
             }
         }
@@ -495,18 +525,18 @@ private fun SectionHeader(
     ) {
         SaltText(
             title,
-            color = LocalMetroColors.current.onBackground,
-            style = LocalMetroTypography.current.title.copy(
+            color = LocalNcrustColors.current.onBackground,
+            style = LocalNcrustTypography.current.title.copy(
                 fontSize = 20.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
             modifier = Modifier.weight(1f)
         )
         actions()
         if (onPlayAll != null) {
-            MetroIconButton(onClick = onPlayAll) {
+            NcrustIconButton(onClick = onPlayAll) {
                 SaltIcon(
                     Icons.Rounded.PlayArrow,
                     contentDescription = LocalStrings.current.playAllButton,
-                    tint = LocalMetroColors.current.primary,
+                    tint = LocalNcrustColors.current.primary,
                     sizeDp = 24.dp,
                 )
             }
@@ -527,15 +557,15 @@ private fun DailySongTile(song: SongItem, onClick: () -> Unit, onLongClick: () -
         AsyncImage(
             model = CoverUrls.small(song.album?.picUrl),
             contentDescription = strings.coverDesc,
-            placeholder = ColorPainter(LocalMetroColors.current.surfaceVariant),
-            modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(14.dp)),
+            placeholder = ColorPainter(LocalNcrustColors.current.surfaceVariant),
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(NcrustShape.artwork),
             contentScale = ContentScale.Crop
         )
         Spacer(Modifier.height(4.dp))
         SaltText(
             song.name,
-            color = LocalMetroColors.current.onBackground,
-            style = LocalMetroTypography.current.caption.copy(
+            color = LocalNcrustColors.current.onBackground,
+            style = LocalNcrustTypography.current.caption.copy(
                 fontSize = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -543,8 +573,8 @@ private fun DailySongTile(song: SongItem, onClick: () -> Unit, onLongClick: () -
         )
         SaltText(
             song.artists?.joinToString("/") { it.name } ?: strings.unknownArtist,
-            color = LocalMetroColors.current.onSurfaceVariant,
-            style = LocalMetroTypography.current.label.copy(fontSize = 12.sp),
+            color = LocalNcrustColors.current.onSurfaceVariant,
+            style = LocalNcrustTypography.current.label.copy(fontSize = 12.sp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 4.dp)
@@ -568,15 +598,15 @@ private fun SongGridTile(song: SongItem, onClick: () -> Unit, onLongClick: () ->
         AsyncImage(
             model = CoverUrls.small(song.album?.picUrl),
             contentDescription = strings.coverDesc,
-            placeholder = ColorPainter(LocalMetroColors.current.surfaceVariant),
-            modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(14.dp)),
+            placeholder = ColorPainter(LocalNcrustColors.current.surfaceVariant),
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(NcrustShape.artwork),
             contentScale = ContentScale.Crop
         )
         Spacer(Modifier.height(4.dp))
         SaltText(
             song.name,
-            color = LocalMetroColors.current.onBackground,
-            style = LocalMetroTypography.current.caption.copy(
+            color = LocalNcrustColors.current.onBackground,
+            style = LocalNcrustTypography.current.caption.copy(
                 fontSize = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -584,8 +614,8 @@ private fun SongGridTile(song: SongItem, onClick: () -> Unit, onLongClick: () ->
         )
         SaltText(
             song.artists?.joinToString("/") { it.name } ?: strings.unknownArtist,
-            color = LocalMetroColors.current.onSurfaceVariant,
-            style = LocalMetroTypography.current.label.copy(fontSize = 12.sp),
+            color = LocalNcrustColors.current.onSurfaceVariant,
+            style = LocalNcrustTypography.current.label.copy(fontSize = 12.sp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 4.dp)
@@ -593,16 +623,17 @@ private fun SongGridTile(song: SongItem, onClick: () -> Unit, onLongClick: () ->
     }
 }
 
-/** 推荐歌单大 tile：160dp 方封面 + 圆播放按钮。 */
+/** 推荐歌单 tile 固定为 224dp 高，标题预留两行，避免横滑时行高跳动。 */
 @Composable
-private fun PlaylistTile(playlist: PlaylistApi.PlaylistCard, onClick: () -> Unit, onPlayAll: () -> Unit) {    val strings = LocalStrings.current
-    Column(modifier = Modifier.width(160.dp).clickable { onClick() }) {
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(14.dp))) {
+private fun PlaylistTile(playlist: PlaylistApi.PlaylistCard, onClick: () -> Unit, onPlayAll: () -> Unit) {
+    val strings = LocalStrings.current
+    Column(modifier = Modifier.width(160.dp).height(224.dp).clickable(role = androidx.compose.ui.semantics.Role.Button) { onClick() }) {
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(NcrustShape.artwork)) {
             AsyncImage(
                 model = CoverUrls.small(playlist.coverUrl),
                 contentDescription = null,
-                placeholder = ColorPainter(LocalMetroColors.current.surfaceVariant),
-                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)),
+                placeholder = ColorPainter(LocalNcrustColors.current.surfaceVariant),
+                modifier = Modifier.fillMaxSize().clip(NcrustShape.artwork),
                 contentScale = ContentScale.Crop
             )
             PlayAllButton(
@@ -612,26 +643,35 @@ private fun PlaylistTile(playlist: PlaylistApi.PlaylistCard, onClick: () -> Unit
             )
         }
         Spacer(Modifier.height(4.dp))
-        SaltText(
-            playlist.name,
-            color = LocalMetroColors.current.onBackground,
-            style = LocalMetroTypography.current.caption.copy(
-                fontSize = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
-        SaltText(
-            strings.trackCountSongs(playlist.trackCount),
-            color = LocalMetroColors.current.onSurfaceVariant,
-            style = LocalMetroTypography.current.label.copy(fontSize = 12.sp),
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
+        Box(
+            modifier = Modifier.fillMaxWidth().height(40.dp).padding(horizontal = 4.dp),
+            contentAlignment = Alignment.TopStart
+        ) {
+            SaltText(
+                playlist.name,
+                color = LocalNcrustColors.current.onBackground,
+                style = LocalNcrustTypography.current.caption.copy(
+                    fontSize = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        Box(
+            modifier = Modifier.fillMaxWidth().height(20.dp).padding(horizontal = 4.dp),
+            contentAlignment = Alignment.TopStart
+        ) {
+            SaltText(
+                strings.trackCountSongs(playlist.trackCount),
+                color = LocalNcrustColors.current.onSurfaceVariant,
+                style = LocalNcrustTypography.current.label.copy(fontSize = 12.sp)
+            )
+        }
     }
 }
 
 /**
- * 私人 FM 电台大 tile：形制同 PlaylistTile，封面为 Metro 风格图形——
+ * 私人 FM 电台大 tile：形制同 PlaylistTile，封面为 简洁几何图形——
  * 整块用**用户头像提取的强调色**铺底，中央是一枚**对称音频波形**记号
  * (以中线为轴上下等幅的方端竖条，包络中间高两侧收)，无文字、无圆角；
  * 记号颜色按底色明度取黑/白以保证对比。
@@ -643,25 +683,18 @@ private fun FmRadioTile(
     subtitle: String,
     onClick: () -> Unit
 ) {
-    // 波形记号颜色只看与**底色 accent** 的对比，不能跟随主题明暗：
-    // 浅色主题下 onBackground 是近黑，压在深色头像强调色上会看不见。
-    // 深色主题用白、浅色主题用米色(主题背景色)。
-    val isLightTheme = LocalMetroColors.current.background.luminance() > 0.5f
-    val onAccent = when {
-        accent.luminance() > 0.5f -> Color.Black
-        isLightTheme -> LocalMetroColors.current.background
-        else -> Color.White
-    }
-    Column(modifier = Modifier.width(160.dp).clickable { onClick() }) {
+    // Derive the glyph foreground from the sampled artwork color, independent of app theme.
+    val onAccent = contrastingColor(accent)
+    Column(modifier = Modifier.width(160.dp).height(224.dp).clickable { onClick() }) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(NcrustShape.artwork)
                 .background(accent)
         ) {
             // 对称音频波形：5 根方端竖条，包络 0.5→1→0.5，中线上下等幅。
-            // 方端(非圆角)贴合 Kanesumi；包络收口让记号有"声音起伏"而不呆板。
+            // 方端(非圆角)贴合播放器风格；包络收口让记号有"声音起伏"而不呆板。
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
@@ -690,21 +723,30 @@ private fun FmRadioTile(
             )
         }
         Spacer(Modifier.height(4.dp))
-        SaltText(
-            title,
-            color = LocalMetroColors.current.onBackground,
-            style = LocalMetroTypography.current.caption.copy(
-                fontSize = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
-        SaltText(
-            subtitle,
-            color = LocalMetroColors.current.onSurfaceVariant,
-            style = LocalMetroTypography.current.label.copy(fontSize = 12.sp),
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
+        Box(
+            modifier = Modifier.fillMaxWidth().height(40.dp).padding(horizontal = 4.dp),
+            contentAlignment = Alignment.TopStart
+        ) {
+            SaltText(
+                title,
+                color = LocalNcrustColors.current.onBackground,
+                style = LocalNcrustTypography.current.caption.copy(
+                    fontSize = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        Box(
+            modifier = Modifier.fillMaxWidth().height(20.dp).padding(horizontal = 4.dp),
+            contentAlignment = Alignment.TopStart
+        ) {
+            SaltText(
+                subtitle,
+                color = LocalNcrustColors.current.onSurfaceVariant,
+                style = LocalNcrustTypography.current.label.copy(fontSize = 12.sp)
+            )
+        }
     }
 }
 

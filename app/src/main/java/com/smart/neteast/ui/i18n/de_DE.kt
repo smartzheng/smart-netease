@@ -190,6 +190,17 @@ val deDE = Strings(
 
     pendingSyncCount = { "$it nur lokal gespeichert, Synchronisierung ausstehend" },
     retrySync = "Sync wiederholen",
+    syncing = "Wird synchronisiert…",
+    syncCompleted = "Mit der Cloud synchronisiert",
+    pendingSyncRetryFailed = { count, code, readback -> when {
+        readback -> "$count noch ausstehend: NetEase hat die Anfrage angenommen, die Playlist hat sie noch nicht bestätigt. Später erneut versuchen."
+        code == 524 -> "$count noch ausstehend: NetEase hat das Like abgelehnt (524, Anfrageumgebung eingeschränkt)."
+        code != null && code != -1 -> "$count noch ausstehend: NetEase Like-Fehlercode $code."
+        code == -1 -> "$count noch ausstehend: Anfrage oder Antwortprüfung fehlgeschlagen. Später erneut versuchen."
+        else -> "$count noch ausstehend: NetEase hat das Like noch nicht bestätigt."
+    } },
+    removeFromQueue = "Aus der Warteschlange entfernen",
+    reorderQueueItem = "Zum Sortieren ziehen",
 
     actionShare = "Teilen",
     shareChooserTitle = "Teilen mit",

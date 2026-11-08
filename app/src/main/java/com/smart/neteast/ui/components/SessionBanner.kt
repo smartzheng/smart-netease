@@ -1,4 +1,7 @@
 package com.smart.neteast.ui.components
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
 import androidx.compose.material.icons.rounded.*
 
 import androidx.compose.foundation.background
@@ -6,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -19,7 +23,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smart.neteast.ui.i18n.LocalStrings
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import com.smart.neteast.ui.design.SaltIcon
 import com.moriafly.salt.ui.Text as SaltText
 
@@ -29,7 +32,7 @@ import com.moriafly.salt.ui.Text as SaltText
  * 存在的原因：登录失效时网易大多不报错，表现是「每日推荐变了 / 收藏刷不出来 / 有些歌只能试听」
  * （`spec/api/entitlement.md`）。不告知用户，这些现象全都会被算成 Ncrust 的 bug。
  *
- * Kanesumi 风格：直角、无圆角、左右贴边；整条可点，直接进现有登录流程。
+ * Salt UI 风格：轻量底色、圆角和舒适留白；整条可点，直接进现有登录流程。
  */
 @Composable
 fun SessionExpiredBanner(
@@ -40,7 +43,8 @@ fun SessionExpiredBanner(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(LocalMetroColors.current.primary.copy(alpha = 0.16f))
+            .heightIn(min = 48.dp)
+            .background(LocalNcrustColors.current.primary.copy(alpha = 0.16f))
             .clickable(onClick = onRelogin)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -48,7 +52,7 @@ fun SessionExpiredBanner(
         SaltIcon(
             Icons.Rounded.Warning,
             contentDescription = null,
-            tint = LocalMetroColors.current.primary,
+            tint = LocalNcrustColors.current.primary,
             sizeDp = 18.dp
         )
         Spacer(Modifier.width(10.dp))
@@ -56,7 +60,7 @@ fun SessionExpiredBanner(
         // 「登录已失效，部分歌…」——截断后用户读不到「重新登录」这个动作。
         SaltText(
             strings.sessionExpiredBanner,
-            color = LocalMetroColors.current.primary,
+            color = LocalNcrustColors.current.primary,
             style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium),
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,

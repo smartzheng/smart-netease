@@ -1,9 +1,12 @@
 package com.smart.neteast.ui.theme
+
 import androidx.compose.material.icons.rounded.*
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -11,11 +14,13 @@ import androidx.compose.runtime.Composable
 import com.smart.neteast.ui.i18n.LocalStrings
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import com.smart.neteast.ui.design.SaltIcon
 import com.moriafly.salt.ui.Text as SaltText
 
@@ -23,7 +28,7 @@ import com.moriafly.salt.ui.Text as SaltText
  * 主题色选择器 —— Groove 风：一行 6 个方形色块 + 下方选中色名。
  *
  * 设计取舍：
- *  - 6 种预设正好一行装下，视觉上就是一条 Metro"色墙"；
+ *  - 6 种预设正好一行装下，视觉上就是一条 颜色选择条；
  *  - 选中态用 √ 图标叠加，根据色块亮度自动切黑白对比色，不管选到哪个色都能看清；
  *  - 素白（#FFFFFF）单独加一圈灰色描边，否则在黑色背景上和相邻的色块之间没有边界。
  *  - 选中色名用 primary 色，随选择变化——即时视觉反馈。
@@ -39,12 +44,12 @@ fun ThemeColorSelector(
         // 限宽：色块按 weight 等分，若跟随平板整宽(最多 720dp)会变成巨大的方块。
         // 上限 336dp 让每块约 51dp，手机上仍是整宽自适应。
         Row(
-            modifier = Modifier.widthIn(max = 336.dp).fillMaxWidth(),
+            modifier = Modifier.widthIn(max = 336.dp).fillMaxWidth().selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             presets.forEachIndexed { index, preset ->
                 val isSelected = index == selectedIndex
-                val checkColor = if (isLightColor(preset.color)) Color.Black else Color.White
+                val checkColor = contrastingColor(preset.color)
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -52,11 +57,16 @@ fun ThemeColorSelector(
                         .background(preset.color)
                         .then(
                             // 素白在黑背景上必须描边，否则看不出色块边界。
-                            if (isLightColor(preset.color))
+                            if (checkColor == Color.Black)
                                 Modifier.border(1.dp, Color.Gray.copy(alpha = 0.5f))
                             else Modifier
                         )
-                        .clickable { onSelect(index) },
+                        .semantics { contentDescription = colorNames.getOrElse(index) { preset.label } }
+                        .selectable(
+                            selected = isSelected,
+                            role = Role.RadioButton,
+                            onClick = { onSelect(index) }
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     if (isSelected) {
@@ -64,7 +74,7 @@ fun ThemeColorSelector(
                             imageVector = Icons.Rounded.Check,
                             contentDescription = null,
                             tint = checkColor,
-                            sizeDp = 26.dp
+                            sizeDp = NcrustIconSize.regular
                         )
                     }
                 }
@@ -75,14 +85,8 @@ fun ThemeColorSelector(
             text = colorNames.getOrElse(selectedIndex) {
                 presets.getOrElse(selectedIndex) { presets[0] }.label
             },
-            color = LocalMetroColors.current.primary,
+            color = LocalNcrustColors.current.primary,
             style = TextStyle(fontSize = 14.sp)
         )
     }
-}
-
-/** 感知亮度判断：> 0.7 视为浅色，用黑色图标；否则白色图标。 */
-private fun isLightColor(color: Color): Boolean {
-    val luminance = 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue
-    return luminance > 0.7
 }

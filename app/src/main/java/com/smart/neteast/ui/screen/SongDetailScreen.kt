@@ -1,5 +1,11 @@
 package com.smart.neteast.ui.screen
 
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
+
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,8 +21,6 @@ import com.smart.neteast.ui.ResponsiveContent
 import com.smart.neteast.ui.components.TopScrimIconButton
 import com.smart.neteast.ui.i18n.LocalStrings
 import com.smart.neteast.ui.viewmodel.SongViewModel
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import com.moriafly.salt.ui.Text as SaltText
 
 @Composable
@@ -35,7 +39,7 @@ fun SongDetailScreen(songId: Long, onBack: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(LocalMetroColors.current.background)
+            .background(LocalNcrustColors.current.background)
     ) {
         ResponsiveContent(maxWidth = 720.dp) {
             Column(
@@ -47,27 +51,27 @@ fun SongDetailScreen(songId: Long, onBack: () -> Unit) {
                     .padding(start = 16.dp, end = 16.dp, top = 72.dp, bottom = 16.dp)
             ) {
                 songDetail?.let { song ->
-                    SaltText(song.name, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.headlineMedium)
+                    SaltText(song.name, color = LocalNcrustColors.current.onBackground, style = LocalNcrustTypography.current.headlineMedium)
                     Spacer(modifier = Modifier.height(8.dp))
                     SaltText(
                         song.artists.joinToString("/") { it.name },
-                        color = Color(0xFF1DB954),
-                        style = LocalMetroTypography.current.titleMedium
+                        color = LocalNcrustColors.current.primary,
+                        style = LocalNcrustTypography.current.titleMedium
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    SaltText(song.album.name ?: strings.unknownAlbum, color = LocalMetroColors.current.onSurfaceVariant)
+                    SaltText(song.album.name ?: strings.unknownAlbum, color = LocalNcrustColors.current.onSurfaceVariant)
                     if (song.duration > 0) {
-                        SaltText(formatDuration(song.duration), color = LocalMetroColors.current.onSurfaceVariant)
+                        SaltText(formatDuration(song.duration), color = LocalNcrustColors.current.onSurfaceVariant)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                SaltText(strings.lyricsLabel, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.titleLarge)
+                SaltText(strings.lyricsLabel, color = LocalNcrustColors.current.onBackground, style = LocalNcrustTypography.current.titleLarge)
                 Spacer(modifier = Modifier.height(8.dp))
 
                 lyric?.let { lrc ->
-                    SaltText(lrc, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.bodyMedium)
-                } ?: SaltText(strings.noLyrics, color = LocalMetroColors.current.onSurfaceVariant)
+                    SaltText(lrc, color = LocalNcrustColors.current.onBackground, style = LocalNcrustTypography.current.bodyMedium)
+                } ?: SaltText(strings.noLyrics, color = LocalNcrustColors.current.onSurfaceVariant)
             }
         }
 

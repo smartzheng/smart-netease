@@ -1,5 +1,6 @@
 package com.smart.neteast.ui.theme
 
+
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.text.TextStyle
@@ -10,7 +11,7 @@ import androidx.compose.ui.unit.sp
  * Ncrust 自有排版。替代 MD3 的 Typography。
  *
  * 字号/字重/行高与 MD3 默认一致，保证迁移期视觉零变化。
- * 后续可按 Metro 风格微调（行高更紧、字重对比更硬）。
+ * 后续可按 Salt UI格微调（行高更紧、字重对比更硬）。
  */
 @Immutable
 data class NcrustTypography(
@@ -19,7 +20,11 @@ data class NcrustTypography(
     val titleMedium: TextStyle,
     val bodyLarge: TextStyle,
     val bodyMedium: TextStyle,
-    val bodySmall: TextStyle
+    val bodySmall: TextStyle,
+    val pageHeading: TextStyle = headlineMedium,
+    val title: TextStyle = titleLarge,
+    val caption: TextStyle = bodySmall,
+    val label: TextStyle = bodySmall,
 )
 
 val DefaultNcrustTypography = NcrustTypography(

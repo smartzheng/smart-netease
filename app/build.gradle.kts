@@ -78,12 +78,6 @@ dependencies {
     // SaltUI 2.3.1 matches the app's Jetpack Compose 1.7.6 baseline.
     implementation("io.github.moriafly:salt-ui:2.3.1")
 
-    // Kanesumi —— Metro 组件库。通过组合构建从 ../Kanesumi-sec-a 接入
-    // (见 settings.gradle.kts 的 includeBuild)。core/anim 由 controls/structure
-    // 的 api 依赖自动带出,这里只列上游两件。
-    implementation("io.github.takahashirinta:kanesumi-controls:0.1.0-SNAPSHOT")
-    implementation("io.github.takahashirinta:kanesumi-structure:0.1.0-SNAPSHOT")
-
     implementation("androidx.core:core-ktx:1.13.0")
     // 登录二维码: eapi unikey 接口不返回图片, 客户端本地生成(官方客户端同款做法)
     implementation("com.google.zxing:core:3.5.3")

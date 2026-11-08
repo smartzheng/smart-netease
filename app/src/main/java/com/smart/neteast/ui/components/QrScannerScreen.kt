@@ -1,4 +1,8 @@
 package com.smart.neteast.ui.components
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+import com.smart.neteast.ui.theme.NcrustShape
+
 import androidx.compose.material.icons.rounded.*
 
 import android.Manifest
@@ -46,8 +50,8 @@ import com.smart.neteast.auth.CookieManager
 import com.smart.neteast.auth.QrPair
 import com.smart.neteast.auth.QrPairClient
 import com.smart.neteast.ui.i18n.LocalStrings
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import com.smart.neteast.ui.design.SaltIcon
+import com.smart.neteast.ui.theme.NcrustIconSize
 import com.moriafly.salt.ui.Text as SaltText
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
@@ -212,7 +216,7 @@ fun QrAuthorizeScreen(
                 )
                 ScanStatus.Success -> SaltText(
                     strings.scanSuccess,
-                    color = LocalMetroColors.current.primary,
+                    color = LocalNcrustColors.current.primary,
                     style = TextStyle(fontSize = 16.sp),
                     modifier = Modifier.align(Alignment.Center)
                 )
@@ -230,8 +234,8 @@ fun QrAuthorizeScreen(
                     Spacer(Modifier.height(16.dp))
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .border(1.dp, LocalMetroColors.current.primary, RoundedCornerShape(14.dp))
+                            .clip(NcrustShape.control)
+                            .border(1.dp, LocalNcrustColors.current.primary, NcrustShape.control)
                             .clickable {
                                 handled.set(false)
                                 status = ScanStatus.Scanning
@@ -240,7 +244,7 @@ fun QrAuthorizeScreen(
                     ) {
                         SaltText(
                             strings.retry,
-                            color = LocalMetroColors.current.primary,
+                            color = LocalNcrustColors.current.primary,
                             style = TextStyle(fontSize = 14.sp)
                         )
                     }
@@ -252,7 +256,7 @@ fun QrAuthorizeScreen(
                 Icons.Rounded.Close,
                 contentDescription = strings.close,
                 tint = Color.White,
-                sizeDp = 26.dp,
+                sizeDp = NcrustIconSize.regular,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()

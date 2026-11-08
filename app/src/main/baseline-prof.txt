@@ -15,8 +15,6 @@ Lcom/takahashirinta/ncrust/MainActivity;
 Lcom/takahashirinta/ncrust/MainActivityKt;
 Lcom/takahashirinta/ncrust/NcrustApplication;
 Lcom/takahashirinta/ncrust/warmup/AppWarmup;
-Lcom/takahashirinta/ncrust/ui/screen/SplashScreen;
-Lcom/takahashirinta/ncrust/ui/screen/SplashScreenKt;
 
 # ── 网络层（warmup 阶段全部触碰） ────────────────────────────────────
 Lcom/takahashirinta/ncrust/network/RetrofitClient;
@@ -78,13 +76,6 @@ Lcom/takahashirinta/ncrust/ui/i18n/LanguageManagerKt;
 # ── 歌词 ─────────────────────────────────────────────────────────────
 Lcom/takahashirinta/ncrust/lyric/LrcParser;
 Lcom/takahashirinta/ncrust/lyric/LrcParserKt;
-
-# ── 动画基建（scroll fling / easing 每一次列表滑动都命中） ─────────
-Lcom/takahashirinta/ncrust/ui/anim/sokuou/SokuouKt;
-Lcom/takahashirinta/ncrust/ui/anim/sokuou/UwpEasing;
-Lcom/takahashirinta/ncrust/ui/anim/sokuou/UwpEasingKt;
-Lcom/takahashirinta/ncrust/ui/anim/sokuou/MetroScrollKt;
-Lcom/takahashirinta/ncrust/ui/anim/sokuou/MetroFlingBehavior;
 
 # ── 导航 ─────────────────────────────────────────────────────────────
 Lcom/takahashirinta/ncrust/ui/navigation/NavRoutes;

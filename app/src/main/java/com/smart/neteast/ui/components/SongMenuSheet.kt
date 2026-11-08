@@ -1,5 +1,8 @@
 package com.smart.neteast.ui.components
 
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -16,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.smart.neteast.network.SongItem
 import com.smart.neteast.network.CoverUrls
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import com.smart.neteast.ui.design.SaltIcon
 import com.moriafly.salt.ui.Text as SaltText
 import com.moriafly.salt.ui.SaltTheme
@@ -66,7 +68,7 @@ fun SongMenuSheet(
                     SaltText(
                         song.name,
                         color = SaltTheme.colors.text,
-                        style = LocalMetroTypography.current.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        style = LocalNcrustTypography.current.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -74,7 +76,7 @@ fun SongMenuSheet(
                     SaltText(
                         song.artists?.joinToString("/") { it.name } ?: "",
                         color = SaltTheme.colors.highlight,
-                        style = LocalMetroTypography.current.bodyMedium,
+                        style = LocalNcrustTypography.current.bodyMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -84,7 +86,7 @@ fun SongMenuSheet(
                         SaltText(
                             albumName,
                             color = SaltTheme.colors.subText,
-                            style = LocalMetroTypography.current.bodySmall,
+                            style = LocalNcrustTypography.current.bodySmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -115,7 +117,7 @@ fun SongMenuSheet(
                 SaltText(
                     action.label,
                     color = SaltTheme.colors.text,
-                    style = LocalMetroTypography.current.bodyLarge
+                    style = LocalNcrustTypography.current.bodyLarge
                 )
             }
         }

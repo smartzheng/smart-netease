@@ -1,4 +1,13 @@
 package com.smart.neteast.ui.screen
+
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+import com.smart.neteast.ui.theme.NcrustShape
+
+
+
+import com.smart.neteast.ui.design.*
 import androidx.compose.material.icons.rounded.*
 
 import androidx.compose.animation.AnimatedContent
@@ -25,18 +34,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.smart.neteast.account.SessionMonitor
 import com.smart.neteast.account.SessionState
@@ -51,17 +54,11 @@ import com.smart.neteast.network.CoverUrls
 import com.smart.neteast.ui.BottomOverlayInsetDp
 import com.smart.neteast.ui.ResponsiveContent
 import com.smart.neteast.ui.components.SessionExpiredBanner
-import io.github.takahashirinta.kanesumi.anim.sokuou.MetroDefault
-import io.github.takahashirinta.kanesumi.anim.sokuou.rememberMetroFlingBehavior
-import io.github.takahashirinta.kanesumi.controls.MetroProgressIndicator
 import com.smart.neteast.ui.components.PlaylistCollectionContent
 import com.smart.neteast.ui.components.SaltTabRow
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import com.moriafly.salt.ui.Text as SaltText
 import com.smart.neteast.ui.components.PlayAllButton
 import com.smart.neteast.ui.components.PlayAllDialog
-import com.smart.neteast.ui.components.ScreenTitle
 import com.smart.neteast.ui.components.SongCard
 import com.smart.neteast.ui.components.SongCardStyle
 import com.smart.neteast.ui.components.SongMenuAction
@@ -91,37 +88,6 @@ fun LibraryScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val strings = LocalStrings.current
-    val density = LocalDensity.current
-    val headerCollapseRangePx = with(density) { 22.dp.toPx() }
-    var headerCollapsePx by remember { mutableFloatStateOf(0f) }
-    val headerScrollConnection = remember(headerCollapseRangePx) {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (available.y >= 0f || headerCollapsePx >= headerCollapseRangePx) return Offset.Zero
-                val consumedY = minOf(-available.y, headerCollapseRangePx - headerCollapsePx)
-                headerCollapsePx += consumedY
-                return Offset(0f, -consumedY)
-            }
-
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: NestedScrollSource
-            ): Offset {
-                if (available.y <= 0f || headerCollapsePx <= 0f) return Offset.Zero
-                val expandedY = minOf(available.y, headerCollapsePx)
-                headerCollapsePx -= expandedY
-                return Offset(0f, expandedY)
-            }
-        }
-    }
-    val collapsedByDp = with(density) { headerCollapsePx.toDp().value.coerceIn(0f, 22f) }
-    val titleTopPadding = (8f - collapsedByDp.coerceAtMost(8f)).coerceAtLeast(0f).dp
-    val afterTopCollapse = (collapsedByDp - 8f).coerceAtLeast(0f)
-    val titleBottomPadding = (4f - afterTopCollapse.coerceAtMost(4f)).coerceAtLeast(0f).dp
-    val titleToTabsSpacing = (4f - (afterTopCollapse - 4f).coerceAtLeast(0f).coerceAtMost(4f))
-        .coerceAtLeast(0f).dp
-    val compactTitleProgress = ((collapsedByDp - 16f) / 6f).coerceIn(0f, 1f)
     // 会话失效时顶部一条横幅：收藏刷不出来/只给试听的直接原因就在这里。
     // 必须 collectAsState 订阅：直接读 StateFlow.value 不会建立快照依赖，横幅永远不刷新。
     val sessionState by SessionMonitor.state.collectAsState()
@@ -131,6 +97,7 @@ fun LibraryScreen(
     var savedAlbums by remember { mutableStateOf(LibraryManager.getSavedAlbums(context)) }
     // 未获云端确认的点赞操作数量：>0 时页面顶部提示"仅本地/待重试"，不冒充已同步。
     var pendingSyncCount by remember { mutableIntStateOf(0) }
+    var isRetryingPendingSync by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableIntStateOf(0) }
     val categories = listOf(strings.categoryTracks, strings.categoryAlbums, strings.categoryPlaylists)
 
@@ -220,6 +187,33 @@ fun LibraryScreen(
         pendingSyncCount = LibraryManager.getPendingSyncSongIds(context).size
     }
 
+    fun retryPendingSync() {
+        if (isRetryingPendingSync) return
+        coroutineScope.launch {
+            isRetryingPendingSync = true
+            try {
+                val result = LibraryManager.retryPendingSync(context)
+                reloadLocal()
+                val message = when {
+                    !result.isLoggedIn -> strings.notLoggedIn
+                    result.pendingCount == 0 -> strings.syncCompleted
+                    else -> strings.pendingSyncRetryFailed(
+                        result.pendingCount,
+                        result.rejectedCode,
+                        result.readbackPending,
+                    )
+                }
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (e: Exception) {
+                Toast.makeText(context, strings.loadFailed(e.message), Toast.LENGTH_SHORT).show()
+            } finally {
+                isRetryingPendingSync = false
+            }
+        }
+    }
+
     LaunchedEffect(selectedCategory, playlistRevision, refreshTrigger) {
         reloadLocal()
         if (selectedCategory == 2) {
@@ -268,23 +262,9 @@ fun LibraryScreen(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize().nestedScroll(headerScrollConnection)) {
     ResponsiveContent {
         // 背景由 MainScreen 外层 Box 统一填充，此处不重复画一层
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Groove 风大字页头。
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, top = titleTopPadding, bottom = titleBottomPadding)
-            ) {
-                ScreenTitle(
-                    strings.tabLibrary,
-                    fontSize = (20f - 2f * compactTitleProgress).sp,
-                    lineHeight = (26f - 2f * compactTitleProgress).sp,
-                )
-            }
-            Spacer(Modifier.height(titleToTabsSpacing))
+        Column(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
             if (sessionExpired) {
                 SessionExpiredBanner(onRelogin = onRelogin)
                 Spacer(Modifier.height(4.dp))
@@ -297,7 +277,7 @@ fun LibraryScreen(
 
             // Tab 切换用 AnimatedContent 做方向感知的横向滑入。
             // 距离 1/16 屏宽（比 NavGraph 的 1/8 更轻——同页内切 tab，不应有"翻页"的重量感）；
-            // 200ms MetroDefault 曲线。向右切（index 增）新页从右入、旧页向左出；向左切反之。
+            // 200ms NcrustMotion.StandardEasing 曲线。向右切（index 增）新页从右入、旧页向左出；向左切反之。
             AnimatedContent(
                 targetState = selectedCategory,
                 transitionSpec = {
@@ -305,13 +285,13 @@ fun LibraryScreen(
                     val enterSign = if (goingRight) 1 else -1
                     val exitSign = if (goingRight) -1 else 1
                     (slideInHorizontally(
-                        animationSpec = tween(200, easing = MetroDefault),
+                        animationSpec = tween(200, easing = NcrustMotion.StandardEasing),
                         initialOffsetX = { fullWidth -> enterSign * fullWidth / 16 }
-                    ) + fadeIn(animationSpec = tween(160, easing = MetroDefault))) togetherWith
+                    ) + fadeIn(animationSpec = tween(160, easing = NcrustMotion.StandardEasing))) togetherWith
                     (slideOutHorizontally(
-                        animationSpec = tween(200, easing = MetroDefault),
+                        animationSpec = tween(200, easing = NcrustMotion.StandardEasing),
                         targetOffsetX = { fullWidth -> exitSign * fullWidth / 16 }
-                    ) + fadeOut(animationSpec = tween(160, easing = MetroDefault)))
+                    ) + fadeOut(animationSpec = tween(160, easing = NcrustMotion.StandardEasing)))
                 },
                 modifier = Modifier.fillMaxSize(),
                 label = "LibraryCategoryContent"
@@ -321,13 +301,9 @@ fun LibraryScreen(
                         if (pendingSyncCount > 0) {
                             PendingSyncNotice(
                                 message = strings.pendingSyncCount(pendingSyncCount),
-                                retryLabel = strings.retrySync,
-                                onRetry = {
-                                    coroutineScope.launch {
-                                        LibraryManager.retryPendingSync(context)
-                                        reloadLocal()
-                                    }
-                                }
+                                retryLabel = if (isRetryingPendingSync) strings.syncing else strings.retrySync,
+                                isRetrying = isRetryingPendingSync,
+                                onRetry = ::retryPendingSync
                             )
                         }
                         // 红心 id 表才是全量（savedSongs 只是已分页加载的首页）。
@@ -336,7 +312,7 @@ fun LibraryScreen(
                         val playAllCount = if (likedIdCount > 0) likedIdCount else savedSongs.size
                         if (savedSongs.isEmpty() && likedIdCount == 0) {
                             Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
-                                SaltText(strings.noSavedSongs, color = LocalMetroColors.current.onSurfaceVariant, style = LocalMetroTypography.current.bodyLarge)
+                                SaltText(strings.noSavedSongs, color = LocalNcrustColors.current.onSurfaceVariant, style = LocalNcrustTypography.current.bodyLarge)
                             }
                         } else {
                             LibraryPlayAllRow(
@@ -351,9 +327,15 @@ fun LibraryScreen(
                                 modifier = Modifier.fillMaxWidth().weight(1f),
                                 state = songListState,
                                 contentPadding = PaddingValues(bottom = BottomOverlayInsetDp),
-                                flingBehavior = rememberMetroFlingBehavior()
+                                flingBehavior = rememberNcrustFlingBehavior()
                             ) {
-                                items(savedSongs, key = { it.id }) { song ->
+                                // Namespace model ids away from LazyColumn's implicit numeric keys
+                                // (for example a pending-sync notice at index 0). Old cache/API
+                                // payloads can also contain duplicate or invalid ids.
+                                items(
+                                    savedSongs.filter { it.id > 0 }.distinctBy { it.id },
+                                    key = { "saved-song-${it.id}" }
+                                ) { song ->
                                     SongCard(
                                         song = song,
                                         style = SongCardStyle.LIST,
@@ -381,10 +363,7 @@ fun LibraryScreen(
                                             if (LibraryManager.isSongPendingSync(context, song.id)) {
                                                 actions.add(
                                                     SongMenuAction(Icons.Rounded.Sync, strings.retrySync) {
-                                                        coroutineScope.launch {
-                                                            LibraryManager.retryPendingSync(context)
-                                                            reloadLocal()
-                                                        }
+                                                        retryPendingSync()
                                                     }
                                                 )
                                             }
@@ -400,7 +379,7 @@ fun LibraryScreen(
                 1 -> {
                     if (savedAlbums.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            SaltText(strings.noSavedAlbums, color = LocalMetroColors.current.onSurfaceVariant, style = LocalMetroTypography.current.bodyLarge)
+                            SaltText(strings.noSavedAlbums, color = LocalNcrustColors.current.onSurfaceVariant, style = LocalNcrustTypography.current.bodyLarge)
                         }
                     } else {
                         // 自适应栅格：列数随内容栏宽度变化（宽屏多列），取代写死的 2 列。
@@ -412,15 +391,18 @@ fun LibraryScreen(
                             contentPadding = PaddingValues(
                                 start = 16.dp, top = 8.dp, end = 16.dp, bottom = BottomOverlayInsetDp
                             ),
-                            flingBehavior = rememberMetroFlingBehavior()
+                            flingBehavior = rememberNcrustFlingBehavior()
                         ) {
-                            items(savedAlbums, key = { it.albumId }) { album ->
+                            items(
+                                savedAlbums.filter { it.albumId > 0 }.distinctBy { it.albumId },
+                                key = { "saved-album-${it.albumId}" }
+                            ) { album ->
                                 LibraryAlbumGridItem(
                                     album = album,
                                     modifier = Modifier.fillMaxWidth().animateItem(
-                                        fadeInSpec = tween(150, easing = MetroDefault),
-                                        placementSpec = tween(220, easing = MetroDefault),
-                                        fadeOutSpec = tween(120, easing = MetroDefault)
+                                        fadeInSpec = tween(150, easing = NcrustMotion.StandardEasing),
+                                        placementSpec = tween(220, easing = NcrustMotion.StandardEasing),
+                                        fadeOutSpec = tween(120, easing = NcrustMotion.StandardEasing)
                                     ),
                                     onClick = { onAlbumClick(album.albumId) },
                                     onPlayAll = { onPlayAlbum(album.albumId) }
@@ -440,14 +422,12 @@ fun LibraryScreen(
             } }
         }
     }
-
-    }
 }
 
 /**
  * 「单曲」tab 顶部的整列播放入口。
  *
- * 复用专辑/歌单 tab 的 [PlayAllButton]（Kanesumi 里刻意做成圆形，用户决策），视觉上与网格
+ * 复用专辑/歌单 tab 的 [PlayAllButton]（沿用简洁圆形设计，用户决策），视觉上与网格
  * 卡片右下角那颗是同一个控件；这里多一行文案，因为歌曲列表没有封面可以承载它。
  * 加载期间按钮降透明度 + 禁用、副标题变「正在加载 N 首…」，避免点了没反应。
  */
@@ -475,18 +455,18 @@ private fun LibraryPlayAllRow(
         Column(modifier = Modifier.weight(1f)) {
             SaltText(
                 strings.playAllButton,
-                color = LocalMetroColors.current.onBackground,
-                style = LocalMetroTypography.current.bodyLarge
+                color = LocalNcrustColors.current.onBackground,
+                style = LocalNcrustTypography.current.bodyLarge
             )
             SaltText(
                 if (isLoading) loadingLabel else strings.songCountFormat(songCount),
-                color = LocalMetroColors.current.onSurfaceVariant,
-                style = LocalMetroTypography.current.bodySmall
+                color = LocalNcrustColors.current.onSurfaceVariant,
+                style = LocalNcrustTypography.current.bodySmall
             )
         }
         if (isLoading) {
-            MetroProgressIndicator(
-                color = LocalMetroColors.current.primary,
+            NcrustProgressIndicator(
+                color = LocalNcrustColors.current.primary,
                 sizeDp = 18.dp,
                 strokeDp = 2.dp
             )
@@ -499,6 +479,7 @@ private fun LibraryPlayAllRow(
 private fun PendingSyncNotice(
     message: String,
     retryLabel: String,
+    isRetrying: Boolean,
     onRetry: () -> Unit
 ) {
     Row(
@@ -509,20 +490,31 @@ private fun PendingSyncNotice(
     ) {
         SaltText(
             message,
-            color = LocalMetroColors.current.onSurfaceVariant,
-            style = LocalMetroTypography.current.bodySmall,
+            color = LocalNcrustColors.current.onSurfaceVariant,
+            style = LocalNcrustTypography.current.bodySmall,
             modifier = Modifier.weight(1f)
         )
         Box(
             modifier = Modifier
-                .clickable(onClick = onRetry)
-                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .heightIn(min = 48.dp)
+                .clickable(enabled = !isRetrying, onClick = onRetry)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+            contentAlignment = Alignment.Center
         ) {
-            SaltText(
-                retryLabel,
-                color = LocalMetroColors.current.primary,
-                style = LocalMetroTypography.current.bodyMedium
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (isRetrying) {
+                    NcrustProgressIndicator(
+                        color = LocalNcrustColors.current.primary,
+                        sizeDp = 16.dp,
+                        strokeDp = 2.dp
+                    )
+                }
+                SaltText(
+                    retryLabel,
+                    color = LocalNcrustColors.current.primary,
+                    style = LocalNcrustTypography.current.bodyMedium
+                )
+            }
         }
     }
 }
@@ -535,11 +527,13 @@ fun LibraryAlbumGridItem(
     onPlayAll: () -> Unit
 ) {
     val strings = LocalStrings.current
-    Column(modifier = modifier.clickable { onClick() }) {
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(14.dp))) {
+    Column(modifier = modifier.clickable(role = androidx.compose.ui.semantics.Role.Button) { onClick() }) {
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(NcrustShape.artwork)) {
             AsyncImage(
                 model = CoverUrls.small(album.picUrl),
                 contentDescription = strings.albumCoverDesc,
+                placeholder = ColorPainter(LocalNcrustColors.current.surfaceVariant),
+                error = ColorPainter(LocalNcrustColors.current.surfaceVariant),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
@@ -549,8 +543,8 @@ fun LibraryAlbumGridItem(
             )
         }
         Spacer(Modifier.height(6.dp))
-        SaltText(album.name, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
-        SaltText(strings.albumArtistAndCount(album.artist, album.songCount), color = LocalMetroColors.current.onSurfaceVariant, style = LocalMetroTypography.current.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
+        SaltText(album.name, color = LocalNcrustColors.current.onBackground, style = LocalNcrustTypography.current.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
+        SaltText(strings.albumArtistAndCount(album.artist, album.songCount), color = LocalNcrustColors.current.onSurfaceVariant, style = LocalNcrustTypography.current.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
         Spacer(Modifier.height(6.dp))
     }
 }

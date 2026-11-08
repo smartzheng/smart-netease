@@ -1,5 +1,7 @@
 # Ncrust Android 性能与功耗审计（真机测量前的代码级审计）
 
+> 历史快照：本文早于 2026-11-07 的 Salt UI 迁移。Android 已不再包含 Kanesumi 复合构建；文中 `MetroLyricsPanel`、Kanesumi 源码路径及 profile 类名只描述迁移前实现。
+
 审计对象：本仓库 `master` 工作区（`versionName = 1.3.2` / `versionCode = 7`，见 `app/build.gradle.kts:35-36`）。
 审计方式：**只读代码**。本次没有跑 App、没有跑 benchmark、没有真机数据。
 因此下面所有「预估收益」都是**定性等级 + 理由**，不是实测数字；所有涉及运行时行为的判断按三级标注：

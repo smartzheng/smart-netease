@@ -1,4 +1,7 @@
 package com.smart.neteast.ui.components
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
 import androidx.compose.material.icons.rounded.*
 
 import androidx.compose.foundation.clickable
@@ -18,8 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.smart.neteast.ui.i18n.LocalStrings
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import com.smart.neteast.ui.design.SaltIcon
+import com.smart.neteast.ui.theme.NcrustIconSize
 import com.moriafly.salt.ui.Text as SaltText
 import com.moriafly.salt.ui.SaltTheme
 
@@ -52,7 +55,7 @@ fun PlayAllDialog(
         ) {
             SaltText(
                 text = strings.songCountFormat(songCount),
-                color = LocalMetroColors.current.onSurfaceVariant,
+                color = LocalNcrustColors.current.onSurfaceVariant,
                 style = TextStyle(fontSize = 13.sp)
             )
         }
@@ -61,26 +64,26 @@ fun PlayAllDialog(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onReplaceAndPlay(); onDismiss() }
+                .clickable(role = androidx.compose.ui.semantics.Role.Button) { onReplaceAndPlay(); onDismiss() }
                 .padding(horizontal = 20.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             SaltIcon(
                 imageVector = Icons.Rounded.PlayArrow,
                 contentDescription = null,
-                tint = LocalMetroColors.current.primary,
-                sizeDp = 26.dp
+                tint = LocalNcrustColors.current.primary,
+                sizeDp = NcrustIconSize.regular
             )
             Spacer(Modifier.width(16.dp))
             Column {
                 SaltText(
                     text = strings.playNowTitle,
-                    color = LocalMetroColors.current.onBackground,
+                    color = LocalNcrustColors.current.onBackground,
                     style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 )
                 SaltText(
                     text = strings.playNowDesc,
-                    color = LocalMetroColors.current.onSurfaceVariant,
+                    color = LocalNcrustColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 12.sp)
                 )
             }
@@ -90,26 +93,26 @@ fun PlayAllDialog(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onInsertNext(); onDismiss() }
+                .clickable(role = androidx.compose.ui.semantics.Role.Button) { onInsertNext(); onDismiss() }
                 .padding(horizontal = 20.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             SaltIcon(
                 imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
                 contentDescription = null,
-                tint = LocalMetroColors.current.onBackground,
-                sizeDp = 26.dp
+                tint = LocalNcrustColors.current.onBackground,
+                sizeDp = NcrustIconSize.regular
             )
             Spacer(Modifier.width(16.dp))
             Column {
                 SaltText(
                     text = strings.insertNextTitle,
-                    color = LocalMetroColors.current.onBackground,
+                    color = LocalNcrustColors.current.onBackground,
                     style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 )
                 SaltText(
                     text = strings.insertNextDesc,
-                    color = LocalMetroColors.current.onSurfaceVariant,
+                    color = LocalNcrustColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 12.sp)
                 )
             }
@@ -120,26 +123,26 @@ fun PlayAllDialog(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onAppendToQueue(); onDismiss() }
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button) { onAppendToQueue(); onDismiss() }
                     .padding(horizontal = 20.dp, vertical = 18.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 SaltIcon(
                     imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                     contentDescription = null,
-                    tint = LocalMetroColors.current.onBackground,
-                    sizeDp = 26.dp
+                    tint = LocalNcrustColors.current.onBackground,
+                    sizeDp = NcrustIconSize.regular
                 )
                 Spacer(Modifier.width(16.dp))
                 Column {
                     SaltText(
                         text = strings.appendQueueTitle,
-                        color = LocalMetroColors.current.onBackground,
+                        color = LocalNcrustColors.current.onBackground,
                         style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     )
                     SaltText(
                         text = strings.appendQueueDesc,
-                        color = LocalMetroColors.current.onSurfaceVariant,
+                        color = LocalNcrustColors.current.onSurfaceVariant,
                         style = TextStyle(fontSize = 12.sp)
                     )
                 }
@@ -156,7 +159,7 @@ fun PlayAllDialog(
         ) {
             SaltText(
                 text = strings.cancel,
-                color = LocalMetroColors.current.onSurfaceVariant,
+                color = LocalNcrustColors.current.onSurfaceVariant,
                 style = TextStyle(fontSize = 15.sp)
             )
         }

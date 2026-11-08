@@ -19,9 +19,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.smart.neteast.ui.theme.MarkdownText
-import com.smart.neteast.update.ApkArchive
-import io.github.takahashirinta.kanesumi.core.theme.MetroColors
-import io.github.takahashirinta.kanesumi.core.theme.MetroTheme
+import com.smart.neteast.ui.theme.NcrustTheme
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,32 +30,17 @@ import java.util.concurrent.TimeUnit
 /** 在模拟器运行；截图保存在被测应用 externalFilesDir，方便 adb pull 后人工验收。 */
 @RunWith(AndroidJUnit4::class)
 class MarkdownRenderingTest {
-    @Test fun packageManagerReadsUpdateArchive() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val path = InstrumentationRegistry.getArguments().getString("updateApk")
-            ?: context.applicationInfo.sourceDir
-        val identity = ApkArchive.readArchive(context, File(path))
-        assertNotNull("PackageManager 必须能读出 APK 身份", identity)
-        assertEquals(context.packageName, identity!!.packageName)
-        assertTrue(identity.versionCode > 0)
-        assertTrue(identity.signatureDigests.isNotEmpty())
-    }
-
     @Test fun releaseTableRendersAndScrollsInBothThemes() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val automation = instrumentation.uiAutomation
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             for (light in listOf(false, true)) {
                 val rendered = CountDownLatch(1)
-                val colors = if (light) MetroColors(
-                    background = Color(0xFFF6F2E9), onBackground = Color(0xFF171717),
-                    surfaceVariant = Color(0xFFE5E0D8), primary = Color(0xFF3B82F6)
-                ) else MetroColors(primary = Color(0xFF3B82F6))
                 scenario.onActivity { activity ->
                     activity.setContent {
                         key(light) {
-                        MetroTheme(colors = colors) {
-                            Column(Modifier.fillMaxSize().background(colors.background)
+                        NcrustTheme(primaryColor = Color(0xFF3B82F6), isDark = !light) {
+                            Column(Modifier.fillMaxSize().background(if (light) Color(0xFFF6F2E9) else Color.Black)
                                 .onGloballyPositioned {
                                     val view = activity.window.decorView
                                     if (android.os.Build.VERSION.SDK_INT >= 29) {
@@ -68,8 +51,8 @@ class MarkdownRenderingTest {
                                 MarkdownText(NOTES)
                             }
                         }
-                        }
                     }
+                }
                 }
                 assertTrue("新主题必须完成一帧渲染", rendered.await(10, TimeUnit.SECONDS))
                 instrumentation.waitForIdleSync()

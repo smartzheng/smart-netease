@@ -189,6 +189,17 @@ val jpMY = Strings(
 
     pendingSyncCount = { "$it 曲、地存のみ、雲 同期 待" },
     retrySync = "同期 再試",
+    syncing = "同步中…",
+    syncCompleted = "雲 同期 完了",
+    pendingSyncRetryFailed = { count, code, readback -> when {
+        readback -> "$count 首待同步：請求已接受，但歌單尚未確認，稍後再試"
+        code == 524 -> "$count 首待同步：網易雲拒絕收藏（524，操作環境受限）"
+        code != null && code != -1 -> "$count 首待同步：網易雲收藏錯誤碼 $code"
+        code == -1 -> "$count 首待同步：請求或回應驗證失敗，稍後再試"
+        else -> "$count 首待同步：網易雲尚未確認收藏"
+    } },
+    removeFromQueue = "從播放佇列移除",
+    reorderQueueItem = "拖動以調整播放順序",
 
     actionShare = "頒",
     shareChooserTitle = "頒 處",

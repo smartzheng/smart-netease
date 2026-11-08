@@ -190,6 +190,17 @@ scanConnecting = "평판에 연결중…",
 
     pendingSyncCount = { "로컬 저장만 ${it}곡, 클라우드 동기화 대기" },
     retrySync = "동기화 재시도",
+    syncing = "동기화 중…",
+    syncCompleted = "클라우드에 동기화됨",
+    pendingSyncRetryFailed = { count, code, readback -> when {
+        readback -> "${count}곡 대기 중: 요청은 접수됐지만 재생목록에서 아직 확인되지 않았습니다. 나중에 다시 시도하세요."
+        code == 524 -> "${count}곡 대기 중: NetEase가 좋아요 요청을 거부했습니다(524, 요청 환경 제한)."
+        code != null && code != -1 -> "${count}곡 대기 중: NetEase 좋아요 오류 코드 $code"
+        code == -1 -> "${count}곡 대기 중: 요청 또는 응답 확인에 실패했습니다. 나중에 다시 시도하세요."
+        else -> "${count}곡 대기 중: NetEase가 아직 좋아요를 확인하지 않았습니다."
+    } },
+    removeFromQueue = "재생 대기열에서 삭제",
+    reorderQueueItem = "드래그하여 순서 변경",
 
     actionShare = "공유",
     shareChooserTitle = "공유 대상",

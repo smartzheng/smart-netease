@@ -1,5 +1,15 @@
 package com.smart.neteast.ui.screen
 
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+import com.smart.neteast.ui.theme.NcrustShape
+import com.smart.neteast.ui.theme.NcrustIconSize
+
+
+
+import com.smart.neteast.ui.design.*
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,10 +37,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import io.github.takahashirinta.kanesumi.anim.sokuou.rememberMetroFlingBehavior
-import io.github.takahashirinta.kanesumi.controls.MetroSelectorFlyout
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import com.smart.neteast.ui.design.SaltIcon
 import com.moriafly.salt.ui.Text as SaltText
 import com.moriafly.salt.ui.Switcher as SaltSwitcher
@@ -47,7 +53,6 @@ import com.smart.neteast.power.BackgroundActivity
 import com.smart.neteast.ui.BottomOverlayInsetDp
 import com.smart.neteast.ui.components.QrAuthorizeScreen
 import com.smart.neteast.ui.components.QrLoginDialog
-import com.smart.neteast.ui.components.ScreenTitle
 import com.smart.neteast.ui.components.ncrustDialogSurface
 import com.smart.neteast.ui.components.vipStatusText
 import com.smart.neteast.ui.i18n.LocalStrings
@@ -216,20 +221,8 @@ fun UserScreen(
     LazyColumn(
         modifier = Modifier.widthIn(max = 720.dp).fillMaxHeight(),
         contentPadding = PaddingValues(bottom = BottomOverlayInsetDp),
-        flingBehavior = rememberMetroFlingBehavior()
+        flingBehavior = rememberNcrustFlingBehavior()
     ) {
-        // Groove 大字页头。
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, top = 8.dp, bottom = 4.dp)
-            ) {
-                ScreenTitle(strings.tabUser)
-            }
-            Spacer(Modifier.height(4.dp))
-        }
-
         // Profile 块。整块可点：已登录 → 账户管理；未登录 → 直接进 WebView 登录。
         item {
             ProfileBlock(
@@ -252,8 +245,8 @@ fun UserScreen(
             if (vipText != null) {
                 SaltText(
                     vipText,
-                    color = LocalMetroColors.current.onSurfaceVariant,
-                    style = LocalMetroTypography.current.bodySmall,
+                    color = LocalNcrustColors.current.onSurfaceVariant,
+                    style = LocalNcrustTypography.current.bodySmall,
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)
                 )
             }
@@ -264,7 +257,7 @@ fun UserScreen(
         item {
             SectionTitle(strings.qualitySectionTitle)
             SettingsGroup {
-                MetroDropdownRow(
+                NcrustDropdownRow(
                     label = strings.wifiQualityLabel,
                     selectedIndex = wifiQuality,
                     options = strings.qualityOptions,
@@ -273,7 +266,7 @@ fun UserScreen(
                         prefs.edit().putInt("wifi_quality", it).apply()
                     }
                 )
-                MetroDropdownRow(
+                NcrustDropdownRow(
                     label = strings.mobileQualityLabel,
                     selectedIndex = mobileQuality,
                     options = strings.qualityOptions,
@@ -300,7 +293,7 @@ fun UserScreen(
                         playerViewModel.setLyricsTranslation(it)
                     }
                 )
-                MetroDropdownRow(
+                NcrustDropdownRow(
                     label = strings.trialSettingTitle,
                     selectedIndex = if (trialPlayback) 0 else 1,
                     options = listOf(strings.trialSettingPlay, strings.trialSettingSkip),
@@ -363,7 +356,7 @@ fun UserScreen(
 
             SectionTitle(strings.languageSectionTitle)
             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                MetroLanguageDropdown(
+                SaltLanguageDropdown(
                     selectedCode = selectedLanguageCode,
                     presets = languagePresets,
                     onSelect = { code ->
@@ -396,14 +389,14 @@ fun UserScreen(
             ) {
                 SaltText(
                     strings.batteryTitle,
-                    color = LocalMetroColors.current.onBackground,
+                    color = LocalNcrustColors.current.onBackground,
                     style = TextStyle(fontSize = 15.sp),
                     modifier = Modifier.weight(1f)
                 )
                 SaltIcon(
                     Icons.Rounded.ChevronRight,
                     contentDescription = null,
-                    tint = LocalMetroColors.current.onSurfaceVariant,
+                    tint = LocalNcrustColors.current.onSurfaceVariant,
                     sizeDp = 20.dp,
                 )
             }
@@ -422,13 +415,13 @@ fun UserScreen(
             ) {
                 SaltText(
                     strings.cacheSizeLabel(cacheSize),
-                    color = LocalMetroColors.current.onBackground,
+                    color = LocalNcrustColors.current.onBackground,
                     style = TextStyle(fontSize = 15.sp),
                     modifier = Modifier.weight(1f)
                 )
                 SaltText(
                     strings.clearCache,
-                    color = LocalMetroColors.current.primary,
+                    color = LocalNcrustColors.current.primary,
                     style = TextStyle(fontSize = 15.sp)
                 )
             }
@@ -453,10 +446,10 @@ private fun ProfileBlock(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(LocalMetroColors.current.surfaceVariant)
-            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .clip(NcrustShape.card)
+            .background(LocalNcrustColors.current.surfaceVariant)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -464,7 +457,7 @@ private fun ProfileBlock(
             modifier = Modifier
                 .size(72.dp)
                 .clip(CircleShape)
-                .background(LocalMetroColors.current.surface),
+                .background(LocalNcrustColors.current.surface),
             contentAlignment = Alignment.Center
         ) {
             if (profile?.avatarUrl?.isNotEmpty() == true) {
@@ -478,8 +471,8 @@ private fun ProfileBlock(
                 SaltIcon(
                     Icons.Outlined.Person,
                     strings.userIconDesc,
-                    tint = LocalMetroColors.current.primary,
-                    sizeDp = 38.dp,
+                    tint = LocalNcrustColors.current.primary,
+                    sizeDp = NcrustIconSize.profile,
                 )
             }
         }
@@ -489,14 +482,14 @@ private fun ProfileBlock(
             when {
                 isLoading -> SaltText(
                     strings.loading,
-                    color = LocalMetroColors.current.onSurfaceVariant,
+                    color = LocalNcrustColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.SemiBold),
                 )
                 profile != null -> {
                     SaltText(
                         profile.nickname,
-                        color = LocalMetroColors.current.onBackground,
-                        style = LocalMetroTypography.current.title.copy(
+                        color = LocalNcrustColors.current.onBackground,
+                        style = LocalNcrustTypography.current.title.copy(
                             fontSize = 18.sp,
                             lineHeight = 24.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -507,8 +500,8 @@ private fun ProfileBlock(
                     Spacer(Modifier.height(2.dp))
                     SaltText(
                         uidLabel,
-                        color = LocalMetroColors.current.onSurfaceVariant,
-                        style = LocalMetroTypography.current.bodySmall,
+                        color = LocalNcrustColors.current.onSurfaceVariant,
+                        style = LocalNcrustTypography.current.bodySmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -516,8 +509,8 @@ private fun ProfileBlock(
                 else -> {
                     SaltText(
                         notLoggedInText,
-                        color = LocalMetroColors.current.onSurfaceVariant,
-                        style = LocalMetroTypography.current.title.copy(
+                        color = LocalNcrustColors.current.onSurfaceVariant,
+                        style = LocalNcrustTypography.current.title.copy(
                             fontSize = 18.sp,
                             lineHeight = 24.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -528,8 +521,8 @@ private fun ProfileBlock(
                     Spacer(Modifier.height(2.dp))
                     SaltText(
                         loginHintText,
-                        color = LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.6f),
-                        style = LocalMetroTypography.current.bodySmall,
+                        color = LocalNcrustColors.current.onSurfaceVariant.copy(alpha = 0.6f),
+                        style = LocalNcrustTypography.current.bodySmall,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -540,8 +533,8 @@ private fun ProfileBlock(
         SaltIcon(
             Icons.Rounded.ChevronRight,
             contentDescription = null,
-            tint = LocalMetroColors.current.onSurfaceVariant,
-            sizeDp = 22.dp,
+            tint = LocalNcrustColors.current.onSurfaceVariant,
+            sizeDp = NcrustIconSize.regular,
         )
     }
 }
@@ -552,8 +545,8 @@ private fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(LocalMetroColors.current.surfaceVariant)
+            .clip(NcrustShape.card)
+            .background(LocalNcrustColors.current.surfaceVariant)
             .padding(vertical = 4.dp),
         content = content,
     )
@@ -564,7 +557,7 @@ private fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
 private fun SectionTitle(text: String) {
     SaltText(
         text,
-        color = LocalMetroColors.current.onBackground,
+        color = LocalNcrustColors.current.onBackground,
         style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
         modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 8.dp)
     )
@@ -597,8 +590,8 @@ private fun SettingSwitchRow(
     ) {
         SaltText(
             title,
-            color = LocalMetroColors.current.onBackground,
-            style = LocalMetroTypography.current.bodyMedium,
+            color = LocalNcrustColors.current.onBackground,
+            style = LocalNcrustTypography.current.bodyMedium,
             modifier = Modifier.weight(1f)
         )
         Spacer(Modifier.width(16.dp))
@@ -607,8 +600,8 @@ private fun SettingSwitchRow(
     if (description != null) {
         SaltText(
             description,
-            color = LocalMetroColors.current.onSurfaceVariant,
-            style = LocalMetroTypography.current.caption,
+            color = LocalNcrustColors.current.onSurfaceVariant,
+            style = LocalNcrustTypography.current.caption,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, bottom = 4.dp)
@@ -617,8 +610,8 @@ private fun SettingSwitchRow(
     if (note != null) {
         SaltText(
             note,
-            color = LocalMetroColors.current.primary,
-            style = LocalMetroTypography.current.caption,
+            color = LocalNcrustColors.current.primary,
+            style = LocalNcrustTypography.current.caption,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, bottom = 4.dp)
@@ -651,13 +644,13 @@ private fun ThemeModeSelector(
                     .weight(1f)
                     .clip(RoundedCornerShape(12.dp))
                     .background(
-                        if (active) LocalMetroColors.current.primary.copy(alpha = 0.14f)
+                        if (active) LocalNcrustColors.current.primary.copy(alpha = 0.14f)
                         else Color.Transparent
                     )
                     .border(
                         1.dp,
-                        if (active) LocalMetroColors.current.primary
-                        else LocalMetroColors.current.divider,
+                        if (active) LocalNcrustColors.current.primary
+                        else LocalNcrustColors.current.divider,
                         RoundedCornerShape(12.dp)
                     )
                     .clickable { onSelect(mode) }
@@ -666,8 +659,8 @@ private fun ThemeModeSelector(
             ) {
                 SaltText(
                     label,
-                    color = if (active) LocalMetroColors.current.primary
-                    else LocalMetroColors.current.onSurfaceVariant,
+                    color = if (active) LocalNcrustColors.current.primary
+                    else LocalNcrustColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 14.sp),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -693,14 +686,14 @@ private fun ClearCacheConfirmDialog(
         ) {
             SaltText(
                 strings.clearCache,
-                color = LocalMetroColors.current.onBackground,
+                color = LocalNcrustColors.current.onBackground,
                 style = TextStyle(fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
             )
             Spacer(Modifier.height(12.dp))
             SaltText(
                 strings.clearCacheConfirm,
-                color = LocalMetroColors.current.onSurfaceVariant,
-                style = LocalMetroTypography.current.bodyMedium,
+                color = LocalNcrustColors.current.onSurfaceVariant,
+                style = LocalNcrustTypography.current.bodyMedium,
             )
             Spacer(Modifier.height(24.dp))
             Row(
@@ -724,7 +717,7 @@ private fun ClearCacheConfirmDialog(
  *  - 下拉展开的菜单里每项独占一行，完整显示，用户始终能看到完整名字。
  */
 @Composable
-private fun MetroDropdownRow(
+private fun NcrustDropdownRow(
     label: String,
     selectedIndex: Int,
     options: List<String>,
@@ -741,14 +734,14 @@ private fun MetroDropdownRow(
         ) {
             SaltText(
                 label,
-                color = LocalMetroColors.current.onBackground,
+                color = LocalNcrustColors.current.onBackground,
                 style = TextStyle(fontSize = 15.sp),
                 modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(12.dp))
             SaltText(
                 options.getOrElse(selectedIndex) { "" },
-                color = LocalMetroColors.current.primary,
+                color = LocalNcrustColors.current.primary,
                 style = TextStyle(fontSize = 15.sp),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -757,18 +750,18 @@ private fun MetroDropdownRow(
             SaltIcon(
                 Icons.Rounded.ArrowDropDown,
                 contentDescription = null,
-                tint = LocalMetroColors.current.onSurfaceVariant,
+                tint = LocalNcrustColors.current.onSurfaceVariant,
                 sizeDp = 20.dp,
             )
         }
         // UWP ComboBox 移植:选中项落回锚点原位,菜单从锚点双向展开。
-        MetroSelectorFlyout(
+        NcrustSelectorFlyout(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             options = options,
             selectedIndex = selectedIndex,
             onSelect = onSelect,
-            containerColor = LocalMetroColors.current.surface,
+            containerColor = LocalNcrustColors.current.surface,
             cornerRadiusDp = 20.dp,
         )
     }
@@ -791,7 +784,7 @@ private fun AccountDialog(
         ) {
             SaltText(
                 strings.accountDialogTitle,
-                color = LocalMetroColors.current.onBackground,
+                color = LocalNcrustColors.current.onBackground,
                 style = TextStyle(fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
             )
             Spacer(Modifier.height(16.dp))
@@ -799,14 +792,14 @@ private fun AccountDialog(
             if (userProfile != null) {
                 SaltText(
                     strings.nicknameLabel(userProfile.nickname),
-                    color = LocalMetroColors.current.onBackground,
+                    color = LocalNcrustColors.current.onBackground,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(4.dp))
                 SaltText(
                     strings.uidLabel(userProfile.userId.toString()),
-                    color = LocalMetroColors.current.onSurfaceVariant,
+                    color = LocalNcrustColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 13.sp),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -818,8 +811,8 @@ private fun AccountDialog(
             FullWidthDialogButton(
                 text = strings.scanEntryTitle,
                 accent = false,
-                borderColor = LocalMetroColors.current.primary,
-                textColor = LocalMetroColors.current.primary,
+                borderColor = LocalNcrustColors.current.primary,
+                textColor = LocalNcrustColors.current.primary,
                 onClick = onScanAuthorize
             )
             Spacer(Modifier.height(12.dp))
@@ -828,8 +821,8 @@ private fun AccountDialog(
             FullWidthDialogButton(
                 text = strings.logoutButton,
                 accent = false,
-                borderColor = Color.Red.copy(alpha = 0.5f),
-                textColor = Color.Red,
+                borderColor = LocalNcrustColors.current.error.copy(alpha = 0.5f),
+                textColor = LocalNcrustColors.current.error,
                 onClick = onLogout
             )
 
@@ -858,17 +851,18 @@ private fun DialogButton(
 ) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(14.dp))
+            .clip(NcrustShape.control)
             .then(
-                if (accent) Modifier.background(LocalMetroColors.current.primary)
-                else Modifier.border(1.dp, LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                if (accent) Modifier.background(LocalNcrustColors.current.primary)
+                else Modifier.border(1.dp, LocalNcrustColors.current.onSurfaceVariant.copy(alpha = 0.4f), NcrustShape.control)
             )
+            .heightIn(min = 48.dp)
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 10.dp)
     ) {
         SaltText(
             text,
-            color = if (accent) Color.Black else LocalMetroColors.current.onSurfaceVariant,
+            color = if (accent) LocalNcrustColors.current.onPrimary else LocalNcrustColors.current.onSurfaceVariant,
             style = TextStyle(fontSize = 14.sp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -881,25 +875,26 @@ private fun DialogButton(
 private fun FullWidthDialogButton(
     text: String,
     accent: Boolean,
-    borderColor: Color = LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.4f),
-    textColor: Color = LocalMetroColors.current.onBackground,
+    borderColor: Color = LocalNcrustColors.current.onSurfaceVariant.copy(alpha = 0.4f),
+    textColor: Color = LocalNcrustColors.current.onBackground,
     onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(NcrustShape.control)
             .then(
-                if (accent) Modifier.background(LocalMetroColors.current.primary)
-                else Modifier.border(1.dp, borderColor, RoundedCornerShape(14.dp))
+                if (accent) Modifier.background(LocalNcrustColors.current.primary)
+                else Modifier.border(1.dp, borderColor, NcrustShape.control)
             )
+            .heightIn(min = 48.dp)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
         SaltText(
             text,
-            color = if (accent) Color.Black else textColor,
+            color = if (accent) LocalNcrustColors.current.onPrimary else textColor,
             style = TextStyle(fontSize = 14.sp),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
@@ -914,7 +909,7 @@ private fun FullWidthDialogButton(
  * "Советский русский"/"Middle English" 最多截断，绝不换行撑破箭头位置。
  */
 @Composable
-fun MetroLanguageDropdown(
+fun SaltLanguageDropdown(
     selectedCode: String,
     presets: List<LanguagePreset>,
     onSelect: (String) -> Unit
@@ -927,14 +922,14 @@ fun MetroLanguageDropdown(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .border(1.dp, LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                .border(1.dp, LocalNcrustColors.current.onSurfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                 .clickable { expanded = true }
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             SaltText(
                 selected.displayName,
-                color = LocalMetroColors.current.onBackground,
+                color = LocalNcrustColors.current.onBackground,
                 style = TextStyle(fontSize = 14.sp),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -944,19 +939,19 @@ fun MetroLanguageDropdown(
             SaltIcon(
                 Icons.Rounded.ArrowDropDown,
                 contentDescription = null,
-                tint = LocalMetroColors.current.onSurfaceVariant,
+                tint = LocalNcrustColors.current.onSurfaceVariant,
                 sizeDp = 20.dp,
             )
         }
 
         // UWP ComboBox 移植:选中项落回锚点原位,内部滚动到选中语言。
         val selectedIndex = presets.indexOfFirst { it.code == selectedCode }.coerceAtLeast(0)
-        MetroSelectorFlyout(
+        NcrustSelectorFlyout(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             options = presets.map { it.displayName },
             selectedIndex = selectedIndex,
-            containerColor = LocalMetroColors.current.surface,
+            containerColor = LocalNcrustColors.current.surface,
             cornerRadiusDp = 20.dp,
             onSelect = { index ->
                 onSelect(presets[index].code)

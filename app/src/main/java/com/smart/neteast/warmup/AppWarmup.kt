@@ -14,6 +14,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,10 +22,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * 冷启动一次性预热：Splash 遮挡期间跑完所有可提前的 IO，等首页真的进入时数据+封面都在本地。
+ * 冷启动一次性预热：首页数据进入启动关键路径，封面缓存留在后台低优先级处理。
  *
- * 目的：把"进入 Home 后 loader + 图片解码 + 首次 Composition"堆在一起的爆发抹平——
- * 让 splash 期间的 CPU/网络/磁盘齐上，用户看到的第一帧 Home 是完成态。
+ * 目的：先以本地收藏数据和首页请求尽快进入界面；图片预取与云端同步不得延长 splash。
  *
  * ready 由 splash 订阅：为 true 时才允许淡出（配合 splash 侧的最短驻留时间）。
  * 总兜底 [TIMEOUT_MS]：无论网络多慢，超时后强制置 ready，防止启动被卡死。
@@ -40,8 +40,10 @@ object AppWarmup {
     private const val TIMEOUT_MS = 3_000L
     // Home 里 tile 显示尺寸约 160dp，取 320px 覆盖 xxhdpi 单张封面
     private const val COVER_PX = 320
-    // 每类内容预取多少张封面——盖住首屏可见部分即可
+    // 首页每类内容预取多少张封面——后台覆盖首屏可见部分即可
     private const val PREFETCH_PER_SECTION = 6
+    private const val PREFETCH_LIBRARY_SONGS = 16
+    private const val PREFETCH_LIBRARY_ALBUMS = 8
 
     // 全部 SharedPreferences 文件名——IO 线程一次性触碰，让主线程 getSharedPreferences 命中缓存。
     // 与各 Manager 里的 PREFS_NAME 常量保持同步。
@@ -73,7 +75,7 @@ object AppWarmup {
         LibraryManager.preload(app)
 
         scope.launch {
-            withTimeoutOrNull(TIMEOUT_MS) {
+            val homeReady = withTimeoutOrNull(TIMEOUT_MS) {
                 // 阶段一：三条 Home 请求并发写入 ContentCache
                 coroutineScope {
                     val dailyDeferred = async {
@@ -93,43 +95,15 @@ object AppWarmup {
                 }
                 // 标记首页数据已预热：HomeScreen 进屏时据此跳过重复请求。
                 ContentCache.markHomeWarmed()
+                true
+            } ?: false
 
-                // 阶段一·五：封面预取到 Coil 全局 ImageLoader 的内存+磁盘缓存。
-                // 必须紧跟在 Home 数据之后、其他网络任务之前——首页首帧的 AsyncImage
-                // 依赖这批封面。原先收藏库刷新插在这里, 慢网络下它吃掉的预算会让
-                // 封面一张都来不及预取, 首帧退化成现场加载(抖动 + 掉帧)。
-                val loader = Coil.imageLoader(app)
-                val urls = buildList {
-                    ContentCache.homeDailySongs?.take(PREFETCH_PER_SECTION)?.forEach {
-                        it.album?.picUrl?.takeIf(String::isNotBlank)?.let(::add)
-                    }
-                    ContentCache.homeRecommendPlaylists?.take(PREFETCH_PER_SECTION)?.forEach {
-                        it.coverUrl.takeIf(String::isNotBlank)?.let(::add)
-                    }
-                    ContentCache.homeNewSongs?.take(PREFETCH_PER_SECTION)?.forEach {
-                        it.album?.picUrl?.takeIf(String::isNotBlank)?.let(::add)
-                    }
-                }.distinct().mapNotNull { CoverUrls.small(it) }
-
-                coroutineScope {
-                    // 并发上限 4: 封面最多 3 段 × 6 张 = 18 个, 一次性全 async 会堆出
-                    // 十几个阻塞在 OkHttp 队列上的协程抢 IO 线程。分块后峰值并发可控,
-                    // 给同一启动阶段的其他工作留出带宽, 又不明显拖长预取。
-                    urls.chunked(4).forEach { chunk ->
-                        chunk.map { url ->
-                            async {
-                                runCatching {
-                                    loader.execute(
-                                        ImageRequest.Builder(app)
-                                            .data(url)
-                                            .size(COVER_PX, COVER_PX)
-                                            .build()
-                                    )
-                                }
-                            }
-                        }.awaitAll()
-                    }
-                }
+            // 先让主页面绘制，再在后台预取首页与本地收藏封面；图片网络/解码不挡启动。
+            _ready.value = true
+            scope.launch {
+                delay(350L)
+                if (homeReady) prefetchHomeCovers(app)
+                prefetchLibraryCovers(app)
             }
 
             // 阶段二：收藏库刷新(已登录时)。只喂收藏页缓存, 不进 ready 关键路径——
@@ -137,7 +111,60 @@ object AppWarmup {
             if (CookieManager.hasCookie(app)) {
                 scope.launch { runCatching { LibraryManager.refreshFromCloud(app) } }
             }
-            _ready.value = true
         }
+    }
+
+    private suspend fun prefetchHomeCovers(app: Context) {
+        val sourceUrls = buildList {
+            ContentCache.homeDailySongs?.take(PREFETCH_PER_SECTION)?.forEach {
+                addIfPresent(it.album?.picUrl)
+            }
+            ContentCache.homeRecommendPlaylists?.take(PREFETCH_PER_SECTION)?.forEach {
+                addIfPresent(it.coverUrl)
+            }
+            ContentCache.homeNewSongs?.take(PREFETCH_PER_SECTION)?.forEach {
+                addIfPresent(it.album?.picUrl)
+            }
+        }
+        prefetchCovers(app, sourceUrls, COVER_PX)
+    }
+
+    private suspend fun prefetchLibraryCovers(app: Context) {
+        val sourceUrls = buildList {
+            LibraryManager.getSavedSongs(app).take(PREFETCH_LIBRARY_SONGS).forEach {
+                addIfPresent(it.album?.picUrl)
+            }
+            LibraryManager.getSavedAlbums(app).take(PREFETCH_LIBRARY_ALBUMS).forEach {
+                addIfPresent(it.picUrl)
+            }
+        }
+        prefetchCovers(app, sourceUrls, COVER_PX)
+    }
+
+    private suspend fun prefetchCovers(app: Context, sourceUrls: List<String>, sizePx: Int) {
+        val urls = sourceUrls.distinct().mapNotNull { CoverUrls.small(it) }
+        if (urls.isEmpty()) return
+        val loader = Coil.imageLoader(app)
+        coroutineScope {
+            urls.chunked(4).forEach { chunk ->
+                chunk.map { url ->
+                    async {
+                        runCatching {
+                            loader.execute(
+                                ImageRequest.Builder(app)
+                                    .data(url)
+                                    .size(sizePx, sizePx)
+                                    .build()
+                            )
+                        }
+                    }
+                }.awaitAll()
+            }
+        }
+    }
+
+    /** Gson may supply null for legacy/non-null model fields; never let a bad cover crash startup warmup. */
+    private fun MutableList<String>.addIfPresent(value: String?) {
+        if (!value.isNullOrBlank()) add(value)
     }
 }

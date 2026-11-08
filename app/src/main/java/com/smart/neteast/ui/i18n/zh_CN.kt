@@ -191,6 +191,17 @@ val zhCN = Strings(
 
     pendingSyncCount = { "$it 首仅本地保存，等待同步到云端" },
     retrySync = "重试同步",
+    syncing = "正在同步…",
+    syncCompleted = "已同步到云端",
+    pendingSyncRetryFailed = { count, code, readback -> when {
+        readback -> "仍有 $count 首待同步：网易云已接收请求，但歌单暂未确认，稍后可重试"
+        code == 524 -> "仍有 $count 首待同步：网易云拒绝了收藏请求（524，当前操作环境被限制）"
+        code != null && code != -1 -> "仍有 $count 首待同步：网易云收藏接口返回错误码 $code"
+        code == -1 -> "仍有 $count 首待同步：收藏请求或响应校验失败，请稍后重试"
+        else -> "仍有 $count 首待同步，网易云尚未确认收藏状态"
+    } },
+    removeFromQueue = "从播放队列移除",
+    reorderQueueItem = "拖动以调整播放顺序",
 
     actionShare = "分享",
     shareChooserTitle = "分享到",

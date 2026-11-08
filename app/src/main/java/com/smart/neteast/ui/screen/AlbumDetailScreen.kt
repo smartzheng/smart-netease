@@ -1,4 +1,7 @@
 package com.smart.neteast.ui.screen
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
 import androidx.compose.material.icons.rounded.*
 
 import androidx.compose.foundation.background
@@ -38,7 +41,6 @@ import com.smart.neteast.ui.components.SongCard
 import com.smart.neteast.ui.components.SongCardStyle
 import com.smart.neteast.ui.components.SongMenuAction
 import com.smart.neteast.ui.i18n.LocalStrings
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import com.moriafly.salt.ui.Text as SaltText
 import android.widget.Toast
 
@@ -134,7 +136,7 @@ fun AlbumDetailScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .background(LocalMetroColors.current.surfaceVariant)
+                                    .background(LocalNcrustColors.current.surfaceVariant)
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null
@@ -158,7 +160,7 @@ fun AlbumDetailScreen(
                             ) {
                                 SaltText(
                                     if (isAlbumSaved) strings.actionUnsaveAlbum else strings.actionSaveAlbum,
-                                    color = LocalMetroColors.current.primary,
+                                    color = LocalNcrustColors.current.primary,
                                     style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                 )
                             }

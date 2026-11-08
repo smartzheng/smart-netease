@@ -1,4 +1,14 @@
 package com.smart.neteast.ui.components
+
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+import com.smart.neteast.ui.theme.NcrustShape
+import com.smart.neteast.ui.theme.NcrustSpacing
+
+
+
+import com.smart.neteast.ui.design.*
 import androidx.compose.material.icons.rounded.*
 
 import androidx.compose.animation.core.Animatable
@@ -29,9 +39,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.smart.neteast.network.SongItem
 import com.smart.neteast.network.CoverUrls
-import io.github.takahashirinta.kanesumi.anim.sokuou.SokuouPresets
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import com.smart.neteast.ui.design.SaltIcon
 import com.moriafly.salt.ui.Text as SaltText
 import com.smart.neteast.ui.i18n.LocalStrings
@@ -75,6 +82,7 @@ fun SongCard(
                 modifier = modifier
                     .fillMaxWidth()
                     .combinedClickable(
+                        role = Role.Button,
                         onClick = onClick,
                         onLongClick = { onShowMenu?.invoke() }
                     )
@@ -85,9 +93,9 @@ fun SongCard(
                     AsyncImage(
                         model = CoverUrls.small(song.album?.picUrl),
                         contentDescription = strings.coverDesc,
-                        // 纯色占位:避免低端机解码完成前出现"空方块"闪变(Metro 不做 crossfade,直接落图)
-                        placeholder = ColorPainter(LocalMetroColors.current.surfaceVariant),
-                        modifier = Modifier.size(actualCoverSize).clip(RoundedCornerShape(10.dp)),
+                        // 纯色占位:避免低端机解码完成前出现"空方块"闪变(保持静态占位,解码完成后直接落图)
+                        placeholder = ColorPainter(LocalNcrustColors.current.surfaceVariant),
+                        modifier = Modifier.size(actualCoverSize).clip(NcrustShape.thumbnail),
                         contentScale = ContentScale.Crop
                     )
                     Spacer(Modifier.width(12.dp))
@@ -98,8 +106,8 @@ fun SongCard(
                 Column(Modifier.weight(1f)) {
                     SaltText(
                         song.name,
-                        color = if (isCurrentPlaying) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
-                        style = LocalMetroTypography.current.bodyLarge,
+                        color = if (isCurrentPlaying) LocalNcrustColors.current.primary else LocalNcrustColors.current.onBackground,
+                        style = LocalNcrustTypography.current.bodyLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -109,8 +117,8 @@ fun SongCard(
                             if (albumName.isNotEmpty()) append(" · $albumName")
                             if (durationStr.isNotEmpty()) append("  $durationStr")
                         },
-                        color = LocalMetroColors.current.onSurfaceVariant,
-                        style = LocalMetroTypography.current.bodySmall,
+                        color = LocalNcrustColors.current.onSurfaceVariant,
+                        style = LocalNcrustTypography.current.bodySmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -134,9 +142,9 @@ fun SongCard(
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onPress = {
-                                scaleScope.launch { scaleAnim.animateTo(1.03f, SokuouPresets.QuickInteraction) }
+                                scaleScope.launch { scaleAnim.animateTo(1.03f, NcrustMotion.Interaction) }
                                 tryAwaitRelease()
-                                scaleScope.launch { scaleAnim.animateTo(1f, SokuouPresets.QuickInteraction) }
+                                scaleScope.launch { scaleAnim.animateTo(1f, NcrustMotion.Interaction) }
                             },
                             onTap = { onClick() },
                             onLongPress = { onShowMenu?.invoke() }
@@ -151,25 +159,25 @@ fun SongCard(
                 AsyncImage(
                     model = CoverUrls.small(song.album?.picUrl),
                     contentDescription = strings.coverDesc,
-                    placeholder = ColorPainter(LocalMetroColors.current.surfaceVariant),
+                    placeholder = ColorPainter(LocalNcrustColors.current.surfaceVariant),
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                        .clip(RoundedCornerShape(14.dp)),
+                        .clip(NcrustShape.artwork),
                     contentScale = ContentScale.Crop
                 )
                 Spacer(Modifier.height(8.dp))
                 SaltText(
                     song.name,
-                    color = LocalMetroColors.current.onBackground,
-                    style = LocalMetroTypography.current.bodyMedium,
+                    color = LocalNcrustColors.current.onBackground,
+                    style = LocalNcrustTypography.current.bodyMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 SaltText(
                     "$artistStr · $albumName",
-                    color = LocalMetroColors.current.onSurfaceVariant,
-                    style = LocalMetroTypography.current.bodySmall,
+                    color = LocalNcrustColors.current.onSurfaceVariant,
+                    style = LocalNcrustTypography.current.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -195,7 +203,7 @@ fun PlayAllButton(
     // Keep a 48dp touch target while the play symbol stays visually light.
     Box(
         modifier = modifier
-            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+        .sizeIn(minWidth = NcrustSpacing.touchTarget, minHeight = NcrustSpacing.touchTarget)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -213,7 +221,7 @@ fun PlayAllButton(
             SaltIcon(
                 imageVector = Icons.Rounded.PlayArrow,
                 contentDescription = LocalStrings.current.playAllButton,
-                tint = LocalMetroColors.current.primary,
+                tint = LocalNcrustColors.current.primary,
                 sizeDp = if (size >= 40.dp) 28.dp else 22.dp
             )
         }

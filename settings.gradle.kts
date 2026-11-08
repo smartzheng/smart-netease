@@ -25,17 +25,3 @@ dependencyResolutionManagement {
 rootProject.name = "smart-netease"
 include(":app")
 include(":benchmark")
-
-// Kanesumi UI library is vendored in this repository for reproducible standalone builds.
-includeBuild("Kanesumi-sec-a") {
-    dependencySubstitution {
-        substitute(module("io.github.takahashirinta:kanesumi-core"))
-            .using(project(":kanesumi-core"))
-        substitute(module("io.github.takahashirinta:kanesumi-anim"))
-            .using(project(":kanesumi-anim"))
-        substitute(module("io.github.takahashirinta:kanesumi-controls"))
-            .using(project(":kanesumi-controls"))
-        substitute(module("io.github.takahashirinta:kanesumi-structure"))
-            .using(project(":kanesumi-structure"))
-    }
-}

@@ -2,9 +2,9 @@
 
 # Smart Netease
 
-### 把网易云的曲库，装进一块直角玻璃
+### 把网易云的曲库，装进一块精致的音乐播放器
 
-**Kanesumi Design · GPU 零重组动画 · 无缝播放（实验） · 7 级音质 · 车机适配 · 8 语言**
+**Salt UI · GPU 零重组动画 · 无缝播放（实验） · 7 级音质 · 车机适配 · 8 语言**
 
 Android · Kotlin + Jetpack Compose + Media3 ｜ Windows · C# + UWP + WinUI 2 ｜ eapi 加密直连 · 无中间服务器
 
@@ -18,7 +18,7 @@ Android · Kotlin + Jetpack Compose + Media3 ｜ Windows · C# + UWP + WinUI 2 �
 [![Windows](https://img.shields.io/badge/Windows-1.0.0-0078D4?style=flat-square&logo=windows11)](https://github.com/smartzheng/smart-netease/releases)
 [![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](LICENSE)
 
-[**下载安装**](https://github.com/smartzheng/smart-netease/releases) · [**Wiki 文档**](https://github.com/smartzheng/smart-netease/wiki) · [**问题反馈**](https://github.com/smartzheng/smart-netease/issues) · [**Kanesumi 设计库**](https://github.com/GuitaristRin/Kanesumi-sec-a)
+[**下载安装**](https://github.com/smartzheng/smart-netease/releases) · [**Wiki 文档**](https://github.com/smartzheng/smart-netease/wiki) · [**问题反馈**](https://github.com/smartzheng/smart-netease/issues)
 
 </div>
 
@@ -39,7 +39,7 @@ Android · Kotlin + Jetpack Compose + Media3 ｜ Windows · C# + UWP + WinUI 2 �
 
 | | |
 |---|---|
-| 🟩 **直角美学** | 全应用遵循 Kanesumi Design：直角切割、纯色细线、封面贴屏边、浮层返回箭头 |
+| 🟩 **Salt UI 设计** | 统一圆角、留白、字体和图标，封面与弹层采用一致的视觉层级 |
 | ⚡ **GPU 零重组** | 播放器动画由单个 `progress` 经 `graphicsLayer` 驱动，展开 / 收起时**不重组** |
 | 🎧 **真·无损** | eapi 直连拉取 FLAC / Hi-Res / 杜比全景声，逐级降级兜底，弱机自动跳过无解档位 |
 | 🔀 **5 种播放模式** | 顺序循环 / 单曲循环 / 乱序 / 顺序线性 / 相似无限（私人 FM 电台） |
@@ -138,23 +138,13 @@ App 不提供手动粘贴 Cookie，登录方式：
 
 Android Studio Hedgehog+ · JDK 21（`gradle/gradle-daemon-jvm.properties` 固定 Gradle daemon 使用 21）· Kotlin 1.9.24 · Gradle 9.3.1 · Android SDK 36（minSdk 24）。AGP 8.5 本身最低要求 JDK 17；本项目按 daemon 配置准备 JDK 21，Java / Kotlin 编译目标仍为 11。
 
-### ⚠️ 必须先克隆 Kanesumi
-
-`settings.gradle.kts` 通过 `includeBuild("../Kanesumi-sec-a")` 直接依赖同级的 [Kanesumi](https://github.com/GuitaristRin/Kanesumi-sec-a) 源码仓库。**单独克隆 Ncrust 无法构建**，目录结构必须是：
-
-```
-projects/
-├── Ncrust/
-└── Kanesumi-sec-a/
-```
+Android 界面使用 Salt UI，Ncrust 自有控件和动画 token 放在 `app/src/main/java/com/smart/neteast/ui/design/`。不需要另外克隆 UI 仓库。
 
 ### 构建命令
 
 ```bash
 git clone https://github.com/smartzheng/smart-netease.git
-git clone https://github.com/GuitaristRin/Kanesumi-sec-a.git
-
-cd Ncrust
+cd smart-netease
 ./gradlew assembleDebug            # Debug APK -> app/build/outputs/apk/debug/
 ./gradlew assembleRelease          # Release APK（R8 minify，需 keystore.properties）
 
@@ -190,7 +180,7 @@ Windows 端的构建细节、本地注册运行与已知坑见 [`windows/AGENTS.
 
 | 主题 | 说明 |
 |---|---|
-| **Kanesumi Design** | 直角、无圆角、无弹簧；共享组件与动画词汇（`Metro*` / `sokuou`）位于外部 Kanesumi 库，App 内**已无 `material3` 依赖** |
+| **Salt UI** | Salt UI 提供主题与文本基础；Ncrust 在应用内维护自己的控件、圆角、间距和动画 token，不依赖 Kanesumi |
 | **GPU 零重组** | 播放器动画由单个 `progress: Animatable<Float>` 驱动，视觉属性只在 `graphicsLayer {}` 内读取 |
 | **三层图层** | 主页面 / 播放卡 / 导航栏为独立 composable 层，手势转场互不干扰 |
 | **网络直连** | 自有 `EapiCrypto`（AES-128-ECB + MD5 签名）与 `WeapiCrypto`（双 AES-CBC + 原始 RSA），直连网易云，无中间服务器 |
@@ -218,7 +208,7 @@ app/src/main/java/com/takahashirinta/ncrust/
 ## 🪟 Windows 版
 
 Windows 客户端在本仓库的 [`windows/`](windows/) 目录，用 **C# + UWP + WinUI 2** 编写，与 Android 版不共享实现代码：
-控件从 Kanesumi-sec-a 移植，保证两端视觉一致；协议、音质阶梯、队列行为等由 [`spec/`](spec/) 里的共享规格与测试夹具约束。
+Windows 使用独立的 UWP / WinUI 控件，与 Android 不共享 UI 实现；协议、音质阶梯、队列行为等由 [`spec/`](spec/) 里的共享规格与测试夹具约束。
 
 **当前版本 1.0.3**，功能已与 Android 主干基本对齐：首页（含私人 FM）/ 搜索 / 专辑·歌手·歌单详情 / 音乐库 /
 播放卡片与歌词·队列 / 5 种播放模式与 INFINITY 续播 / 7 级音质自动降档 / 播放上报 / 10 段均衡器（桌面独有）。
@@ -261,7 +251,6 @@ Windows 客户端在本仓库的 [`windows/`](windows/) 目录，用 **C# + UWP 
 
 | 项目 | 说明 |
 |---|---|
-| [Kanesumi-sec-a](https://github.com/GuitaristRin/Kanesumi-sec-a) | Kanesumi Design 组件与动画库（Apache-2.0），本项目 UI 依赖 |
 | [163CMAnalyser](https://github.com/GuitaristRin/163CMAnalyser) | Rust CLI 无损下载工具 |
 | [Netease_url](https://github.com/Suxiaoqinx/Netease_url) | Python 原版网易云解析（MIT） |
 
@@ -269,7 +258,7 @@ Windows 客户端在本仓库的 [`windows/`](windows/) 目录，用 **C# + UWP 
 
 ## 📄 许可证
 
-本项目以 **MIT** 许可发布，Copyright (c) 2026 Takahashi_Rinta。完整文本见 [LICENSE](LICENSE)。Kanesumi 库为 Apache-2.0。
+本项目以 **MIT** 许可发布，Copyright (c) 2026 Takahashi_Rinta。完整文本见 [LICENSE](LICENSE)。
 
 ---
 

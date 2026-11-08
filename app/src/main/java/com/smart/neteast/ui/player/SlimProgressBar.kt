@@ -1,5 +1,8 @@
 package com.smart.neteast.ui.player
 
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
+
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -40,7 +43,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smart.neteast.formatDuration
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
+import com.smart.neteast.ui.theme.NcrustSpacing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.PI
@@ -101,17 +104,17 @@ fun SlimProgressBar(
     // 让 Canvas 每帧重跑一次 draw block（即便分支不进入）。低端机上纯浪费。
     val bufferingPhases: BufferingPhases? = if (showBuffering) rememberBufferingPhases() else null
 
-    val accent = LocalMetroColors.current.primary
-    val trackColor = LocalMetroColors.current.divider
+    val accent = LocalNcrustColors.current.primary
+    val trackColor = LocalNcrustColors.current.divider
     // Canvas draw scope 内不能读 CompositionLocal，先在此处取好。
-    val thumbColor = LocalMetroColors.current.onBackground
-    val bubbleTextColor = LocalMetroColors.current.onSurfaceVariant
+    val thumbColor = LocalNcrustColors.current.onBackground
+    val bubbleTextColor = LocalNcrustColors.current.onSurfaceVariant
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = horizontalPadding)
-            .height(40.dp)                        // 触摸区域保持 40dp
+            .height(NcrustSpacing.touchTarget)    // 保留 48dp 触摸区域，轨道仍按内容中心绘制
             .onSizeChanged { barWidth = it.width.toFloat().coerceAtLeast(1f) }
             .pointerInput(Unit) {
                 awaitEachGesture {
@@ -173,7 +176,7 @@ fun SlimProgressBar(
                 }
             }
 
-            // 拖动时显示直角滑块指示器（3×14dp 白色矩形），符合 Metro 直角风格
+            // 拖动时显示直角滑块指示器（3×14dp 白色矩形），符合当前图标语言
             if (isDragging) {
                 val thumbW = 3.dp.toPx()
                 val thumbH = 14.dp.toPx()

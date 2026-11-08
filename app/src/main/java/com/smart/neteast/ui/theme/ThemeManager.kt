@@ -1,5 +1,7 @@
 package com.smart.neteast.ui.theme
 
+
+
 import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
@@ -95,7 +97,10 @@ fun NcrustTheme(
     content: @Composable () -> Unit
 ) {
     val colors = remember(primaryColor, isDark) {
-        (if (isDark) DefaultNcrustColors else LightNcrustColors).copy(primary = primaryColor)
+        (if (isDark) DefaultNcrustColors else LightNcrustColors).copy(
+            primary = primaryColor,
+            onPrimary = contrastingColor(primaryColor),
+        )
     }
     val saltColors = remember(colors, isDark) {
         SaltColors(
@@ -117,19 +122,19 @@ fun NcrustTheme(
     }
     val saltShapes = remember {
         SaltShapes(
-            small = RoundedCornerShape(10.dp),
-            medium = RoundedCornerShape(16.dp),
-            large = RoundedCornerShape(24.dp),
+            small = NcrustShape.control,
+            medium = NcrustShape.card,
+            large = NcrustShape.dialog,
         )
     }
     val saltDimens = remember {
         SaltDimens(
             item = 56.dp,
-            itemIcon = 24.dp,
+            itemIcon = NcrustIconSize.regular,
             corner = 16.dp,
             dialogCorner = 24.dp,
-            padding = 16.dp,
-            subPadding = 8.dp,
+            padding = NcrustSpacing.pageGutter,
+            subPadding = NcrustSpacing.compact,
         )
     }
     SaltTheme(

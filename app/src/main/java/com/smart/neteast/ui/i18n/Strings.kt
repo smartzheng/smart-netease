@@ -206,6 +206,11 @@ data class Strings(
     // Cloud sync state (local-only optimistic likes awaiting server confirmation)
     val pendingSyncCount: (Int) -> String,
     val retrySync: String,
+    val syncing: String,
+    val syncCompleted: String,
+    val pendingSyncRetryFailed: (Int, Int?, Boolean) -> String,
+    val removeFromQueue: String,
+    val reorderQueueItem: String,
 
     // Sharing
     val actionShare: String,

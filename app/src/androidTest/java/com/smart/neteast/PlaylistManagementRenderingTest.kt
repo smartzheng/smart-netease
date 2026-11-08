@@ -24,7 +24,6 @@ import com.smart.neteast.ui.components.PlaylistManagementPanel
 import com.smart.neteast.ui.components.PlaylistSelectionActions
 import com.smart.neteast.ui.i18n.*
 import com.smart.neteast.ui.theme.*
-import io.github.takahashirinta.kanesumi.core.theme.MetroTheme
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -139,7 +138,6 @@ class PlaylistManagementRenderingTest {
                 key(state, strings, dark) {
                     CompositionLocalProvider(LocalStrings provides strings) {
                         NcrustTheme(Color(0xFF1DB954), dark) {
-                            MetroTheme(LocalNcrustColors.current.toMetroColors(dark)) {
                                 Box(Modifier.fillMaxSize().semantics { contentDescription = marker }.onGloballyPositioned {
                                     val view = activity.window.decorView
                                     if (android.os.Build.VERSION.SDK_INT >= 29) view.viewTreeObserver.registerFrameCommitCallback { frame.countDown() }
@@ -149,7 +147,6 @@ class PlaylistManagementRenderingTest {
                                         { change -> state.value = state.value.copy(draft = change(state.value.draft)) },
                                         { submit() }, {}, {}, {}, {}, {}, {}, {})
                                 }
-                            }
                         }
                     }
                 }

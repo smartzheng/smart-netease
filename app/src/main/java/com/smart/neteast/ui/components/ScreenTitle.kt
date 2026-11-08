@@ -1,5 +1,11 @@
 package com.smart.neteast.ui.components
 
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
+
+
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -14,8 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import com.moriafly.salt.ui.Text as SaltText
 
 /** Shared compact page heading for the three primary tabs. */
@@ -29,13 +33,13 @@ fun ScreenTitle(
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         Box(
             Modifier.width(3.dp).height(16.dp)
-                .background(LocalMetroColors.current.primary, RoundedCornerShape(2.dp))
+                .background(LocalNcrustColors.current.primary, RoundedCornerShape(2.dp))
         )
         Spacer(Modifier.width(10.dp))
         SaltText(
             text = text,
-            color = LocalMetroColors.current.onBackground,
-            style = LocalMetroTypography.current.pageHeading.copy(
+            color = LocalNcrustColors.current.onBackground,
+            style = LocalNcrustTypography.current.pageHeading.copy(
                 fontSize = fontSize,
                 lineHeight = lineHeight,
                 fontWeight = FontWeight.SemiBold,

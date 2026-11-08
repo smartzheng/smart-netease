@@ -1,5 +1,13 @@
 package com.smart.neteast.ui.components
 
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
+
+
+import com.smart.neteast.ui.design.*
+
 import com.moriafly.salt.ui.Text as SaltText
 import com.moriafly.salt.ui.TextButton as SaltTextButton
 
@@ -31,8 +39,6 @@ import androidx.compose.ui.unit.sp
 import com.smart.neteast.playlist.*
 import com.smart.neteast.ui.i18n.LocalStrings
 import com.smart.neteast.ui.i18n.PlaylistStrings
-import io.github.takahashirinta.kanesumi.controls.*
-import io.github.takahashirinta.kanesumi.core.theme.*
 
 @Composable
 fun PlaylistManagementOverlay(onDeleted: (Long) -> Unit = {}, onOpen: (Long) -> Unit) {
@@ -56,7 +62,7 @@ fun PlaylistManagementPanel(
 ) {
     val strings = LocalStrings.current
     val p = strings.playlists
-    val colors = LocalMetroColors.current
+    val colors = LocalNcrustColors.current
     val mode = state.request?.mode ?: return
     BackHandler(onBack = onClose)
     Column(Modifier.fillMaxSize().background(colors.background).statusBarsPadding().navigationBarsPadding().imePadding(),
@@ -69,11 +75,11 @@ fun PlaylistManagementPanel(
                 PlaylistPanelMode.EDIT -> p.edit
                 PlaylistPanelMode.REMOVE -> p.remove
                 PlaylistPanelMode.DELETE -> p.delete
-            }, style = LocalMetroTypography.current.title.copy(fontSize = 24.sp), modifier = Modifier.weight(1f))
+            }, style = LocalNcrustTypography.current.title.copy(fontSize = 24.sp), modifier = Modifier.weight(1f))
             PlaylistButton(strings.cancel, onClose, containerColor = colors.background, contentColor = colors.onBackground)
         }
         when {
-            state.loading -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { MetroProgressIndicator() }
+            state.loading -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { NcrustProgressIndicator() }
             state.result != null -> Column(Modifier.weight(1f).widthIn(max = 640.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp)) {
                 val result = state.result
                 SaltText(when (result.outcome) {
@@ -82,7 +88,7 @@ fun PlaylistManagementPanel(
                     PlaylistOutcome.PARTIAL -> if (state.request.songIds.isNotEmpty()) p.partial(result.confirmedIds.size, result.unresolvedIds.size)
                         else p.partial(result.confirmedFields.count { it != PlaylistAction.CREATE }, 3 - result.confirmedFields.count { it != PlaylistAction.CREATE })
                     PlaylistOutcome.FAILED -> p.failed
-                }, style = LocalMetroTypography.current.bodyLarge)
+                }, style = LocalNcrustTypography.current.bodyLarge)
                 result.problem?.let { Spacer(Modifier.height(12.dp)); SaltText(playlistProblemText(it, p)) }
                 state.backupFile?.let { Spacer(Modifier.height(12.dp)); SaltText(p.backup(it.absolutePath)) }
                 Spacer(Modifier.height(20.dp))
@@ -112,18 +118,18 @@ fun PlaylistManagementPanel(
                 val owned = state.collection.items.filter { it.isOwnedBy(state.ownerId) }
                 if (owned.isEmpty()) item { SaltText(strings.noPlaylists) }
                 items(owned, key = { it.id }) { playlist ->
-                    Column(Modifier.fillMaxWidth().clickable(enabled = !state.busy) { onSubmit(playlist.id) }.padding(vertical = 16.dp)) {
-                        SaltText(playlist.name, style = LocalMetroTypography.current.bodyLarge)
+                    Column(Modifier.fillMaxWidth().clickable(enabled = !state.busy, role = androidx.compose.ui.semantics.Role.Button) { onSubmit(playlist.id) }.padding(vertical = 16.dp)) {
+                        SaltText(playlist.name, style = LocalNcrustTypography.current.bodyLarge)
                         SaltText("${strings.trackCount(playlist.trackCount.coerceAtLeast(0))} · ${if (playlist.privacy == 10) p.private else if (playlist.privacy == 0) p.public else p.unknown}", color = colors.onSurfaceVariant)
                     }
-                    MetroDivider()
+                    NcrustDivider()
                 }
                 if (!state.collection.complete) item { SaltText(p.incomplete); PlaylistButton(strings.retry, onReload, enabled = !state.busy) }
             }
             else -> PlaylistEditorBody(state, onDraft, onSubmit, Modifier.weight(1f))
         }
         if (state.busy) Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-            MetroProgressIndicator(sizeDp = 20.dp); Spacer(Modifier.width(12.dp)); SaltText(strings.loading)
+            NcrustProgressIndicator(sizeDp = 20.dp); Spacer(Modifier.width(12.dp)); SaltText(strings.loading)
         }
     }
 }
@@ -132,19 +138,19 @@ fun PlaylistManagementPanel(
 private fun PlaylistEditorBody(state: PlaylistPanelState, onDraft: ((PlaylistDraft) -> PlaylistDraft) -> Unit, onSubmit: (Long) -> Unit, modifier: Modifier) {
     val strings = LocalStrings.current
     val p = strings.playlists
-    val colors = LocalMetroColors.current
+    val colors = LocalNcrustColors.current
     val mode = state.request!!.mode
     Column(modifier.widthIn(max = 640.dp).fillMaxWidth()) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 16.dp)) {
             if (mode == PlaylistPanelMode.CREATE || mode == PlaylistPanelMode.EDIT) {
                 PlaylistFieldLabel(p.name, "${state.draft.name.length}/40")
                 Spacer(Modifier.height(8.dp))
-                MetroTextField(state.draft.name, { value -> if (value.length <= 40) onDraft { it.copy(name = value) } },
+                NcrustTextField(state.draft.name, { value -> if (value.length <= 40) onDraft { it.copy(name = value) } },
                     modifier = Modifier.fillMaxWidth().semantics { contentDescription = p.name }, enabled = !state.busy, singleLine = true)
                 Spacer(Modifier.height(24.dp))
                 PlaylistFieldLabel(p.description, "${state.draft.description.length}/1000")
                 Spacer(Modifier.height(8.dp))
-                MetroTextField(state.draft.description, { value -> if (value.length <= 1000) onDraft { it.copy(description = value) } },
+                NcrustTextField(state.draft.description, { value -> if (value.length <= 1000) onDraft { it.copy(description = value) } },
                     modifier = Modifier.fillMaxWidth().semantics { contentDescription = p.description }, enabled = !state.busy, minLines = 3, maxLines = 6)
                 Spacer(Modifier.height(24.dp))
                 PlaylistFieldLabel(p.visibility)
@@ -178,10 +184,10 @@ private fun PlaylistEditorBody(state: PlaylistPanelState, onDraft: ((PlaylistDra
 @Composable
 private fun PlaylistFieldLabel(label: String, value: String? = null) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        SaltText(label, modifier = Modifier.weight(1f), color = LocalMetroColors.current.onSurfaceVariant,
-            style = LocalMetroTypography.current.caption)
-        if (value != null) SaltText(value, color = LocalMetroColors.current.onSurfaceVariant,
-            style = LocalMetroTypography.current.caption)
+        SaltText(label, modifier = Modifier.weight(1f), color = LocalNcrustColors.current.onSurfaceVariant,
+            style = LocalNcrustTypography.current.caption)
+        if (value != null) SaltText(value, color = LocalNcrustColors.current.onSurfaceVariant,
+            style = LocalNcrustTypography.current.caption)
     }
 }
 
@@ -204,9 +210,9 @@ fun PlaylistSelectionActions(count: Int, owned: Boolean, onAll: () -> Unit, onCa
         SaltText(s.playlists.selectionCount(count))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PlaylistButton(s.playlists.selectAll, onAll, Modifier.weight(1f),
-                containerColor = LocalMetroColors.current.surfaceVariant, contentColor = LocalMetroColors.current.onBackground)
+                containerColor = LocalNcrustColors.current.surfaceVariant, contentColor = LocalNcrustColors.current.onBackground)
             PlaylistButton(s.cancel, onCancel, Modifier.weight(1f),
-                containerColor = LocalMetroColors.current.surfaceVariant, contentColor = LocalMetroColors.current.onBackground)
+                containerColor = LocalNcrustColors.current.surfaceVariant, contentColor = LocalNcrustColors.current.onBackground)
         }
         PlaylistButton(s.playlists.add, onAdd, Modifier.fillMaxWidth(), enabled = count > 0)
         if (owned) PlaylistButton(s.playlists.remove, onRemove, Modifier.fillMaxWidth(), enabled = count > 0)
@@ -215,13 +221,12 @@ fun PlaylistSelectionActions(count: Int, owned: Boolean, onAll: () -> Unit, onCa
 
 /** 强调色可由用户任意选择，白字在云杉绿或素白上不可读。只为本次新增按钮选择前景。 */
 internal fun playlistTextColor(background: Color): Color {
-    val value = background.luminance()
-    return if ((value + 0.05f) / 0.05f >= 1.05f / (value + 0.05f)) Color.Black else Color.White
+    return com.smart.neteast.ui.theme.contrastingColor(background)
 }
 
 @Composable
 fun PlaylistButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
-    containerColor: Color = LocalMetroColors.current.primary, contentColor: Color? = null, selected: Boolean? = null) {
+    containerColor: Color = LocalNcrustColors.current.primary, contentColor: Color? = null, selected: Boolean? = null) {
     val latestClick by rememberUpdatedState(onClick)
     SaltTextButton(onClick = onClick, text = text, modifier = modifier.clearAndSetSemantics {
         this.text = AnnotatedString(text)

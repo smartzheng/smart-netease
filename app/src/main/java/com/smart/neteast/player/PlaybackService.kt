@@ -243,11 +243,10 @@ class PlaybackService : MediaLibraryService() {
                 newPosition: Player.PositionInfo,
                 reason: Int
             ) {
-                // 暂停时没有 ticker：拖动进度 / 外部 seek 后要立刻把新位置推给界面与媒体会话。
-                if (!player.isPlaying) {
-                    onProgressUpdate?.invoke(player.currentPosition, player.duration)
-                    updatePlaybackState()
-                }
+                // 拖动进度、媒体控件 seek、切歌跳转都立刻同步；不依赖下一次 ticker。
+                publishProgress()
+                if (player.isPlaying) startProgressUpdates()
+                updatePlaybackState()
             }
             override fun onPlayerError(error: PlaybackException) {
                 // 之前完全没有错误处理:解码/取流失败后播放器静默停在 IDLE,
@@ -373,6 +372,9 @@ class PlaybackService : MediaLibraryService() {
         val title = intent?.getStringExtra("title")
         val artist = intent?.getStringExtra("artist")
         val artwork = intent?.getStringExtra("artwork")
+        val actualLevel = intent?.getStringExtra("actualLevel").orEmpty()
+        val startPositionMs = intent?.getLongExtra("startPositionMs", 0L)?.coerceAtLeast(0L) ?: 0L
+        val startPlayback = intent?.getBooleanExtra("startPlayback", true) ?: true
         val songId = intent?.getLongExtra("songId", -1L) ?: -1L
 
         if (title != null) mediaTitle = title
@@ -385,9 +387,15 @@ class PlaybackService : MediaLibraryService() {
         }
 
         if (url != null) {
-            PlaybackStateManager.saveState(this, songId, mediaTitle, mediaArtist, currentArtworkUrl ?: "", true)
+            PlaybackStateManager.saveState(
+                this, songId, mediaTitle, mediaArtist, currentArtworkUrl ?: "", startPlayback
+            )
             // 手动切歌：整项替换播放列表，并绑定完整身份（mediaId + 元数据）。
-            playUrl(url, songId, title ?: mediaTitle, artist ?: mediaArtist, artwork.orEmpty())
+            playUrl(
+                url, songId, title ?: mediaTitle, artist ?: mediaArtist, artwork.orEmpty(),
+                actualLevel = actualLevel, startPositionMs = startPositionMs,
+                startPlayback = startPlayback
+            )
         } else if (!isServiceStarted && mediaTitle != "Ncrust") {
             updateNotify()
         }
@@ -515,15 +523,24 @@ class PlaybackService : MediaLibraryService() {
         player.play()
     }
 
-    private fun playUrl(url: String, songId: Long, title: String, artist: String, artwork: String) {
+    private fun playUrl(
+        url: String,
+        songId: Long,
+        title: String,
+        artist: String,
+        artwork: String,
+        actualLevel: String = "",
+        startPositionMs: Long = 0L,
+        startPlayback: Boolean = true
+    ) {
         // 只记 songId/标题：取链 URL 带签名参数，不能进 logcat（即便 release 也会打）。
         Log.d("PlaybackService", "Playing: songId=$songId title=$title")
         // 手动切歌顶掉无缝队列，预载的下一首封面一并作废。
         preloadedArtworkBitmaps.clear()
-        val mediaItem = buildMediaItem(url, songId, title, artist, artwork, "")
-        player.setMediaItem(mediaItem)
+        val mediaItem = buildMediaItem(url, songId, title, artist, artwork, actualLevel)
+        player.setMediaItem(mediaItem, startPositionMs.coerceAtLeast(0L))
         player.prepare()
-        player.playWhenReady = true
+        player.playWhenReady = startPlayback
     }
 
     /**
@@ -771,19 +788,26 @@ class PlaybackService : MediaLibraryService() {
     }
 
     private fun startProgressUpdates() {
-        progressJob?.cancel()
         // 未在播放时不起循环：由 onIsPlayingChanged(true) 再启动。
         if (!player.isPlaying) return
+        if (progressJob?.isActive == true) return
         progressJob = scope.launch {
-            while (isActive && player.isPlaying) {
-                onProgressUpdate?.invoke(player.currentPosition, player.duration)
-                updatePlaybackState()
-                // 500 ms tick：歌词滚动/进度条精度感知不到差异，但把 UI 层 4Hz
-                // 广播降到 2Hz，PlayerViewModel 的三个 StateFlow / SlimProgressBar
-                // 每秒重绘次数直接减半，低端机主线程 snapshot 广播压力显著下降
-                delay(500)
+            while (isActive) {
+                if (!player.isPlaying) break
+                // 单次 UI/媒体会话更新异常不能让整条进度 ticker 永久退出；下一帧继续校正。
+                runCatching { publishProgress() }
+                    .onFailure { Log.w("PlaybackService", "Progress update failed; ticker will retry", it) }
+                runCatching { updatePlaybackState() }
+                    .onFailure { Log.w("PlaybackService", "Playback state update failed", it) }
+                // 250ms 让时间文本与进度条更及时；工作仍只在实际播放时运行。
+                delay(250)
             }
+            if (progressJob === coroutineContext[Job]) progressJob = null
         }
+    }
+
+    private fun publishProgress() {
+        onProgressUpdate?.invoke(player.currentPosition, player.duration)
     }
 
     private fun createNotificationChannel() {

@@ -1,7 +1,5 @@
 package com.smart.neteast.ui.design
 
-import com.smart.neteast.ui.design.SaltIcon
-
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.size
@@ -11,6 +9,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.moriafly.salt.ui.Icon
 import com.moriafly.salt.ui.SaltTheme
+import com.smart.neteast.ui.theme.NcrustIconSize
 
 /** App-sized SaltUI icon primitive; the caller keeps control of the hit target. */
 @Composable
@@ -19,7 +18,7 @@ fun SaltIcon(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     tint: Color = SaltTheme.colors.text,
-    sizeDp: Dp = 24.dp,
+    sizeDp: Dp = NcrustIconSize.regular,
 ) {
     Icon(
         imageVector = imageVector,

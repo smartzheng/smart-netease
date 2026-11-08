@@ -1,5 +1,8 @@
 package com.smart.neteast.ui.theme
 
+
+import com.smart.neteast.ui.design.*
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,8 +34,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
-import io.github.takahashirinta.kanesumi.controls.MetroDivider
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import com.moriafly.salt.ui.Text as SaltText
 
 /**
@@ -58,9 +59,9 @@ fun MarkdownText(markdown: String, modifier: Modifier = Modifier) {
                 is MarkdownBlock.Code -> BasicText(
                     block.text,
                     modifier = Modifier.fillMaxWidth()
-                        .background(LocalMetroColors.current.surfaceVariant)
+                        .background(LocalNcrustColors.current.surfaceVariant)
                         .padding(12.dp),
-                    style = TextStyle(color = LocalMetroColors.current.onBackground,
+                    style = TextStyle(color = LocalNcrustColors.current.onBackground,
                         fontSize = 14.sp, lineHeight = 21.sp,
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
                 )
@@ -71,8 +72,8 @@ fun MarkdownText(markdown: String, modifier: Modifier = Modifier) {
 
 @Composable
 private fun MarkdownLine(line: String) {
-    val onBg = LocalMetroColors.current.onBackground
-    val codeBg = LocalMetroColors.current.surfaceVariant
+    val onBg = LocalNcrustColors.current.onBackground
+    val codeBg = LocalNcrustColors.current.surfaceVariant
     when {
         // 图片：![alt](url)
         line.trimStart().startsWith("![") -> {
@@ -93,7 +94,7 @@ private fun MarkdownLine(line: String) {
         // 水平分割线：--- 或 ***
         line.trimStart().matches(Regex("^[-*]{3,}$")) -> {
             Spacer(Modifier.height(8.dp))
-            MetroDivider(color = codeBg)
+            NcrustDivider(color = codeBg)
             Spacer(Modifier.height(8.dp))
         }
         // 标题
@@ -101,7 +102,7 @@ private fun MarkdownLine(line: String) {
             Spacer(Modifier.height(16.dp))
             SaltText(
                 text = line.trimStart().removePrefix("### "),
-                color = LocalMetroColors.current.onBackground,
+                color = LocalNcrustColors.current.onBackground,
                 style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
             )
             Spacer(Modifier.height(8.dp))
@@ -110,7 +111,7 @@ private fun MarkdownLine(line: String) {
             Spacer(Modifier.height(20.dp))
             SaltText(
                 text = line.trimStart().removePrefix("## "),
-                color = LocalMetroColors.current.onBackground,
+                color = LocalNcrustColors.current.onBackground,
                 style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold)
             )
             Spacer(Modifier.height(8.dp))
@@ -119,7 +120,7 @@ private fun MarkdownLine(line: String) {
             Spacer(Modifier.height(24.dp))
             SaltText(
                 text = line.trimStart().removePrefix("# "),
-                color = LocalMetroColors.current.primary,
+                color = LocalNcrustColors.current.primary,
                 style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
             )
             Spacer(Modifier.height(8.dp))
@@ -127,12 +128,12 @@ private fun MarkdownLine(line: String) {
         // 无序列表：- item
         line.trimStart().startsWith("- ") -> {
             Row(modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)) {
-                SaltText("•", color = LocalMetroColors.current.primary, style = TextStyle(fontSize = 16.sp))
+                SaltText("•", color = LocalNcrustColors.current.primary, style = TextStyle(fontSize = 16.sp))
                 Spacer(Modifier.width(8.dp))
                 BasicText(
                     text = parseInlineMarkdown(line.trimStart().removePrefix("- "), onBg, codeBg),
                     style = TextStyle(
-                        color = LocalMetroColors.current.onBackground.copy(alpha = 0.85f),
+                        color = LocalNcrustColors.current.onBackground.copy(alpha = 0.85f),
                         fontSize = 16.sp,
                         lineHeight = 24.sp
                     )
@@ -149,7 +150,7 @@ private fun MarkdownLine(line: String) {
             BasicText(
                 text = parseInlineMarkdown(line, onBg, codeBg),
                 style = TextStyle(
-                    color = LocalMetroColors.current.onBackground.copy(alpha = 0.85f),
+                    color = LocalNcrustColors.current.onBackground.copy(alpha = 0.85f),
                     fontSize = 16.sp,
                     lineHeight = 24.sp
                 )
@@ -161,7 +162,7 @@ private fun MarkdownLine(line: String) {
 
 @Composable
 private fun MarkdownTable(table: MarkdownBlock.Table) {
-    val colors = LocalMetroColors.current
+    val colors = LocalNcrustColors.current
     BoxWithConstraints(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         // 整表共用横向滚动与列宽，长下载链接不会挤坏相邻列或让表头错位。
         val cellWidth = maxOf(144.dp, maxWidth / table.header.size)
@@ -184,7 +185,7 @@ private fun MarkdownTable(table: MarkdownBlock.Table) {
                         )
                     }
                 }
-                MetroDivider(color = colors.surfaceVariant)
+                NcrustDivider(color = colors.surfaceVariant)
             }
         }
     }

@@ -1,5 +1,8 @@
 package com.smart.neteast.ui.player
 
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,8 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smart.neteast.formatDuration
 import com.smart.neteast.ui.i18n.LocalStrings
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import com.smart.neteast.ui.design.SaltIcon
+import com.smart.neteast.ui.theme.NcrustSpacing
 import com.moriafly.salt.ui.Text as SaltText
 import kotlinx.coroutines.flow.StateFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,6 +57,7 @@ fun FullPlayerControls(
     isBufferingFlow: StateFlow<Boolean>,
     onSeek: (Float) -> Unit = {},
     onNavigateToUser: () -> Unit = {},
+    onShowQualityPanel: () -> Unit = {},
     lyricsUnavailable: Boolean = false,
     previousEnabled: Boolean = true,
     // 宽屏左栏用紧凑尺寸：缩小按钮/间距，把纵向空间让给封面区。
@@ -115,8 +119,8 @@ fun FullPlayerControls(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
-                            .clickable(enabled = !lyricsUnavailable) {
+                            .size(NcrustSpacing.touchTarget)
+                            .clickable(enabled = !lyricsUnavailable, role = androidx.compose.ui.semantics.Role.Button) {
                                 tick()
                                 onToggleLyrics()
                             },
@@ -125,15 +129,15 @@ fun FullPlayerControls(
                         SaltIcon(
                             imageVector = Icons.Rounded.Lyrics,
                             contentDescription = strings.lyricsButton,
-                            tint = if (lyricsUnavailable) LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.5f)
-                            else if (showLyrics) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
+                            tint = if (lyricsUnavailable) LocalNcrustColors.current.onSurfaceVariant.copy(alpha = 0.5f)
+                            else if (showLyrics) LocalNcrustColors.current.primary else LocalNcrustColors.current.onBackground,
                             sizeDp = 24.dp
                         )
                     }
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
-                            .clickable {
+                            .size(NcrustSpacing.touchTarget)
+                            .clickable(role = androidx.compose.ui.semantics.Role.Button) {
                                 tick()
                                 onToggleQueue()
                             },
@@ -142,14 +146,14 @@ fun FullPlayerControls(
                         SaltIcon(
                             imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
                             contentDescription = strings.queueButton,
-                            tint = if (showQueue) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
+                            tint = if (showQueue) LocalNcrustColors.current.primary else LocalNcrustColors.current.onBackground,
                             sizeDp = 24.dp
                         )
                     }
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
-                            .clickable {
+                            .size(NcrustSpacing.touchTarget)
+                            .clickable(role = androidx.compose.ui.semantics.Role.Button) {
                                 tick()
                                 onAddToLibrary()
                             },
@@ -158,7 +162,7 @@ fun FullPlayerControls(
                         SaltIcon(
                             imageVector = if (isInLibrary) Icons.Rounded.Check else Icons.Rounded.Add,
                             contentDescription = strings.addToLibraryButton,
-                            tint = if (isInLibrary) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
+                            tint = if (isInLibrary) LocalNcrustColors.current.primary else LocalNcrustColors.current.onBackground,
                             sizeDp = 24.dp
                         )
                     }
@@ -170,7 +174,7 @@ fun FullPlayerControls(
                     TransportControlButton(
                         glyph = TransportGlyph.Previous,
                         contentDescription = strings.prevButton,
-                        tint = if (previousEnabled) LocalMetroColors.current.onBackground else LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.5f),
+                        tint = if (previousEnabled) LocalNcrustColors.current.onBackground else LocalNcrustColors.current.onSurfaceVariant.copy(alpha = 0.5f),
                         onClick = { tick(); onPlayPrevious() },
                         touchSize = 48.dp,
                         iconSize = 28.dp,
@@ -179,7 +183,7 @@ fun FullPlayerControls(
                     TransportControlButton(
                         glyph = if (isPlaying) TransportGlyph.Pause else TransportGlyph.Play,
                         contentDescription = if (isPlaying) strings.pauseButton else strings.playButton,
-                        tint = LocalMetroColors.current.primary,
+                        tint = LocalNcrustColors.current.primary,
                         onClick = { tick(); onPlayPause() },
                         touchSize = 54.dp,
                         iconSize = 36.dp,
@@ -187,7 +191,7 @@ fun FullPlayerControls(
                     TransportControlButton(
                         glyph = TransportGlyph.Next,
                         contentDescription = strings.nextButton,
-                        tint = LocalMetroColors.current.onBackground,
+                        tint = LocalNcrustColors.current.onBackground,
                         onClick = { tick(); onPlayNext() },
                         touchSize = 48.dp,
                         iconSize = 28.dp,
@@ -196,12 +200,11 @@ fun FullPlayerControls(
                 Box(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
-                        .background(LocalMetroColors.current.surfaceVariant)
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
-                        ) { onNavigateToUser() }
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) { onShowQualityPanel() }
+                        .padding(horizontal = 8.dp, vertical = 8.dp)
                 ) {
                     QualityLabel(
                         qualityIndexFlow = qualityIndexFlow,
@@ -236,9 +239,8 @@ fun FullPlayerControls(
                 // 最长多语言音质名也只占 64dp；省略号截断，不侵占进度条的权重空间。
                 Box(
                     Modifier.widthIn(max = 64.dp)
-                        .background(LocalMetroColors.current.surfaceVariant)
-                        .clickable { onNavigateToUser() }
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .clickable { onShowQualityPanel() }
+                        .padding(horizontal = 6.dp, vertical = 8.dp)
                 ) {
                     QualityLabel(qualityIndexFlow, trialFlow, qualityOptions)
                 }
@@ -257,12 +259,11 @@ fun FullPlayerControls(
                 Box(
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .background(LocalMetroColors.current.surfaceVariant)
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
-                        ) { onNavigateToUser() }
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) { onShowQualityPanel() }
+                        .padding(horizontal = 8.dp, vertical = 8.dp)
                 ) {
                     QualityLabel(
                         qualityIndexFlow = qualityIndexFlow,
@@ -294,7 +295,7 @@ fun FullPlayerControls(
             TransportControlButton(
                 glyph = TransportGlyph.Previous,
                 contentDescription = strings.prevButton,
-                tint = if (previousEnabled) LocalMetroColors.current.onBackground else LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.5f),
+                tint = if (previousEnabled) LocalNcrustColors.current.onBackground else LocalNcrustColors.current.onSurfaceVariant.copy(alpha = 0.5f),
                 onClick = { tick(); onPlayPrevious() },
                 touchSize = sideBtn,
                 iconSize = sideIcon,
@@ -304,7 +305,7 @@ fun FullPlayerControls(
             TransportControlButton(
                 glyph = if (isPlaying) TransportGlyph.Pause else TransportGlyph.Play,
                 contentDescription = if (isPlaying) strings.pauseButton else strings.playButton,
-                tint = LocalMetroColors.current.primary,
+                tint = LocalNcrustColors.current.primary,
                 onClick = { tick(); onPlayPause() },
                 touchSize = playBtn,
                 iconSize = playIcon,
@@ -313,7 +314,7 @@ fun FullPlayerControls(
             TransportControlButton(
                 glyph = TransportGlyph.Next,
                 contentDescription = strings.nextButton,
-                tint = LocalMetroColors.current.onBackground,
+                tint = LocalNcrustColors.current.onBackground,
                 onClick = { tick(); onPlayNext() },
                 touchSize = sideBtn,
                 iconSize = sideIcon,
@@ -360,8 +361,8 @@ fun PlayerPanelToggles(
                 imageVector = Icons.Rounded.Lyrics,
                 contentDescription = strings.lyricsButton,
                 // 无歌词/未加载时置灰, 语义是该歌不可展开歌词
-                tint = if (lyricsUnavailable) LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.5f)
-                else if (showLyrics) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
+                tint = if (lyricsUnavailable) LocalNcrustColors.current.onSurfaceVariant.copy(alpha = 0.5f)
+                else if (showLyrics) LocalNcrustColors.current.primary else LocalNcrustColors.current.onBackground,
                 sizeDp = toggleIcon
             )
         }
@@ -377,7 +378,7 @@ fun PlayerPanelToggles(
             SaltIcon(
                 imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
                 contentDescription = strings.queueButton,
-                tint = if (showQueue) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
+                tint = if (showQueue) LocalNcrustColors.current.primary else LocalNcrustColors.current.onBackground,
                 sizeDp = toggleIcon
             )
         }
@@ -394,7 +395,7 @@ fun PlayerPanelToggles(
             SaltIcon(
                 imageVector = if (isInLibrary) Icons.Rounded.Check else Icons.Rounded.Add,
                 contentDescription = strings.addToLibraryButton,
-                tint = if (isInLibrary) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
+                tint = if (isInLibrary) LocalNcrustColors.current.primary else LocalNcrustColors.current.onBackground,
                 sizeDp = toggleIcon
             )
         }
@@ -407,7 +408,7 @@ private fun PositionText(positionFlow: StateFlow<Long>, modifier: Modifier) {
     val position by positionFlow.collectAsStateWithLifecycle()
     SaltText(
         formatDuration(position),
-        color = LocalMetroColors.current.onSurfaceVariant,
+        color = LocalNcrustColors.current.onSurfaceVariant,
         style = TextStyle(fontSize = 12.sp),
         maxLines = 1,
         softWrap = false,
@@ -421,7 +422,7 @@ private fun DurationText(durationFlow: StateFlow<Long>, modifier: Modifier) {
     val duration by durationFlow.collectAsStateWithLifecycle()
     SaltText(
         formatDuration(duration),
-        color = LocalMetroColors.current.onSurfaceVariant,
+        color = LocalNcrustColors.current.onSurfaceVariant,
         style = TextStyle(fontSize = 12.sp),
         maxLines = 1,
         softWrap = false,
@@ -443,7 +444,7 @@ private fun QualityLabel(
     else options.getOrElse(qualityIndex) { options.getOrElse(3) { "" } }
     SaltText(
         label,
-        color = LocalMetroColors.current.primary,
+        color = LocalNcrustColors.current.primary,
         style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
         maxLines = 1,
         softWrap = false,
@@ -463,7 +464,7 @@ fun TrialBadge(trialFlow: StateFlow<Boolean>, modifier: Modifier = Modifier) {
     if (!isTrial) return
     SaltText(
         LocalStrings.current.trialBadge,
-        color = LocalMetroColors.current.primary,
+        color = LocalNcrustColors.current.primary,
         style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
         maxLines = 1,
         softWrap = false,

@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.smart.neteast.ui.theme.NcrustSpacing
 
 enum class TransportGlyph {
     Previous, Play, Pause, Next
@@ -35,7 +36,7 @@ fun TransportControlButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     iconSize: Dp = 28.dp,
-    touchSize: Dp = 48.dp,
+    touchSize: Dp = NcrustSpacing.touchTarget,
     enabled: Boolean = true,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -48,7 +49,7 @@ fun TransportControlButton(
 
     Box(
         modifier = modifier
-            .size(touchSize)
+            .size(touchSize.coerceAtLeast(NcrustSpacing.touchTarget))
             .scale(scale)
             .clickable(
                 enabled = enabled,

@@ -1,5 +1,12 @@
 package com.smart.neteast.ui.components
 
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+import com.smart.neteast.ui.theme.NcrustShape
+
+
+
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
@@ -26,8 +33,6 @@ import androidx.compose.ui.window.Dialog
 import com.smart.neteast.auth.QrPairServer
 import com.smart.neteast.network.PlaylistApi
 import com.smart.neteast.ui.i18n.LocalStrings
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import com.moriafly.salt.ui.Text as SaltText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -165,7 +170,7 @@ fun QrLoginDialog(
         ) {
             SaltText(
                 strings.qrLoginTitle,
-                color = LocalMetroColors.current.onBackground,
+                color = LocalNcrustColors.current.onBackground,
                 style = TextStyle(fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
             )
             Spacer(Modifier.height(16.dp))
@@ -187,13 +192,13 @@ fun QrLoginDialog(
                     )
                     state == QrState.Loading -> SaltText(
                         strings.loading,
-                        color = LocalMetroColors.current.onSurfaceVariant,
-                        style = LocalMetroTypography.current.bodyMedium,
+                        color = LocalNcrustColors.current.onSurfaceVariant,
+                        style = LocalNcrustTypography.current.bodyMedium,
                     )
                     else -> SaltText(
                         hintFor(state),
-                        color = LocalMetroColors.current.onSurfaceVariant,
-                        style = LocalMetroTypography.current.bodySmall.copy(textAlign = TextAlign.Center),
+                        color = LocalNcrustColors.current.onSurfaceVariant,
+                        style = LocalNcrustTypography.current.bodySmall.copy(textAlign = TextAlign.Center),
                         modifier = Modifier.padding(16.dp)
                     )
                 }
@@ -202,9 +207,9 @@ fun QrLoginDialog(
             Spacer(Modifier.height(12.dp))
             SaltText(
                 hintFor(state),
-                color = if (state == QrState.Scanned) LocalMetroColors.current.primary
-                else LocalMetroColors.current.onSurfaceVariant,
-                style = LocalMetroTypography.current.bodySmall.copy(textAlign = TextAlign.Center),
+                color = if (state == QrState.Scanned) LocalNcrustColors.current.primary
+                else LocalNcrustColors.current.onSurfaceVariant,
+                style = LocalNcrustTypography.current.bodySmall.copy(textAlign = TextAlign.Center),
             )
 
             Spacer(Modifier.height(24.dp))
@@ -212,15 +217,16 @@ fun QrLoginDialog(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .border(1.dp, LocalMetroColors.current.primary, RoundedCornerShape(14.dp))
-                    .clickable(onClick = onGenericLogin)
+                    .heightIn(min = 48.dp)
+                    .clip(NcrustShape.control)
+                    .border(1.dp, LocalNcrustColors.current.primary, NcrustShape.control)
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onGenericLogin)
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 SaltText(
                     strings.qrGenericLogin,
-                    color = LocalMetroColors.current.primary,
+                    color = LocalNcrustColors.current.primary,
                     style = TextStyle(fontSize = 14.sp),
                 )
             }
@@ -228,15 +234,16 @@ fun QrLoginDialog(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .border(1.dp, LocalMetroColors.current.divider, RoundedCornerShape(14.dp))
-                    .clickable(onClick = onDismiss)
+                    .heightIn(min = 48.dp)
+                    .clip(NcrustShape.control)
+                    .border(1.dp, LocalNcrustColors.current.divider, NcrustShape.control)
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onDismiss)
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 SaltText(
                     strings.close,
-                    color = LocalMetroColors.current.onSurfaceVariant,
+                    color = LocalNcrustColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 14.sp),
                 )
             }

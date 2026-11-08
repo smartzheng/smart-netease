@@ -1,4 +1,11 @@
 package com.smart.neteast.ui.screen
+
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+import com.smart.neteast.ui.theme.NcrustShape
+
+
 import androidx.compose.material.icons.rounded.*
 
 import androidx.compose.foundation.clickable
@@ -33,8 +40,6 @@ import com.smart.neteast.ui.components.SongCardStyle
 import com.smart.neteast.ui.components.SongMenuAction
 import com.smart.neteast.ui.i18n.LocalStrings
 import com.smart.neteast.ui.components.SaltTabRow
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import com.moriafly.salt.ui.Text as SaltText
 import kotlinx.coroutines.launch
 import android.widget.Toast
@@ -143,16 +148,16 @@ fun ArtistDetailScreen(
                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     SaltText(
                         artist?.name ?: strings.unknownArtistName,
-                        color = LocalMetroColors.current.onBackground,
+                        color = LocalNcrustColors.current.onBackground,
                         style = TextStyle(fontSize = 25.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
                     )
                     Spacer(Modifier.height(6.dp))
                     Row {
                         artist?.albumSize?.let {
-                            SaltText(strings.artistAlbumCount(it), color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 14.sp))
+                            SaltText(strings.artistAlbumCount(it), color = LocalNcrustColors.current.onSurfaceVariant, style = TextStyle(fontSize = 14.sp))
                             Spacer(Modifier.width(16.dp))
                         }
-                        artist?.musicSize?.let { SaltText(strings.artistSongCount(it), color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 14.sp)) }
+                        artist?.musicSize?.let { SaltText(strings.artistSongCount(it), color = LocalNcrustColors.current.onSurfaceVariant, style = TextStyle(fontSize = 14.sp)) }
                     }
                 }
                 Spacer(Modifier.height(20.dp))
@@ -170,19 +175,23 @@ fun ArtistDetailScreen(
                     if (albums.isEmpty()) {
                         item {
                             Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                                SaltText(strings.noAlbums, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 16.sp))
+                                SaltText(strings.noAlbums, color = LocalNcrustColors.current.onSurfaceVariant, style = TextStyle(fontSize = 16.sp))
                             }
                         }
                     } else {
                         items(albumRows, key = { row -> row.first().id }) { row ->
-                            // 边到边 tile：spacedBy 2dp 制造 Metro 拼贴感。
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            // Keep the album grid aligned with the app's 16dp content gutter,
+                            // with enough separation to read each cover as its own item.
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
                                 for (album in row) {
                                     ArtistAlbumGridItem(album = album, modifier = Modifier.weight(1f), onClick = { onAlbumClick(album.id) })
                                 }
                                 if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
                             }
-                            Spacer(Modifier.height(2.dp))
+                            Spacer(Modifier.height(14.dp))
                         }
                     }
                 }
@@ -190,7 +199,7 @@ fun ArtistDetailScreen(
                     if (hotSongs.isEmpty()) {
                         item {
                             Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                                SaltText(strings.noHotSongs, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 16.sp))
+                                SaltText(strings.noHotSongs, color = LocalNcrustColors.current.onSurfaceVariant, style = TextStyle(fontSize = 16.sp))
                             }
                         }
                     } else {
@@ -225,13 +234,13 @@ fun ArtistDetailScreen(
 @Composable
 fun ArtistAlbumGridItem(album: ArtistAlbumItem, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val strings = LocalStrings.current
-    Column(modifier = modifier.clickable { onClick() }) {
-        AsyncImage(model = CoverUrls.small(album.picUrl), contentDescription = strings.albumCoverDesc, modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(14.dp)), contentScale = ContentScale.Crop)
+    Column(modifier = modifier.clickable(role = androidx.compose.ui.semantics.Role.Button) { onClick() }) {
+    AsyncImage(model = CoverUrls.small(album.picUrl), contentDescription = strings.albumCoverDesc, modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(NcrustShape.artwork), contentScale = ContentScale.Crop)
         Spacer(Modifier.height(6.dp))
-        SaltText(album.name, color = LocalMetroColors.current.onBackground, style = LocalMetroTypography.current.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
+        SaltText(album.name, color = LocalNcrustColors.current.onBackground, style = LocalNcrustTypography.current.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
         album.publishTime?.let {
             val year = java.text.SimpleDateFormat("yyyy", java.util.Locale.getDefault()).format(java.util.Date(it))
-            SaltText("$year · ${strings.trackCount(album.size ?: 0)}", color = LocalMetroColors.current.onSurfaceVariant, style = LocalMetroTypography.current.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
+            SaltText("$year · ${strings.trackCount(album.size ?: 0)}", color = LocalNcrustColors.current.onSurfaceVariant, style = LocalNcrustTypography.current.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
         }
         Spacer(Modifier.height(6.dp))
     }

@@ -1,4 +1,9 @@
 package com.smart.neteast.ui.player
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
+
+import com.smart.neteast.ui.design.*
 import androidx.compose.material.icons.rounded.*
 
 import androidx.compose.animation.animateColorAsState
@@ -40,12 +45,8 @@ import com.smart.neteast.network.SongItem
 import com.smart.neteast.ui.components.SongCard
 import com.smart.neteast.ui.components.SongCardStyle
 import com.smart.neteast.ui.i18n.LocalStrings
-import io.github.takahashirinta.kanesumi.anim.sokuou.rememberMetroFlingBehavior
-import io.github.takahashirinta.kanesumi.anim.sokuou.sokuouSpring
-import io.github.takahashirinta.kanesumi.controls.MetroDivider
-import io.github.takahashirinta.kanesumi.controls.MetroIconButton
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import com.smart.neteast.ui.design.SaltIcon
+import com.smart.neteast.ui.theme.NcrustIconSize
 import com.moriafly.salt.ui.Text as SaltText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -62,7 +63,7 @@ import kotlinx.coroutines.launch
  *    原因是过去区是播放历史，动它会破坏「现在播放的下一首」语义；
  *    infinity(FM) 模式下整个队列只读。
  *  - 拖动过程是纯视觉联动：被拖行 1:1 跟随手指（无动画、无滞后，跟手），
- *    中间行用 Sokuou 阻尼弹簧让位；真正的队列(stack)只在手指抬起、
+ *    中间行用 阻尼弹簧让位；真正的队列(stack)只在手指抬起、
  *    状态稳定后才更新一次，落位用弹簧 placement 平滑收尾。
  *  - infinity(FM) 且将要播放为空 → 显示「相似歌曲续播」占位符。
  *  - 面板每次可见时把「现在播放」自动定位到视觉中心。
@@ -123,7 +124,7 @@ fun QueueView(
 
     if (rows.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            SaltText(strings.emptyQueue, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 16.sp))
+            SaltText(strings.emptyQueue, color = LocalNcrustColors.current.onSurfaceVariant, style = TextStyle(fontSize = 16.sp))
         }
         return
     }
@@ -284,7 +285,7 @@ fun QueueView(
                     .coerceIn(0f, (vh - draggedRowHeight).coerceAtLeast(0f))
                 dragSettleScope.launch {
                     val anim = Animatable(startTop)
-                    anim.animateTo(slotTop, sokuouSpring(response = 0.18f, dampingRatio = 1f)) {
+                    anim.animateTo(slotTop, ncrustSpring(response = 0.18f, dampingRatio = 1f)) {
                         overlayTop = value
                     }
                     // 等让位弹簧彻底落稳
@@ -313,7 +314,7 @@ fun QueueView(
                 val dropTo = to
                 dragSettleScope.launch {
                     val anim = Animatable(startTop)
-                    anim.animateTo(targetTop, sokuouSpring(response = 0.16f, dampingRatio = 1f)) {
+                    anim.animateTo(targetTop, ncrustSpring(response = 0.16f, dampingRatio = 1f)) {
                         overlayTop = value
                     }
                     // 让位弹簧落稳缓冲(残差降到亚像素再提交)
@@ -349,7 +350,7 @@ fun QueueView(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
-            flingBehavior = rememberMetroFlingBehavior()
+            flingBehavior = rememberNcrustFlingBehavior()
         ) {
             itemsIndexed(rows, key = { _, r -> r.key }) { visualRow, row ->
                 when (row.kind) {
@@ -379,20 +380,20 @@ fun QueueView(
                                 qi < draggingQueueIndex && qi >= dragTargetQueueIndex -> draggedRowHeight
                             else -> 0f
                         }
-                        // Sokuou 阻尼弹簧: 拖动中让位动作有惯性与阻尼, 不硬切不振荡。
+                        // 阻尼弹簧: 拖动中让位动作有惯性与阻尼, 不硬切不振荡。
                         // 落定瞬间(dragging 已清)让位直接归零——与槽位跳变同帧发生、
                         // 相互抵消, 其余卡片不产生多余移动("落定后还抖一下"的来源)。
                         val animatedShift = animateFloatAsState(
                             targetValue = shiftTarget,
                             animationSpec = if (draggingQueueIndex >= 0)
-                                sokuouSpring(response = 0.22f, dampingRatio = 1f)
+                                ncrustSpring(response = 0.22f, dampingRatio = 1f)
                             else tween(0),
                             label = "queueRowShift"
                         ).value
                         // 目标行高亮淡入淡出(120ms): 落定瞬间高亮消失不再"pop",
         // 否则重排那一帧背景色突变 = 闪一下
                         val highlightColor by animateColorAsState(
-                            targetValue = if (highlighted) LocalMetroColors.current.surfaceVariant
+                            targetValue = if (highlighted) LocalNcrustColors.current.surfaceVariant
                             else Color.Transparent,
                             animationSpec = tween(120),
                             label = "queueHighlight"
@@ -440,23 +441,23 @@ fun QueueView(
                                             SaltIcon(
                                                 imageVector = Icons.Rounded.DragHandle,
                                                 contentDescription = null,
-                                                tint = LocalMetroColors.current.onSurfaceVariant,
-                                                sizeDp = 20.dp
+                                                tint = LocalNcrustColors.current.onSurfaceVariant,
+                                                sizeDp = NcrustIconSize.medium
                                             )
                                         }
                                     }
-                                    MetroIconButton(
+                                    NcrustIconButton(
                                         onClick = {
-                                            if (!interactive) return@MetroIconButton
+                                            if (!interactive) return@NcrustIconButton
                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                             onRemoveIndex(qi)
                                         }
                                     ) {
                                         SaltIcon(
                                             imageVector = Icons.Rounded.Close,
-                                            contentDescription = null,
-                                            tint = LocalMetroColors.current.onSurfaceVariant,
-                                            sizeDp = 20.dp
+                                            contentDescription = strings.removeFromQueue,
+                                            tint = LocalNcrustColors.current.onSurfaceVariant,
+                                            sizeDp = NcrustIconSize.medium
                                         )
                                     }
                                 }
@@ -475,7 +476,7 @@ fun QueueView(
                 .align(Alignment.TopCenter)
                 .background(
                     Brush.verticalGradient(
-                        listOf(LocalMetroColors.current.background, Color.Transparent)
+                        listOf(LocalNcrustColors.current.background, Color.Transparent)
                     )
                 )
         )
@@ -486,7 +487,7 @@ fun QueueView(
                 .align(Alignment.BottomCenter)
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color.Transparent, LocalMetroColors.current.background)
+                        listOf(Color.Transparent, LocalNcrustColors.current.background)
                     )
                 )
         )
@@ -530,13 +531,13 @@ private fun buildQueueRows(
 
     if (cur > 0) {
         rows += RowInfo(RowKind.PAST_HEAD, -1, "h-past")
-        for (i in 0 until cur) rows += RowInfo(RowKind.SONG, i, "s-${queue[i].id}")
+        for (i in 0 until cur) rows += RowInfo(RowKind.SONG, i, "s-$i-${queue[i].id}")
     }
     rows += RowInfo(RowKind.NOW_HEAD, cur, "h-now")
-    rows += RowInfo(RowKind.SONG, cur, "s-${queue[cur].id}")
+    rows += RowInfo(RowKind.SONG, cur, "s-$cur-${queue[cur].id}")
     if (cur < queue.size - 1 || infinityActive) {
         rows += RowInfo(RowKind.UPCOMING_HEAD, -1, "h-upcoming")
-        for (i in (cur + 1) until queue.size) rows += RowInfo(RowKind.SONG, i, "s-${queue[i].id}")
+        for (i in (cur + 1) until queue.size) rows += RowInfo(RowKind.SONG, i, "s-$i-${queue[i].id}")
         if (infinityActive) rows += RowInfo(RowKind.INFINITY, -1, "infinity")
     }
     return rows
@@ -552,11 +553,11 @@ private fun SectionHeader(title: String) {
     ) {
         SaltText(
             title,
-            color = LocalMetroColors.current.primary,
+            color = LocalNcrustColors.current.primary,
             style = TextStyle(fontSize = 13.sp)
         )
         Spacer(Modifier.width(12.dp))
-        MetroDivider(color = LocalMetroColors.current.divider, modifier = Modifier.weight(1f))
+        NcrustDivider(color = LocalNcrustColors.current.divider, modifier = Modifier.weight(1f))
     }
 }
 
@@ -571,11 +572,11 @@ private fun InfinityPlaceholder(text: String) {
         SaltIcon(
             imageVector = Icons.Rounded.AllInclusive,
             contentDescription = null,
-            tint = LocalMetroColors.current.primary,
-            sizeDp = 20.dp
+            tint = LocalNcrustColors.current.primary,
+            sizeDp = NcrustIconSize.medium
         )
         Spacer(Modifier.width(8.dp))
-        SaltText(text, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 14.sp))
+        SaltText(text, color = LocalNcrustColors.current.onSurfaceVariant, style = TextStyle(fontSize = 14.sp))
     }
 }
 

@@ -22,7 +22,6 @@ import com.smart.neteast.playlist.*
 import com.smart.neteast.ui.components.*
 import com.smart.neteast.ui.i18n.*
 import com.smart.neteast.ui.theme.*
-import io.github.takahashirinta.kanesumi.core.theme.*
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -178,12 +177,10 @@ class PlaylistCollectionRenderingTest {
                 key(marker) {
                     CompositionLocalProvider(LocalStrings provides zhCN) {
                         NcrustTheme(Color(0xFF3B82F6), dark) {
-                            MetroTheme(LocalNcrustColors.current.toMetroColors(dark)) {
-                                Box(Modifier.fillMaxSize().background(LocalMetroColors.current.background).statusBarsPadding().navigationBarsPadding()
+                                Box(Modifier.fillMaxSize().background(LocalNcrustColors.current.background).statusBarsPadding().navigationBarsPadding()
                                     .semantics { contentDescription = marker }.onGloballyPositioned {
                                         view!!.viewTreeObserver.registerFrameCommitCallback { ready.countDown() }
                                     }) { content() }
-                            }
                         }
                     }
                 }

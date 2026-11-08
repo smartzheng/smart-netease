@@ -1,5 +1,11 @@
 package com.smart.neteast.ui.components
 
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
+
+import com.smart.neteast.ui.design.*
+import com.smart.neteast.ui.theme.NcrustShape
+
 import com.smart.neteast.network.CoverUrls
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -32,13 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.smart.neteast.ui.BottomOverlayInsetDp
-import io.github.takahashirinta.kanesumi.anim.sokuou.MetroDefault
-import io.github.takahashirinta.kanesumi.anim.sokuou.SokuouTweens
-import io.github.takahashirinta.kanesumi.anim.sokuou.rememberMetroFlingBehavior
-import io.github.takahashirinta.kanesumi.controls.MetroProgressIndicator
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import com.moriafly.salt.ui.Text as SaltText
-import io.github.takahashirinta.kanesumi.structure.MetroTopScrim
 import com.smart.neteast.ui.i18n.LocalStrings
 
 /**
@@ -70,7 +70,7 @@ fun DetailScaffold(
         // 主 tab 屏一直在下层挂载，DetailScaffold 显示期间就是它遮住 tab 屏。
         modifier = Modifier
             .fillMaxSize()
-            .background(LocalMetroColors.current.background)
+            .background(LocalNcrustColors.current.background)
     ) {
         val stateKey = when {
             error != null -> DetailScaffoldState.Error
@@ -79,34 +79,35 @@ fun DetailScaffold(
         }
         Crossfade(
             targetState = stateKey,
-            animationSpec = SokuouTweens.CoverFade,
+            animationSpec = NcrustMotion.CoverFade,
             modifier = Modifier.fillMaxSize(),
             label = "DetailScaffoldCrossfade"
         ) { state ->
             when (state) {
                 DetailScaffoldState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        MetroProgressIndicator(color = LocalMetroColors.current.primary)
+                        NcrustProgressIndicator(color = LocalNcrustColors.current.primary)
                     }
                 }
                 DetailScaffoldState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            SaltText(error ?: "", color = Color.Red, style = TextStyle(fontSize = 16.sp))
+                            SaltText(error ?: "", color = LocalNcrustColors.current.error, style = TextStyle(fontSize = 16.sp))
                             if (onRetry != null) {
                                 Spacer(Modifier.height(16.dp))
                                 Box(
                                     modifier = Modifier
-                                        .background(LocalMetroColors.current.primary)
+                                        .background(LocalNcrustColors.current.primary)
                                         .clickable(
                                             interactionSource = remember { MutableInteractionSource() },
                                             indication = null,
+                                            role = androidx.compose.ui.semantics.Role.Button,
                                             onClick = onRetry
                                         )
                                         .padding(horizontal = 24.dp, vertical = 8.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    SaltText(strings.retry, color = Color.Black)
+                                    SaltText(strings.retry, color = LocalNcrustColors.current.onPrimary)
                                 }
                             }
                         }
@@ -121,16 +122,16 @@ fun DetailScaffold(
                     }
                     AnimatedVisibility(
                         visibleState = cascadeState,
-                        enter = fadeIn(animationSpec = tween(220, easing = MetroDefault)) +
+                        enter = fadeIn(animationSpec = tween(220, easing = NcrustMotion.StandardEasing)) +
                             slideInVertically(
-                                animationSpec = tween(220, easing = MetroDefault),
+                                animationSpec = tween(220, easing = NcrustMotion.StandardEasing),
                                 initialOffsetY = { slideOffsetPx }
                             )
                     ) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = BottomOverlayInsetDp),
-                            flingBehavior = rememberMetroFlingBehavior()
+                            flingBehavior = rememberNcrustFlingBehavior()
                         ) {
                             item { header() }
                             content()
@@ -152,7 +153,7 @@ fun DetailScaffold(
  * 顶部渐隐 scrim + 裸图标。scrim 承担"让白色图标在任意封面上可读"的职责，
  * 图标本身无背板。详情页与 WebView 登录共用此组件以保证一致性。
  *
- * 实现委托给库的 MetroTopScrim（同语义：渐隐 scrim + 48dp 触控区 + 直角闪切），
+ * 实现委托给库的 NcrustTopScrim（同语义：渐隐 scrim + 48dp 触控区 + 直角闪切），
  * 保留本签名以便现有调用方不改。
  */
 @Composable
@@ -162,7 +163,7 @@ fun TopScrimIconButton(
     onClick: () -> Unit,
     alignment: Alignment = Alignment.TopStart
 ) {
-    MetroTopScrim(
+    NcrustTopScrim(
         icon = icon,
         contentDescription = contentDescription,
         onClick = onClick,
@@ -206,8 +207,8 @@ fun DetailHeader(
             AsyncImage(
                 model = CoverUrls.large(coverUrl),
                 contentDescription = strings.coverDesc,
-                placeholder = androidx.compose.ui.graphics.painter.ColorPainter(LocalMetroColors.current.surfaceVariant),
-                modifier = Modifier.size(220.dp).clip(RoundedCornerShape(18.dp)),
+                placeholder = androidx.compose.ui.graphics.painter.ColorPainter(LocalNcrustColors.current.surfaceVariant),
+                modifier = Modifier.size(220.dp).clip(NcrustShape.heroArtwork),
                 contentScale = ContentScale.Crop
             )
             Spacer(Modifier.width(24.dp))
@@ -232,12 +233,12 @@ fun DetailHeader(
         AsyncImage(
             model = CoverUrls.large(coverUrl),
             contentDescription = strings.coverDesc,
-            // 纯色占位:详情首开封面解码完成前不闪空块(Metro 直接落图,不做 crossfade)
-            placeholder = androidx.compose.ui.graphics.painter.ColorPainter(LocalMetroColors.current.surfaceVariant),
+            // 纯色占位:详情首开封面解码完成前不闪空块(封面直接落图,不做 crossfade)
+            placeholder = androidx.compose.ui.graphics.painter.ColorPainter(LocalNcrustColors.current.surfaceVariant),
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(18.dp)),
+                .clip(NcrustShape.heroArtwork),
             contentScale = ContentScale.Crop
         )
         Spacer(Modifier.height(20.dp))
@@ -277,7 +278,7 @@ private fun DetailHeaderInfoRow(
         Column(modifier = Modifier.weight(1f)) {
             SaltText(
                 title,
-                color = LocalMetroColors.current.onBackground,
+                color = LocalNcrustColors.current.onBackground,
                 style = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.Normal),
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
@@ -286,12 +287,13 @@ private fun DetailHeaderInfoRow(
                 Spacer(Modifier.height(6.dp))
                 SaltText(
                     subtitle,
-                    color = LocalMetroColors.current.primary,
+                    color = LocalNcrustColors.current.primary,
                     style = TextStyle(fontSize = 14.sp),
                     modifier = if (onSubtitleClick != null)
                         Modifier.clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
+                            role = androidx.compose.ui.semantics.Role.Button,
                             onClick = onSubtitleClick
                         )
                     else Modifier
@@ -299,7 +301,7 @@ private fun DetailHeaderInfoRow(
             }
             infoLines.forEach { line ->
                 Spacer(Modifier.height(3.dp))
-                SaltText(line, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 13.sp))
+                SaltText(line, color = LocalNcrustColors.current.onSurfaceVariant, style = TextStyle(fontSize = 13.sp))
             }
         }
         if (onPlayAll != null) {

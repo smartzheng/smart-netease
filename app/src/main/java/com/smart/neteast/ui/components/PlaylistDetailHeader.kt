@@ -1,5 +1,13 @@
 package com.smart.neteast.ui.components
 
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
+
+
+import com.smart.neteast.ui.design.*
+
 import com.moriafly.salt.ui.Text as SaltText
 
 import androidx.compose.foundation.layout.*
@@ -11,9 +19,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.smart.neteast.ui.i18n.LocalStrings
-import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenu
-import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenuItem
-import io.github.takahashirinta.kanesumi.core.theme.*
 
 /** 播放保持主操作；管理和选择使用次级表面，删除经菜单进入原确认流程。 */
 @Composable
@@ -24,17 +29,17 @@ fun PlaylistDetailHeader(
     selection: @Composable ColumnScope.() -> Unit = {}
 ) {
     val s = LocalStrings.current
-    val colors = LocalMetroColors.current
+    val colors = LocalNcrustColors.current
     var menu by remember { mutableStateOf(false) }
     LaunchedEffect(management, owned, selecting) { menu = false }
     val metadata: @Composable ColumnScope.() -> Unit = {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
-                SaltText(title, style = LocalMetroTypography.current.title.copy(fontSize = 26.sp),
+                SaltText(title, style = LocalNcrustTypography.current.title.copy(fontSize = 26.sp),
                     maxLines = 3, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(8.dp))
                 SaltText(listOfNotNull(privacy, s.trackCountSongs(trackCount)).joinToString(" · "),
-                    style = LocalMetroTypography.current.caption, color = colors.onSurfaceVariant)
+                    style = LocalNcrustTypography.current.caption, color = colors.onSurfaceVariant)
             }
             if (onPlay != null) {
                 Spacer(Modifier.width(16.dp))
@@ -43,11 +48,11 @@ fun PlaylistDetailHeader(
         }
         if (description.isNotBlank()) {
             Spacer(Modifier.height(12.dp))
-            SaltText(description, style = LocalMetroTypography.current.bodyMedium, color = colors.onSurfaceVariant)
+            SaltText(description, style = LocalNcrustTypography.current.bodyMedium, color = colors.onSurfaceVariant)
         }
         if (!complete) {
             Spacer(Modifier.height(12.dp))
-            SaltText(s.playlists.incomplete, style = LocalMetroTypography.current.caption,
+            SaltText(s.playlists.incomplete, style = LocalNcrustTypography.current.caption,
                 color = colors.onSurfaceVariant)
         }
         if (management) {
@@ -62,10 +67,10 @@ fun PlaylistDetailHeader(
                     if (owned) Box {
                         PlaylistButton(s.playlists.manage, { menu = true },
                             containerColor = colors.surfaceVariant, contentColor = colors.onBackground)
-                        MetroDropdownMenu(menu, { menu = false }, alignment = Alignment.BottomEnd,
+                        NcrustDropdownMenu(menu, { menu = false }, alignment = Alignment.BottomEnd,
                             containerColor = colors.surface, cornerRadiusDp = 18.dp) {
-                            MetroDropdownMenuItem(s.playlists.edit, { menu = false; onEdit() })
-                            MetroDropdownMenuItem(s.playlists.delete, { menu = false; onDelete() })
+                            NcrustDropdownMenuItem(s.playlists.edit, { menu = false; onEdit() })
+                            NcrustDropdownMenuItem(s.playlists.delete, { menu = false; onDelete() })
                         }
                     }
                 }

@@ -191,6 +191,17 @@ scanConnecting = "正在連接平板…",
 
     pendingSyncCount = { "$it 首僅本地保存，等待同步至雲端" },
     retrySync = "重試同步",
+    syncing = "正在同步…",
+    syncCompleted = "已同步至雲端",
+    pendingSyncRetryFailed = { count, code, readback -> when {
+        readback -> "仍有 $count 首待同步：網易雲已接收請求，但歌單尚未確認，稍後可重試"
+        code == 524 -> "仍有 $count 首待同步：網易雲拒絕收藏請求（524，操作環境受限）"
+        code != null && code != -1 -> "仍有 $count 首待同步：網易雲收藏介面錯誤碼 $code"
+        code == -1 -> "仍有 $count 首待同步：收藏請求或回應驗證失敗，請稍後重試"
+        else -> "仍有 $count 首待同步，網易雲尚未確認收藏狀態"
+    } },
+    removeFromQueue = "從播放佇列移除",
+    reorderQueueItem = "拖動以調整播放順序",
 
     actionShare = "分享",
     shareChooserTitle = "分享至",

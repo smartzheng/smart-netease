@@ -274,6 +274,36 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         } else 0f
     }
 
+    /** Change the active network's quality preference and re-open the current song at its current position. */
+    fun changePlaybackQuality(index: Int) {
+        val selectedIndex = index.coerceIn(0, qualityApiLevels.lastIndex)
+        val selectedLevel = qualityApiLevels[selectedIndex]
+        val prefs = getApplication<Application>().getSharedPreferences("ncrust_settings", 0)
+        val preferenceKey = if (isOnWifi()) "wifi_quality" else "mobile_quality"
+        prefs.edit().putInt(preferenceKey, selectedIndex).apply()
+
+        val songId = currentSongId.value ?: return
+        if (songId <= 0) return
+        val player = PlaybackService.instance?.player
+        val wasPlaying = player?.isPlaying ?: isPlaying.value
+        val currentLevel = lastPlayedLevel.ifEmpty {
+            qualityApiLevels.getOrElse(currentQualityIndex.value) { "lossless" }
+        }
+        if (selectedLevel == currentLevel) return
+
+        val resumeAt = player?.currentPosition?.takeIf { it > 0L } ?: currentPosition.value
+        playSong(
+            songId = songId,
+            title = currentSongName.value.orEmpty(),
+            artist = currentSongArtist.value.orEmpty(),
+            artworkUrl = currentSongArtwork.value.orEmpty(),
+            quality = selectedLevel,
+            privilege = lastSongPrivilege,
+            startPositionMs = resumeAt.coerceAtLeast(0L),
+            startPlayback = wasPlaying
+        )
+    }
+
     fun setOnSongEndedCallback(callback: () -> Unit) { onSongEndedCallback = callback }
     fun setOnSongNextCallback(callback: () -> Unit) { onSongNextCallback = callback }
     fun setOnSongPreviousCallback(callback: () -> Unit) { onSongPreviousCallback = callback }
@@ -437,7 +467,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         artist: String = "",
         artworkUrl: String = "",
         quality: String = "",
-        privilege: SongPrivilege? = null
+        privilege: SongPrivilege? = null,
+        startPositionMs: Long = 0L,
+        startPlayback: Boolean = true
     ) {
         songPlayVersion++
         val fetchVersion = songPlayVersion
@@ -486,14 +518,17 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 putExtra("artist", artist)
                 putExtra("artwork", artworkUrl)
                 putExtra("songId", songId)
+                putExtra("actualLevel", result.actualLevel.orEmpty())
+                putExtra("startPositionMs", startPositionMs.coerceAtLeast(0L))
+                putExtra("startPlayback", startPlayback)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 getApplication<Application>().startForegroundService(intent)
             else
                 getApplication<Application>().startService(intent)
-            isPlaying.value = true
             viewModelScope.launch { fetchLyrics(songId) }
-            PlaybackStateManager.saveState(getApplication(), songId, title, artist, artworkUrl, true)
+            isPlaying.value = startPlayback
+            PlaybackStateManager.saveState(getApplication(), songId, title, artist, artworkUrl, startPlayback)
             return
         }
         lastSongPrivilege = privilege
@@ -538,12 +573,15 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                         putExtra("artist", artist)
                         putExtra("artwork", artworkUrl)
                         putExtra("songId", songId)
+                        putExtra("actualLevel", result.actualLevel.orEmpty())
+                        putExtra("startPositionMs", startPositionMs.coerceAtLeast(0L))
+                        putExtra("startPlayback", startPlayback)
                     }
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                         getApplication<Application>().startForegroundService(intent)
                     else
                         getApplication<Application>().startService(intent)
-                    isPlaying.value = true
+                    isPlaying.value = startPlayback
                 }
             } catch (e: Exception) {
                 Log.e("PlayerViewModel", "fetchUrl failed", e)

@@ -190,6 +190,17 @@ val jpJP = Strings(
 
     pendingSyncCount = { "ローカル保存のみ $it 曲、クラウド同期待ち" },
     retrySync = "同期を再試行",
+    syncing = "同期中…",
+    syncCompleted = "クラウドに同期しました",
+    pendingSyncRetryFailed = { count, code, readback -> when {
+        readback -> "$count 曲が未同期：NetEase は要求を受け付けましたが、プレイリストで未確認です。後でもう一度お試しください"
+        code == 524 -> "$count 曲が未同期：NetEase が「いいね」を拒否しました（524、操作環境が制限されています）"
+        code != null && code != -1 -> "$count 曲が未同期：NetEase のエラーコード $code"
+        code == -1 -> "$count 曲が未同期：要求または応答の検証に失敗しました。後でもう一度お試しください"
+        else -> "$count 曲が未同期：NetEase がまだ確認していません"
+    } },
+    removeFromQueue = "再生キューから削除",
+    reorderQueueItem = "ドラッグして並べ替え",
 
     actionShare = "共有",
     shareChooserTitle = "共有先",

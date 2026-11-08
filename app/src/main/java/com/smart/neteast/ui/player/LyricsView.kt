@@ -1,5 +1,10 @@
 package com.smart.neteast.ui.player
 
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
+
+import com.smart.neteast.ui.design.*
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,16 +28,13 @@ import com.smart.neteast.lyric.LrcLine
 import com.smart.neteast.ui.i18n.LocalStrings
 import com.smart.neteast.ui.HeightClass
 import com.smart.neteast.ui.LocalHeightClass
-import io.github.takahashirinta.kanesumi.controls.MetroLyricLine
-import io.github.takahashirinta.kanesumi.controls.MetroLyricsPanel
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
 import com.moriafly.salt.ui.Text as SaltText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
- * 歌词面板 —— 渲染交给 Kanesumi 的 MetroLyricsPanel(左对齐大字,每行独立
+ * 歌词面板 —— 渲染交给应用自有的 NcrustLyricsPanel(左对齐大字,每行独立
  * 弹簧单位,静态效果 = 原版 LazyColumn 实现)。这里只做播放器侧对接:
  *
  *  - 位置外推:Service 侧刻意保持 2Hz 广播(见 PlaybackService.startProgressUpdates
@@ -63,7 +65,7 @@ fun LyricsView(
     if (lyrics.isEmpty()) {
         if (!isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                SaltText(strings.noLyrics, color = LocalMetroColors.current.onSurfaceVariant, style = TextStyle(fontSize = 18.sp))
+                SaltText(strings.noLyrics, color = LocalNcrustColors.current.onSurfaceVariant, style = TextStyle(fontSize = 18.sp))
             }
         }
         return
@@ -73,7 +75,7 @@ fun LyricsView(
     // 翻译按时间戳精确对齐原句(网易 tlyric 与原 lrc 时间戳一致),缺失的行不显示译文。
     val metroLines = remember(lyrics, translatedLyrics, showTranslation) {
         val tMap = if (showTranslation) translatedLyrics.associateBy { it.timeMs } else emptyMap()
-        lyrics.map { MetroLyricLine(it.timeMs, it.text, translation = tMap[it.timeMs]?.text ?: "") }
+        lyrics.map { NcrustLyricLine(it.timeMs, it.text, translation = tMap[it.timeMs]?.text ?: "") }
     }
 
     // 订阅位置流:collectAsState 建 State;displayPosition 只在面板 draw/derived
@@ -133,7 +135,7 @@ fun LyricsView(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        MetroLyricsPanel(
+        NcrustLyricsPanel(
             lines = metroLines,
             currentPositionMillis = { displayPosition.longValue },
             isVisible = isVisible,
@@ -147,10 +149,10 @@ fun LyricsView(
                 onSeekToMs(ms)
             } else { _ -> },
             onUserScrolled = onUserScrolled,
-            // 已播/未播行颜色随主题适配：Kanesumi 面板默认写死 White@0.6 / Gray@0.4，
+            // 已播/未播行颜色随主题适配：旧实现默认写死 White@0.6 / Gray@0.4，
             // 浅色底上白色已播行会看不见。这里改用语义色。
-            pastLineColor = LocalMetroColors.current.onBackground.copy(alpha = 0.6f),
-            futureLineColor = LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.4f),
+            pastLineColor = LocalNcrustColors.current.onBackground.copy(alpha = 0.6f),
+            futureLineColor = LocalNcrustColors.current.onSurfaceVariant.copy(alpha = 0.4f),
             fontSize = when (heightClass) {
                 HeightClass.Regular -> 32.sp
                 HeightClass.Compact -> 24.sp
@@ -183,7 +185,7 @@ fun LyricsView(
                 .height(100.dp)
                 .align(Alignment.TopCenter)
                 .background(
-                    Brush.verticalGradient(listOf(LocalMetroColors.current.background, Color.Transparent))
+                    Brush.verticalGradient(listOf(LocalNcrustColors.current.background, Color.Transparent))
                 )
         )
         Box(
@@ -192,7 +194,7 @@ fun LyricsView(
                 .height(100.dp)
                 .align(Alignment.BottomCenter)
                 .background(
-                    Brush.verticalGradient(listOf(Color.Transparent, LocalMetroColors.current.background))
+                    Brush.verticalGradient(listOf(Color.Transparent, LocalNcrustColors.current.background))
                 )
         )
     }

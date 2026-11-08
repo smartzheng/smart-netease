@@ -191,6 +191,17 @@ val en = Strings(
 
     pendingSyncCount = { "$it saved locally, waiting to sync to the cloud" },
     retrySync = "Retry sync",
+    syncing = "Syncing…",
+    syncCompleted = "Synced to the cloud",
+    pendingSyncRetryFailed = { count, code, readback -> when {
+        readback -> "$count still pending: the request was accepted, but the playlist has not confirmed it yet. Retry later."
+        code == 524 -> "$count still pending: NetEase rejected the like (524, restricted request environment)."
+        code != null && code != -1 -> "$count still pending: NetEase like endpoint returned error $code."
+        code == -1 -> "$count still pending: the request or response check failed. Retry later."
+        else -> "$count still pending: NetEase has not confirmed the like yet."
+    } },
+    removeFromQueue = "Remove from queue",
+    reorderQueueItem = "Drag to reorder",
 
     actionShare = "Share",
     shareChooserTitle = "Share to",

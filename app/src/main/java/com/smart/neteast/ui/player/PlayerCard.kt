@@ -1,5 +1,13 @@
 package com.smart.neteast.ui.player
 
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
+
+
+import com.smart.neteast.ui.design.*
+
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.Crossfade
@@ -58,11 +66,6 @@ import com.smart.neteast.ui.HeightClass
 import com.smart.neteast.ui.LocalHeightClass
 import com.smart.neteast.ui.i18n.LocalStrings
 import com.smart.neteast.ui.viewmodel.PlayerViewModel
-import io.github.takahashirinta.kanesumi.anim.sokuou.SokuouTweens
-import io.github.takahashirinta.kanesumi.controls.MetroDivider
-import io.github.takahashirinta.kanesumi.controls.MetroIconButton
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import com.smart.neteast.ui.design.SaltIcon
 import com.moriafly.salt.ui.Text as SaltText
 import kotlin.math.abs
@@ -100,16 +103,17 @@ fun PlayerCard(
     onNavigateToUser: () -> Unit = {}
 ) {
     val hasSong = song != null
-    // 初始落大封面: 歌词未就绪时(加载中/确无), 全屏默认看封面而非空歌词面板;
-    // lyricsReady 到位后由下方的 LaunchedEffect 自动切回歌词视图。
+    // 初始落大封面；切歌和歌词异步加载不会改变用户当前选中的封面/歌词/队列模式。
     var showLyrics by remember { mutableStateOf(false) }
     var showQueue by remember { mutableStateOf(false) }
+    var showQualityPanel by remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
     val strings = LocalStrings.current
     val playerViewModel: PlayerViewModel = viewModel()
+    LaunchedEffect(song?.id) { showQualityPanel = false }
     val lyrics by playerViewModel.lyrics.collectAsState()
     val translatedLyrics by playerViewModel.translatedLyrics.collectAsState()
     val lyricsLoading by playerViewModel.lyricsLoading.collectAsState()
@@ -230,13 +234,9 @@ fun PlayerCard(
         if (cardShown.value) playerViewModel.refreshPlaybackProgress(song?.duration)
     }
 
-    // ---- 歌词可达性驱动的「大封面 ↔ 歌词视图」自动切换 ----
-    // - 切歌瞬间: 旧歌词已被 ViewModel 清空, 直接落大封面, 绝不残留上一首歌词。
-    // - 歌词就绪(lyricsReady): 自动切回歌词视图（Apple Music 语义）。
-    // - 歌词未就绪(仍在加载/确无): 保持大封面 + 灰按钮。
-    // - 用户在队列视图时不打扰。
-    // lyricsReady：歌词**属于当前歌**且非加载中。旧歌词残留(切歌过渡)不算就绪——
-    // 由 lyricsSongId == song?.id 保证, 否则无歌词的新歌会被误判就绪显示旧歌词。
+    // 歌词就绪只影响歌词内容和按钮状态，不自动切换播放器模式，避免异步歌词到达时
+    // 与展开动画叠加，造成封面突然放大/缩小或歌词面板跳入左上角。
+    // lyricsReady：歌词属于当前歌且非加载中；旧歌词残留不算就绪。
     val lyricsReady = lyricsSongId == song?.id && !lyricsLoading && lyrics.isNotEmpty()
     // 只有服务端明确答复"确无歌词"时才置灰歌词按钮；加载中/请求失败都保持可点，
     // 失败时点一下即触发重试，而不是一次网络抖动就把按钮永久禁用（issue: 后台被杀重进后按钮灰掉）。
@@ -263,31 +263,6 @@ fun PlayerCard(
                 Toast.makeText(context, strings.addedToLibrary, Toast.LENGTH_SHORT).show()
             }
             libraryTick++
-        }
-    }
-
-    // 每首歌只自动切到歌词视图一次；用户手动关掉歌词后，不再被自动打开
-    // （否则关歌词时 showLyrics 被 effect 立刻改回 true，wideSplit 回不到 0，
-    //  表现为"封面/控件都不动"）。
-    var autoSwitchedForSong by remember(song?.id) { mutableStateOf(false) }
-
-    LaunchedEffect(song?.id, lyricsReady, lyricsLoading, showQueue) {
-        when {
-            showQueue -> {
-                // 用户在队列：不打扰, 放弃自动回切
-            }
-            // 歌词就绪 → 首次自动切到歌词视图（封面缩小/左移）
-            lyricsReady -> {
-                if (!autoSwitchedForSong) {
-                    autoSwitchedForSong = true
-                    if (!showLyrics) showLyrics = true
-                }
-            }
-            // 加载中：保持当前视图，不清空也不切回大封面 —— 切歌时封面完全不动。
-            lyricsLoading -> {
-            }
-            // 确无歌词（加载完成且为空）→ 回大封面
-            else -> if (showLyrics) showLyrics = false
         }
     }
 
@@ -444,7 +419,7 @@ fun PlayerCard(
                 .graphicsLayer {
                     translationY = statusBarPx * (1f - progress.value)
                 }
-                .background(LocalMetroColors.current.background)
+                .background(LocalNcrustColors.current.background)
         )
         // 折叠态卡背：卡片整体下移后，miniBar 下方露出的是这张黑底（原底部导航/系统栏
         // 位置）。折叠时用 surface 盖住，与 miniBar 同色，避免底部黑块；展开时透明。
@@ -455,7 +430,7 @@ fun PlayerCard(
                     alpha = (1f - progress.value * 5f).coerceIn(0f, 1f)
                     translationY = statusBarPx * (1f - progress.value)
                 }
-                .background(LocalMetroColors.current.surface)
+                .background(LocalNcrustColors.current.surface)
         )
 
         Column(
@@ -494,6 +469,7 @@ fun PlayerCard(
                             }
                         },
                         onNavigateToUser = onNavigateToUser,
+                        onShowQualityPanel = { showQualityPanel = true },
                         lyricsUnavailable = lyricsUnavailable,
                         previousEnabled = playMode != QueueModes.INFINITY,
                         landscape = isWidePlayer,
@@ -519,11 +495,11 @@ fun PlayerCard(
                                     translationX = -q * screenWidthPx
                                 }
                         ) {
-                            // 切歌时旧歌词渐隐、新歌词渐显（Sokuou UWP 缓动）。
+                            // 切歌时旧歌词渐隐、新歌词渐显（Salt UI 动效曲线）。
                             // key = song?.id：同一首歌的歌词更新不触发 Crossfade, 只换内容。
                             Crossfade(
                                 targetState = song?.id,
-                                animationSpec = SokuouTweens.CoverFade,
+                                animationSpec = NcrustMotion.CoverFade,
                                 label = "LyricsCrossfade"
                             ) { _ ->
                                 ThresholdScope(lyricsInteractive) { interactive ->
@@ -568,11 +544,11 @@ fun PlayerCard(
                             ) {
                                 SaltText(
                                     strings.queueTitle,
-                                    color = LocalMetroColors.current.onBackground,
+                                    color = LocalNcrustColors.current.onBackground,
                                     style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold),
                                     modifier = Modifier.weight(1f)
                                 )
-                                MetroIconButton(onClick = onTogglePlayMode) {
+                                NcrustIconButton(onClick = onTogglePlayMode) {
                                     SaltIcon(
                                         imageVector = when (playMode) {
                                             QueueModes.SINGLE -> Icons.Rounded.RepeatOne
@@ -582,29 +558,29 @@ fun PlayerCard(
                                             else -> Icons.Rounded.Repeat
                                         },
                                         contentDescription = strings.playModeButton,
-                                        tint = if (playMode != QueueModes.CYCLE) LocalMetroColors.current.primary else LocalMetroColors.current.onBackground,
+                                        tint = if (playMode != QueueModes.CYCLE) LocalNcrustColors.current.primary else LocalNcrustColors.current.onBackground,
                                         sizeDp = 24.dp
                                     )
                                 }
-                                MetroIconButton(onClick = onSavePlaylist) {
+                                NcrustIconButton(onClick = onSavePlaylist) {
                                     SaltIcon(
                                         imageVector = Icons.Rounded.Add,
                                         contentDescription = strings.saveAsPlaylist,
-                                        tint = LocalMetroColors.current.onBackground,
+                                        tint = LocalNcrustColors.current.onBackground,
                                         sizeDp = 24.dp
                                     )
                                 }
                                 // 清空队列: 停播并回到暂无播放态
-                                MetroIconButton(onClick = onClearQueue) {
+                                NcrustIconButton(onClick = onClearQueue) {
                                     SaltIcon(
                                         imageVector = Icons.Rounded.DeleteSweep,
                                         contentDescription = strings.clearQueue,
-                                        tint = LocalMetroColors.current.onBackground,
+                                        tint = LocalNcrustColors.current.onBackground,
                                         sizeDp = 24.dp
                                     )
                                 }
                             }
-                            MetroDivider(color = LocalMetroColors.current.divider)
+                            NcrustDivider(color = LocalNcrustColors.current.divider)
                             ThresholdScope(cardExpandedForInput) { interactive ->
                                 QueueView(
                                     queue = playbackQueue,
@@ -657,15 +633,15 @@ fun PlayerCard(
                                 ) {
                                     SaltText(
                                         s.name,
-                                        color = LocalMetroColors.current.onBackground,
-                                        style = LocalMetroTypography.current.titleLarge,
+                                        color = LocalNcrustColors.current.onBackground,
+                                        style = LocalNcrustTypography.current.titleLarge,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     SaltText(
                                         s.artists?.joinToString("/") { it.name } ?: "",
-                                        color = LocalMetroColors.current.primary,
-                                        style = LocalMetroTypography.current.bodyLarge,
+                                        color = LocalNcrustColors.current.primary,
+                                        style = LocalNcrustTypography.current.bodyLarge,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -724,8 +700,8 @@ fun PlayerCard(
                             ThresholdScope(titleVisible) { visible ->
                                 SaltText(
                                     s.name,
-                                    color = LocalMetroColors.current.onBackground,
-                                    style = LocalMetroTypography.current.titleMedium,
+                                    color = LocalNcrustColors.current.onBackground,
+                                    style = LocalNcrustTypography.current.titleMedium,
                                     maxLines = 1,
                                     overflow = if (visible) TextOverflow.Clip else TextOverflow.Ellipsis,
                                     modifier = if (visible) Modifier.basicMarquee(
@@ -739,8 +715,8 @@ fun PlayerCard(
                             }
                             SaltText(
                                 s.artists?.joinToString("/") { it.name } ?: "",
-                                color = LocalMetroColors.current.onSurfaceVariant,
-                                style = LocalMetroTypography.current.bodyMedium,
+                                color = LocalNcrustColors.current.onSurfaceVariant,
+                                style = LocalNcrustTypography.current.bodyMedium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -770,15 +746,15 @@ fun PlayerCard(
                         ) {
                             SaltText(
                                 s.name,
-                                color = LocalMetroColors.current.onBackground,
-                                style = LocalMetroTypography.current.titleLarge,
+                                color = LocalNcrustColors.current.onBackground,
+                                style = LocalNcrustTypography.current.titleLarge,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                             SaltText(
                                 s.artists?.joinToString("/") { it.name } ?: "",
-                                color = LocalMetroColors.current.primary,
-                                style = LocalMetroTypography.current.bodyLarge,
+                                color = LocalNcrustColors.current.primary,
+                                style = LocalNcrustTypography.current.bodyLarge,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -806,7 +782,7 @@ fun PlayerCard(
                 .graphicsLayer {
                     alpha = (1f - progress.value * 5f).coerceIn(0f, 1f)
                 }
-                .background(LocalMetroColors.current.surface)
+                .background(LocalNcrustColors.current.surface)
         ) {
             // 点击展开的命中层放在最底下（而不是挂在外层 Box 的 modifier 上），阈值翻转只重组这一层；
             // 上面 Row 里的按钮照样先拿到点击。暂无播放（hasSong=false）时不可点击展开，避免空白播放器被拉起。
@@ -845,15 +821,15 @@ fun PlayerCard(
                     ) {
                         SaltText(
                             s.name,
-                            color = LocalMetroColors.current.onBackground,
-                            style = LocalMetroTypography.current.bodyMedium,
+                            color = LocalNcrustColors.current.onBackground,
+                            style = LocalNcrustTypography.current.bodyMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         SaltText(
                             s.artists?.joinToString("/") { it.name } ?: "",
-                            color = LocalMetroColors.current.onSurfaceVariant,
-                            style = LocalMetroTypography.current.bodySmall,
+                            color = LocalNcrustColors.current.onSurfaceVariant,
+                            style = LocalNcrustTypography.current.bodySmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -868,7 +844,7 @@ fun PlayerCard(
                         TransportControlButton(
                             glyph = if (isPlaying) TransportGlyph.Pause else TransportGlyph.Play,
                             contentDescription = if (isPlaying) LocalStrings.current.pauseButton else LocalStrings.current.playButton,
-                            tint = LocalMetroColors.current.primary,
+                            tint = LocalNcrustColors.current.primary,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onPlayPause()
@@ -878,7 +854,7 @@ fun PlayerCard(
                         TransportControlButton(
                             glyph = TransportGlyph.Next,
                             contentDescription = LocalStrings.current.nextButton,
-                            tint = LocalMetroColors.current.onBackground,
+                            tint = LocalNcrustColors.current.onBackground,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onPlayNext()
@@ -893,8 +869,8 @@ fun PlayerCard(
                     // 直接开始 Infinity——取每日推荐开播, 无需先有队列
                     SaltText(
                         strings.noSongPlaying,
-                        color = LocalMetroColors.current.onSurfaceVariant,
-                        style = LocalMetroTypography.current.bodyMedium,
+                        color = LocalNcrustColors.current.onSurfaceVariant,
+                        style = LocalNcrustTypography.current.bodyMedium,
                         modifier = Modifier
                             .weight(1f)
                             .padding(horizontal = 12.dp)
@@ -903,7 +879,7 @@ fun PlayerCard(
                         TransportControlButton(
                             glyph = TransportGlyph.Play,
                             contentDescription = LocalStrings.current.playButton,
-                            tint = LocalMetroColors.current.primary,
+                            tint = LocalNcrustColors.current.primary,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onPlayNothing()
@@ -923,7 +899,7 @@ fun PlayerCard(
             StableCover(
                 model = CoverUrls.large(s.album?.picUrl),
                 contentDescription = null,
-                placeholderColor = LocalMetroColors.current.surfaceVariant,
+                placeholderColor = LocalNcrustColors.current.surfaceVariant,
                 modifier = Modifier
                     .then(
                         if (isWidePlayer) Modifier.size(coverSizeDp)
@@ -1000,7 +976,7 @@ fun PlayerCard(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     SaltIcon(Icons.Rounded.KeyboardArrowDown, strings.collapsePlayer,
-                                        tint = LocalMetroColors.current.onBackground)
+                                        tint = LocalNcrustColors.current.onBackground)
                                 }
                             }
                         }
@@ -1008,14 +984,25 @@ fun PlayerCard(
                 } else {
                     ThresholdScope(dismissEnabled) { enabled ->
                         if (enabled) {
-                            MetroIconButton(onClick = onDismiss) {
-                                SaltIcon(Icons.Rounded.KeyboardArrowDown, strings.collapsePlayer, tint = LocalMetroColors.current.onBackground)
+                            NcrustIconButton(onClick = onDismiss) {
+                                SaltIcon(Icons.Rounded.KeyboardArrowDown, strings.collapsePlayer, tint = LocalNcrustColors.current.onBackground)
                             }
                         }
                     }
                 }
             }
         }
+    }
+    if (showQualityPanel && hasSong) {
+        QualitySelectionPanel(
+            selectedIndex = playerViewModel.currentQualityIndex.value,
+            options = strings.qualityOptions,
+            onDismiss = { showQualityPanel = false },
+            onSelect = { index ->
+                playerViewModel.changePlaybackQuality(index)
+                showQualityPanel = false
+            }
+        )
     }
 }
 

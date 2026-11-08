@@ -1,5 +1,12 @@
 package com.smart.neteast.ui.components
 
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+import com.smart.neteast.ui.theme.NcrustShape
+
+
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,8 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.smart.neteast.ui.i18n.LocalStrings
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import com.moriafly.salt.ui.Text as SaltText
 
 /**
@@ -39,29 +44,30 @@ fun BackgroundActivityDialog(
         ) {
             SaltText(
                 strings.batteryTitle,
-                color = LocalMetroColors.current.onBackground,
+                color = LocalNcrustColors.current.onBackground,
                 style = TextStyle(fontSize = 20.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
             )
             Spacer(Modifier.height(12.dp))
             SaltText(
                 strings.batteryMessage,
-                color = LocalMetroColors.current.onSurfaceVariant,
-                style = LocalMetroTypography.current.bodyMedium,
+                color = LocalNcrustColors.current.onSurfaceVariant,
+                style = LocalNcrustTypography.current.bodyMedium,
             )
             Spacer(Modifier.height(24.dp))
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(LocalMetroColors.current.primary)
-                    .clickable(onClick = onAllow)
+                    .heightIn(min = 48.dp)
+                    .clip(NcrustShape.control)
+                    .background(LocalNcrustColors.current.primary)
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onAllow)
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 SaltText(
                     strings.batteryAllow,
-                    color = Color.Black,
+                    color = LocalNcrustColors.current.onPrimary,
                     style = TextStyle(fontSize = 14.sp),
                 )
             }
@@ -69,15 +75,16 @@ fun BackgroundActivityDialog(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .border(1.dp, LocalMetroColors.current.onSurfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
-                    .clickable(onClick = onLater)
+                    .heightIn(min = 48.dp)
+                    .clip(NcrustShape.control)
+                    .border(1.dp, LocalNcrustColors.current.onSurfaceVariant.copy(alpha = 0.4f), NcrustShape.control)
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onLater)
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 SaltText(
                     strings.batteryLater,
-                    color = LocalMetroColors.current.onSurfaceVariant,
+                    color = LocalNcrustColors.current.onSurfaceVariant,
                     style = TextStyle(fontSize = 14.sp),
                 )
             }

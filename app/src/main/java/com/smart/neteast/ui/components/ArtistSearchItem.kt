@@ -1,5 +1,13 @@
 package com.smart.neteast.ui.components
 
+import com.smart.neteast.ui.theme.LocalNcrustTypography
+
+import com.smart.neteast.ui.theme.LocalNcrustColors
+
+
+
+import com.smart.neteast.ui.design.*
+
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -21,9 +29,6 @@ import coil.compose.AsyncImage
 import com.smart.neteast.network.ArtistSearchItem
 import com.smart.neteast.network.CoverUrls
 import com.smart.neteast.ui.i18n.LocalStrings
-import io.github.takahashirinta.kanesumi.controls.MetroDropdownMenu
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroColors
-import io.github.takahashirinta.kanesumi.core.theme.LocalMetroTypography
 import com.moriafly.salt.ui.Text as SaltText
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -44,6 +49,7 @@ fun ArtistSearchItem(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
+                role = androidx.compose.ui.semantics.Role.Button,
                 onClick = onClick,
                 onLongClick = { if (menuContent != null) showMenu = true }
             )
@@ -57,7 +63,7 @@ fun ArtistSearchItem(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(CircleShape)
-                    .background(LocalMetroColors.current.surfaceVariant),
+                    .background(LocalNcrustColors.current.surfaceVariant),
                 contentScale = ContentScale.Crop
             )
         }
@@ -66,16 +72,16 @@ fun ArtistSearchItem(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SaltText(
                     artist.name,
-                    color = LocalMetroColors.current.onBackground,
-                    style = LocalMetroTypography.current.bodyLarge,
+                    color = LocalNcrustColors.current.onBackground,
+                    style = LocalNcrustTypography.current.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 if (transStr.isNotEmpty()) {
                     SaltText(
                         " · $transStr",
-                        color = LocalMetroColors.current.onSurfaceVariant,
-                        style = LocalMetroTypography.current.bodySmall,
+                        color = LocalNcrustColors.current.onSurfaceVariant,
+                        style = LocalNcrustTypography.current.bodySmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -84,24 +90,24 @@ fun ArtistSearchItem(
             if (aliasStr.isNotEmpty()) {
                 SaltText(
                     aliasStr,
-                    color = LocalMetroColors.current.onSurfaceVariant,
-                    style = LocalMetroTypography.current.bodySmall,
+                    color = LocalNcrustColors.current.onSurfaceVariant,
+                    style = LocalNcrustTypography.current.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
             SaltText(
                 strings.artistStats(artist.albumSize ?: 0, artist.musicSize ?: 0),
-                color = LocalMetroColors.current.onSurfaceVariant,
-                style = LocalMetroTypography.current.bodySmall
+                color = LocalNcrustColors.current.onSurfaceVariant,
+                style = LocalNcrustTypography.current.bodySmall
             )
         }
     }
     if (menuContent != null) {
-        MetroDropdownMenu(
+        NcrustDropdownMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
-            containerColor = LocalMetroColors.current.surface,
+            containerColor = LocalNcrustColors.current.surface,
             cornerRadiusDp = 18.dp,
         ) {
             menuContent { showMenu = false }

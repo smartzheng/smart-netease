@@ -3,7 +3,7 @@
          用平台 Material.NoActionBar + 深色 windowBackground，去掉 M3/material 依赖，
          同时消除冷启动白闪（之前 M3 DayNight 默认亮底）。 -->
     <style name="Base.Theme.Ncrust" parent="@android:style/Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/ic_launcher_background</item>
+        <item name="android:windowBackground">@drawable/splash_window_background</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
