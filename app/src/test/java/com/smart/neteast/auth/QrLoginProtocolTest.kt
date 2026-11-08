@@ -17,7 +17,7 @@ import org.junit.Test
  * `org.json` 是空桩（一调就抛 "not mocked"，见 `XeapiCryptoTest`）。这里用 Gson 渲染同一份
  * `Map` 来断言字段顺序与原生类型（数值 / 布尔）；两者对 `Map` 的语义一致（保留插入顺序、
  * `Map` 值递归成 JSON 对象、`Int`/`Boolean` 写成裸字面量），但**「JSONObject 也这么写」这一步
- * 是看代码得出的，不是这份单测证明的** —— 端到端的那一步由 Windows Core 测试
+ * 是看代码得出的，不是这份单测证明的** —— 端到端的那一步需由真实账号验证
  * （`QrLoginClientTests.DecryptParams` 解真请求体）覆盖。
  */
 class QrLoginProtocolTest {

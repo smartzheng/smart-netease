@@ -11,7 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * `spec/fixtures/entitlement/` 下的三份 json 是跨端（Android / Windows）账号与权益判定的权威答案，
+ * `spec/fixtures/entitlement/` 下的 JSON 用例锁定 Android 账号与权益判定行为，
  * 期望值由规格 `spec/api/entitlement.md` 手写。这里逐条跑，断言失败的消息里带用例 id。
  *
  * 夹具用 Gson 解析（本地单测里 org.json 是空桩），与线上链路同一套字段映射。

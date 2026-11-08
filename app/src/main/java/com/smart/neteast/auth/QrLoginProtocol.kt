@@ -90,7 +90,7 @@ object QrLoginProtocol {
     fun qrContent(unikey: String): String = QR_CONTENT_PREFIX + unikey
 
     /**
-     * Set-Cookie 头 → 会话 cookie 串（对应 Windows `QrLoginClient.ExtractSessionCookie`）。
+     * Set-Cookie 头 → 会话 cookie 串。
      *
      * 同一响应里可能有两条同名 `MUSIC_U`（删除用的空值与真值，顺序不定）：解析时**忽略空值**，
      * 于是最后一个非空值生效，顺带去重；没有非空 `MUSIC_U` 就不算登录成功（803 也可能只给

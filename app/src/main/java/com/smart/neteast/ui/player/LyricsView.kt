@@ -183,19 +183,21 @@ fun LyricsView(
                 .padding(horizontal = 20.dp),
         )
 
-        // 上下边缘淡出,让歌词从黑里浮出来(沿用原实现)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp)
-                .align(Alignment.TopCenter)
-                .background(
-                    Brush.verticalGradient(
-                        if (artworkStyle) listOf(Color.Black.copy(alpha = 0.32f), Color.Transparent)
-                        else listOf(LocalNcrustColors.current.background, Color.Transparent)
+        // The artwork backdrop already provides contrast. A black top fade here starts exactly
+        // below the player header and reads as a hard divider; keep only the normal screen fade.
+        if (!artworkStyle) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .align(Alignment.TopCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(LocalNcrustColors.current.background, Color.Transparent)
+                        )
                     )
-                )
-        )
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxWidth()

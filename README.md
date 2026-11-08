@@ -2,280 +2,97 @@
 
 # Smart Netease
 
-### 把网易云的曲库，装进一块精致的音乐播放器
+### 一款持续演进的网易云音乐 Android 客户端
 
-**Salt UI · GPU 零重组动画 · 无缝播放（实验） · 7 级音质 · 车机适配 · 8 语言**
+**Kotlin · Jetpack Compose · Salt UI · Media3**
 
-Android · Kotlin + Jetpack Compose + Media3 ｜ Windows · C# + UWP + WinUI 2 ｜ eapi 加密直连 · 无中间服务器
+[![Android](https://img.shields.io/badge/Android-API%2024%2B-3DDC84?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
+[![Version](https://img.shields.io/badge/version-1.4.2-20bf6b?style=flat-square)](https://github.com/smartzheng/smart-netease/releases)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-平台主线：Windows（C#/WinUI）、Android（Kotlin）、Linux（Rust/Kanesumi）、Lumia 950（C++/WinUI）、Android 4 极简版。当前实现与计划状态见 [平台规划](docs/PLATFORMS.md)；Lumia 原型在 `lumia/`，Linux 与 Android 4 尚未形成可发行应用。当前先推进 Ncrust，Ritsudou 的独立技术方向暂缓。
-
-[![Version](https://img.shields.io/badge/version-1.4.1-brightgreen?style=flat-square)](https://github.com/smartzheng/smart-netease/releases)
-[![APK](https://img.shields.io/badge/APK-3.9%20MB-blue?style=flat-square)](https://github.com/smartzheng/smart-netease/releases)
-[![API](https://img.shields.io/badge/API-24%2B-green?style=flat-square&logo=android)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.24-purple?style=flat-square&logo=kotlin)](https://kotlinlang.org)
-[![Compose](https://img.shields.io/badge/Compose-BOM%202024.12-blue?style=flat-square&logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
-[![Windows](https://img.shields.io/badge/Windows-1.0.0-0078D4?style=flat-square&logo=windows11)](https://github.com/smartzheng/smart-netease/releases)
-[![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](LICENSE)
-
-[**下载安装**](https://github.com/smartzheng/smart-netease/releases) · [**Wiki 文档**](https://github.com/smartzheng/smart-netease/wiki) · [**问题反馈**](https://github.com/smartzheng/smart-netease/issues)
+[下载 APK](https://github.com/smartzheng/smart-netease/releases) · [项目来源与致谢](docs/PROJECT.md) · [问题反馈](https://github.com/smartzheng/smart-netease/issues)
 
 </div>
 
-> **⚠️ 重要声明**
->
-> 本项目仅供学习交流使用，请勿用于任何违法违规用途。
->
-> 使用本工具产生的一切后果由用户自行承担。
->
-> 请尊重版权，支持正版音乐。
+> 本项目是网易云音乐的非官方第三方客户端，与网易公司及 Salt Player 无隶属关系。仅供学习和个人使用，请尊重版权并支持正版音乐。
 
----
+## 项目说明
 
-## 为什么是 Ncrust
+Smart Netease 从 [GuitaristRin/Ncrust](https://github.com/GuitaristRin/Ncrust) fork 而来。它保留了原项目的 Android 应用基础，并在此基础上持续重构和扩展；当前仓库只维护 Android App。项目经历了应用包名、界面设计、播放器交互、网络同步和工程文档等多方面的调整，不能视为原项目的原样发行版。
 
-> 网易云官方客户端很全，但它不是为「直角、克制、信息优先」设计的。
-> Ncrust 是一次从零开始的重写：**没有圆角，没有弹簧回弹，没有多余装饰。**
+应用 ID：`com.smart.neteast`。详细来源、设计参考和第三方依赖致谢见[项目来源与致谢](docs/PROJECT.md)。
 
-| | |
-|---|---|
-| 🟩 **Salt UI 设计** | 统一圆角、留白、字体和图标，封面与弹层采用一致的视觉层级 |
-| ⚡ **GPU 零重组** | 播放器动画由单个 `progress` 经 `graphicsLayer` 驱动，展开 / 收起时**不重组** |
-| 🎧 **真·无损** | eapi 直连拉取 FLAC / Hi-Res / 杜比全景声，逐级降级兜底，弱机自动跳过无解档位 |
-| 🔀 **5 种播放模式** | 顺序循环 / 单曲循环 / 乱序 / 顺序线性 / 相似无限（私人 FM 电台） |
-| 🚗 **车机就绪** | Android Auto / Automotive 媒体源与浏览树，车机系统栏 inset 专项适配 |
-| 🪶 **3.9 MB** | R8 全量混淆 + 资源 shrink，冷启动预热，进程被杀也能恢复队列 |
-| 🪟 **跨平台** | Monorepo 内含 Windows 客户端（UWP + WinUI 2），协议与行为由共享的 `spec/` 规格与测试夹具约束 |
-| 🌐 **8 语言** | 运行时切换，不依赖系统 locale |
-| 🔐 **登录无忧** | 浏览器登录 + 二维码登录 + 手机扫码授权平板，全程无需手动粘贴 Cookie |
+## 功能
 
----
+- **音乐发现**：每日推荐、推荐歌单、新歌速递和私人 FM。
+- **搜索与曲库**：搜索单曲、专辑和艺人；管理喜欢的歌曲、订阅专辑及歌单。
+- **播放**：后台播放、系统媒体控制、播放队列、循环/随机/单曲等播放模式及多档音质选择。
+- **播放器**：封面主色背景、沉浸式状态栏、歌词与翻译、播放进度拖动、队列管理和展开/收起过渡动画。
+- **账号**：网页登录、二维码登录、收藏云端同步。
+- **设备支持**：Android Auto / Android Automotive 媒体浏览；适配手机和平板布局。
+- **本地化和主题**：多语言，浅色/深色模式及多种强调色。
 
-## ✨ 功能一览
+具体可用能力受网易云账号权益、歌曲版权、网络和设备解码器影响。无缝播放等实验功能可能出现不稳定情况。
 
-### 🏠 发现
+## 下载与安装
 
-- **每日推荐**、**推荐歌单**、**新歌速递**，懒加载分页，缓存命中秒开
-- **私人 FM**：首页电台入口，持续拉取私人 FM 流无限续播
-- **分享与链接接收**：歌曲菜单一键分享（系统分享面板发送标准网易云链接）；复制 `music.163.com` / `163cn.tv` 分享链接、或从其他 App 分享 / 打开链接（`ACTION_SEND` / `ACTION_VIEW`）回到 App 自动识别 —— 三个入口共用同一解析器，单曲只载入不自动播放
+从 [GitHub Releases](https://github.com/smartzheng/smart-netease/releases) 下载最新 Android APK。首次安装时，Android 可能提示允许从当前来源安装应用。
 
-### 🔍 搜索
+## 从源码构建
 
-- 单曲 / 专辑 / 艺人三标签，500 ms 防抖，三态 Crossfade 过渡
-- 本地搜索历史（每类 10 条、14 天过期）
-- 专辑 / 艺人长按可批量「播放全部 / 下一首 / 添加到队尾」
+### 环境
 
-### 📚 曲库
+- Android Studio
+- JDK 21（Gradle daemon toolchain）
+- Android SDK Platform 36
+- 最低支持 Android 7.0（API 24）
 
-- **收藏单曲**：云端同步「我喜欢的音乐」，列表懒加载分页
-- **收藏专辑**：云端订阅专辑网格
-- **收藏歌单**：当前账号的用户歌单
-- 单曲可收藏 / 插播 / 加队列，本地乐观更新后异步同步云端
-
-### 🎵 播放
-
-- **7 级音质**：压缩 → 较好 → 更好 → 无损 → 高解析 → 高清环绕声 → 杜比全景声
-- **分网络偏好**：Wi-Fi 与移动数据独立设置，默认无损 / 较好
-- **无缝播放（gapless，实验）**：默认关闭；在播放设置中手动开启后，进入最后 60 秒预加载下一首。目前仍可能出现交接不稳定，详见设置页实验提示
-- **自动降档**：解码失败或音频输出故障时同曲降一档重试，避免「进度在走但没声音」
-- **三区队列**：已播 / 当前 / 待播，触摸即拖重排、边缘自动滚动、清空队列
-- **播放上报**：复刻官方 `webLog`，本地收听计入推荐与听歌指数
-
-### 🎨 界面
-
-- **全屏播放器**：三层图层架构，拖拽 25% 阈值吸附，展开 / 收起只做位移缩放
-- **歌词**：LRC 逐行解析、黄金分割定位、手动滚动 5 秒后恢复、双语翻译合并、点击行跳转
-- **主题**：6 种主题色 × 3 种模式（跟随系统 / 深色 / 浅色），运行时切换
-- **响应式**：窄屏限宽居中，宽屏（≥ 600dp）左侧 200dp 常驻 Sidebar
-- **进程恢复**：被杀后恢复进度、歌曲信息、封面、歌词与完整队列
-
-### 🔔 系统集成
-
-- **媒体控制**：MediaLibraryService + MediaStyle 通知，锁屏 / 控制中心 / 蓝牙按键，封面主色调着色
-- **车机**：Android Auto / Android Automotive（AAOS）媒体源与浏览树
-- **后台播放**：`WAKE_LOCK` + 电池优化白名单引导，熄屏不被 ROM 清理
-- **音频焦点**：ExoPlayer 自动处理
-
----
-
-## 🎼 支持音质
-
-| API 参数 | 说明 | 要求 |
-|---|---|:--:|
-| `standard` | 压缩（128 kbps） | 普通账号 |
-| `higher` | 较好 | 普通账号 |
-| `exhigh` | 更好（320 kbps） | 普通账号 |
-| `lossless` | 无损（FLAC） | 黑胶 VIP |
-| `hires` | 高解析 | 黑胶 VIP |
-| `jyeffect` | 高清环绕声 | 黑胶 VIP |
-| `dolby` | 杜比全景声 | 黑胶 VIP |
-
-> 设备没有 MediaCodec FLAC 解码器（API < 27 或精简 ROM）时会自动跳过无损档位，避免无声。
-
----
-
-## 📦 安装
-
-1. 打开 [Releases](https://github.com/smartzheng/smart-netease/releases) 的最新一班（Latest），下载 Android 通用包 `ncrust-android-universal-*.apk`（约 **3.9 MB**）
-2. 允许「未知来源」安装
-3. 打开 App，在用户页登录（见下）
-
-### 🔐 登录
-
-App 不提供手动粘贴 Cookie，登录方式：
-
-- **浏览器登录（手机默认）** — 用户页 → 头像 → 应用内 WebView 打开网易云登录页，登录后自动提取凭证
-- **扫码登录（平板 / 宽屏）** — 生成二维码，用手机网易云 App 扫码
-- **手机扫码授权平板** — 平板显示二维码后，用已登录 Ncrust 的手机扫描，经局域网把凭证加密传给平板
-
-登录成功后自动同步云端收藏。
-
----
-
-## 🛠️ 从源码构建
-
-### 环境要求
-
-Android Studio Hedgehog+ · JDK 21（`gradle/gradle-daemon-jvm.properties` 固定 Gradle daemon 使用 21）· Kotlin 1.9.24 · Gradle 9.3.1 · Android SDK 36（minSdk 24）。AGP 8.5 本身最低要求 JDK 17；本项目按 daemon 配置准备 JDK 21，Java / Kotlin 编译目标仍为 11。
-
-Android 界面使用 Salt UI，Ncrust 自有控件和动画 token 放在 `app/src/main/java/com/smart/neteast/ui/design/`。不需要另外克隆 UI 仓库。
-
-### 构建命令
+### 命令
 
 ```bash
 git clone https://github.com/smartzheng/smart-netease.git
 cd smart-netease
-./gradlew assembleDebug            # Debug APK -> app/build/outputs/apk/debug/
-./gradlew assembleRelease          # Release APK（R8 minify，需 keystore.properties）
-
-benchmark/run_benchmark.sh all     # Macrobenchmark：冷启动 / 滚动 / 播放器展开
+./gradlew :app:assembleDebug
 ```
 
-### 🪟 构建 Windows 版
-
-UWP 项目**只能在 Windows 上用 MSBuild 构建**（不支持 `dotnet build`），且只有 `Release|x64` 一种配置
-（Debug 版 .NET Native 依赖默认不预装的调试运行时）。环境：VS 2022 Build Tools + UWP 工作负载
-（Windows SDK 10.0.22621）+ .NET 9 SDK。
+PowerShell 使用仓库自带的 Gradle wrapper：
 
 ```powershell
-$msbuild = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
-
-& $msbuild windows\Ncrust.Windows.sln /t:Restore /p:Configuration=Release /p:Platform=x64
-& $msbuild windows\Ncrust.Windows.sln /p:Configuration=Release /p:Platform=x64
-# 产物：windows\src\Ncrust.App\AppPackages\Ncrust.App_<版本>_x64_Test\*.msix
-
-# 协议与业务核心的单元测试（net9.0，无需部署 UWP；同时校验 spec/design/tokens.json）
-dotnet test windows\tests\Ncrust.Core.Tests
+git clone https://github.com/smartzheng/smart-netease.git
+cd smart-netease
+.\gradlew.bat :app:assembleDebug
 ```
 
-Windows 端的构建细节、本地注册运行与已知坑见 [`windows/AGENTS.md`](windows/AGENTS.md)。
+Debug APK 输出到 `app/build/outputs/apk/debug/`。构建 Release APK：
 
----
+```powershell
+.\gradlew.bat :app:assembleRelease
+```
 
-## 🧭 技术架构
+Release 需要本机配置被 `.gitignore` 排除的 `keystore.properties`，不得将签名密钥或口令提交到仓库。宏基准测试位于 `benchmark/`。
 
-本仓库是 **monorepo**：`app/`（Android）、`windows/`（Windows 客户端）、`spec/`（跨平台规格与测试夹具）。
-协议或业务行为变更**先改 `spec/`，再改各端实现**。下表为 Android 端架构；Windows 端见
-[`windows/AGENTS.md`](windows/AGENTS.md)，跨平台规格见 [`spec/README.md`](spec/README.md)。
+## 工程结构
 
-| 主题 | 说明 |
+| 路径 | 内容 |
 |---|---|
-| **Salt UI** | Salt UI 提供主题与文本基础；Ncrust 在应用内维护自己的控件、圆角、间距和动画 token，不依赖 Kanesumi |
-| **GPU 零重组** | 播放器动画由单个 `progress: Animatable<Float>` 驱动，视觉属性只在 `graphicsLayer {}` 内读取 |
-| **三层图层** | 主页面 / 播放卡 / 导航栏为独立 composable 层，手势转场互不干扰 |
-| **网络直连** | 自有 `EapiCrypto`（AES-128-ECB + MD5 签名）与 `WeapiCrypto`（双 AES-CBC + 原始 RSA），直连网易云，无中间服务器 |
-| **ContentCache** | 内存网络快照 + Crossfade，消除「空屏 → spinner → 跳变」；LRU-32 详情缓存 |
-| **持久化** | 全部 SharedPreferences + Gson，无 Room |
-| **性能** | R8 全量混淆 + 资源 shrink（release 3.9 MB）、`AppWarmup` 冷启动预热、状态订阅下推至叶子组件、播放器折叠态子树 gating |
+| `app/` | Kotlin Android 应用源码与测试 |
+| `benchmark/` | Android Macrobenchmark |
+| `spec/api/` | Android 网络接口与协议笔记 |
+| `spec/fixtures/` | Android 单元测试使用的协议和行为测试数据 |
+| `docs/` | Android 项目说明、开发记录和专项调查 |
 
-```
-app/src/main/java/com/takahashirinta/ncrust/
-├── MainActivity.kt        # 入口 + MainScreen 编排（导航 / 队列 / 播放模式）
-├── auth/                  # Cookie + 局域网扫码配对
-├── cache/                 # ContentCache（内存，不持久化）
-├── library/               # 云端收藏 + 搜索历史
-├── lyric/                 # LRC 解析 + 歌词缓存
-├── network/               # Retrofit / eapi / weapi / 加密
-├── player/                # PlaybackService / SongUrlFetcher / PlayReporter
-├── warmup/  power/        # 冷启动预热、电池白名单
-└── ui/                    # screen / player / components / theme / i18n / navigation
-```
+应用使用 Jetpack Compose、[Salt UI](https://github.com/Moriafly/SaltUI)、AndroidX Media3、Retrofit、OkHttp 和 Coil。Gradle 依赖版本以 `app/build.gradle.kts` 为准。
 
-> 更完整的架构说明见 [AGENTS.md](AGENTS.md) 与 [Wiki](https://github.com/smartzheng/smart-netease/wiki)。
+## 来源、参考与致谢
 
----
+- **[GuitaristRin/Ncrust](https://github.com/GuitaristRin/Ncrust)**：本项目的直接上游和 Android 应用基础。原项目采用 MIT License；本仓库保留其许可声明，并在此基础上继续修改。
+- **[Moriafly/SaltUI](https://github.com/Moriafly/SaltUI)**：当前 Android 界面使用的 Compose UI 组件库，Apache-2.0。
+- **[Moriafly/SaltPlayerSource](https://github.com/Moriafly/SaltPlayerSource)**：播放器布局、图标观感及展开/收起交互的设计参考。本项目参考其公开界面，不包含该仓库的播放器应用源码或专有资源。
+- **[NeteaseCloudMusicApiEnhanced/api-enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)**：网易云接口行为与请求协议的调研参考，不是本 App 的运行时服务端依赖。
+- 同时感谢 Jetpack Compose、AndroidX Media3、Retrofit、OkHttp、Coil 及本项目所用的其他开源库维护者。依赖及其许可信息以 Gradle 声明和各上游项目为准。
 
-## 🪟 Windows 版
+更多项目演进说明见 [`docs/PROJECT.md`](docs/PROJECT.md)。
 
-Windows 客户端在本仓库的 [`windows/`](windows/) 目录，用 **C# + UWP + WinUI 2** 编写，与 Android 版不共享实现代码：
-Windows 使用独立的 UWP / WinUI 控件，与 Android 不共享 UI 实现；协议、音质阶梯、队列行为等由 [`spec/`](spec/) 里的共享规格与测试夹具约束。
+## 许可
 
-**当前版本 1.0.3**，功能已与 Android 主干基本对齐：首页（含私人 FM）/ 搜索 / 专辑·歌手·歌单详情 / 音乐库 /
-播放卡片与歌词·队列 / 5 种播放模式与 INFINITY 续播 / 7 级音质自动降档 / 播放上报 / 10 段均衡器（桌面独有）。
-
-### 📥 下载安装（Windows 10 1809+ / x64）
-
-1. 打开 [Releases](https://github.com/smartzheng/smart-netease/releases) 里最新一班 `CrateStack-*`，下载
-   `ncrust-windows-x86_64-<版本>.appinstaller`（推荐：经它安装后**自动更新**）与同目录的 `.cer`；
-   各平台最新版索引见 [`docs/RELEASES.md`](docs/RELEASES.md)。
-2. 首次安装需先把自签证书装进**机器级**存储（MSIX 的签名校验由系统在本地计算机存储里查，
-   只装「当前用户」会以 `0x800B0109` 拒装）：**管理员** PowerShell 运行
-   `windows/tools/release/install-cert.ps1 -CerPath <下载的 .cer>`，
-   或 `certlm.msc` → 受信任人 → 导入。
-3. 需要 [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)（登录窗口使用）
-
-> 各平台最新版索引见 [`docs/RELEASES.md`](docs/RELEASES.md)（GitHub 只有一个 Latest 徽章，不代表各平台最新版）。
-
----
-
-## 📋 版本历史
-
-| 版本 | 日期 | 亮点 |
-|---|---|---|
-| v0.1.0-beta | 2026-04-26 | 初始 MVP，核心播放流程跑通 |
-| v1.0.0 | 2026-04-30 | 首个正式版：多屏幕适配、状态持久化、队列管理 |
-| v1.0.1 ~ v1.0.3 | 2026-05-04 | 零重组修复、主题色系统、多语言框架、歌单页闪退与 WebView 登录修复 |
-| v1.1.0 | 2026-05-05 | 收藏 / 队列 / 音质完善 |
-| v1.1.4 | 2026-05-17 | 无缝播放元数据同步、URL 缓存去重、多语言扩充 |
-| v1.2.0 | 2026-07-28 | Sokuou 动画系统、ContentCache + Crossfade、专辑收藏、批量入队 |
-| v1.2.1 | 2026-07-29 | Kanesumi 化收官、冷启动预热、播放器重组归零、R8（25 MB → 4.1 MB） |
-| v1.2.2 | 2026-08-04 | 全页面 Kanesumi 统一、底部导航与迷你条衔接、登录统一为浏览器方式 |
-| v1.3.0 | 2026-09-10 | 平板 / 大屏 Sidebar 与宽屏两栏、唯一封面、弱网缓冲、AudioSink 降档兜底、歌词竞态与定位修复、队列拖拽重排、私人 FM 续播 |
-| v1.3.1 | 2026-09-11 | 车机（Android Auto / AAOS）媒体源与浏览树、浅色模式与主题模式切换、扫码登录重构（平板扫码 + 手机扫码授权平板 + weapi 加密修正）、冷启动与歌词性能优化、播放卡与浅色修复 |
-| **v1.3.2** | **2026-09-28** | **无缝播放元数据串歌修复（以 MediaItem 身份为准）、收藏同步可观测化（云端读失败不再清空本地、点赞待同步状态）、歌曲分享出口与外部链接 / 分享接收；当日晚间原地更换资产，追加 release 冷启动闪退修复（会话改显式键信封落盘）** |
-| Windows v1.0.0 | 2026-09-27 | Windows 端首个正式版（UWP + WinUI 2）：与 Android 主干功能对齐、`.appinstaller` 自动更新、10 段均衡器 |
-
----
-
-## 🔗 相关项目
-
-| 项目 | 说明 |
-|---|---|
-| [163CMAnalyser](https://github.com/GuitaristRin/163CMAnalyser) | Rust CLI 无损下载工具 |
-| [Netease_url](https://github.com/Suxiaoqinx/Netease_url) | Python 原版网易云解析（MIT） |
-
----
-
-## 📄 许可证
-
-本项目以 **MIT** 许可发布，Copyright (c) 2026 Takahashi_Rinta。完整文本见 [LICENSE](LICENSE)。
-
----
-
-<div align="center">
-
-## ⭐ Star History
-
-<a href="https://www.star-history.com/?repos=GuitaristRin%2FNcrust&type=date&legend=top-left">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=GuitaristRin/Ncrust&type=date&theme=dark&legend=top-left&sealed_token=-LRNV-LDu7Vj6bFSSrS8kUQlcdjj0utMO2u3MTcbZRDlMP4VOyWmJAJTQk4piLt-FZ7Mo6oSr-Kj5S5UeoN28q87yNN0v05vMrCYRlf6Htd9mtnCxlwQbEQ_bW5KhFdVzpmhb3_RXC9bBp7D5T9unPUL2TOf-Cd1p4AYAqx6ru63QXFwh_7fAvmlKd3V" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=GuitaristRin/Ncrust&type=date&theme=light&legend=top-left&sealed_token=-LRNV-LDu7Vj6bFSSrS8kUQlcdjj0utMO2u3MTcbZRDlMP4VOyWmJAJTQk4piLt-FZ7Mo6oSr-Kj5S5UeoN28q87yNN0v05vMrCYRlf6Htd9mtnCxlwQbEQ_bW5KhFdVzpmhb3_RXC9bBp7D5T9unPUL2TOf-Cd1p4AYAqx6ru63QXFwh_7fAvmlKd3V" />
-    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=GuitaristRin/Ncrust&type=date&legend=top-left&sealed_token=-LRNV-LDu7Vj6bFSSrS8kUQlcdjj0utMO2u3MTcbZRDlMP4VOyWmJAJTQk4piLt-FZ7Mo6oSr-Kj5S5UeoN28q87yNN0v05vMrCYRlf6Htd9mtnCxlwQbEQ_bW5KhFdVzpmhb3_RXC9bBp7D5T9unPUL2TOf-Cd1p4AYAqx6ru63QXFwh_7fAvmlKd3V" />
-  </picture>
-</a>
-
-**如果 Ncrust 让你重新爱上听歌，请赐一颗 Star ⭐**
-
-[问题反馈](https://github.com/smartzheng/smart-netease/issues) · [Wiki](https://github.com/smartzheng/smart-netease/wiki) · [Releases](https://github.com/smartzheng/smart-netease/releases)
-
-</div>
+本仓库遵循根目录 [MIT License](LICENSE)。第三方依赖及其独立许可仍归各自项目所有。网易云音乐名称、商标、曲目和相关服务归其权利人所有。

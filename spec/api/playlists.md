@@ -8,7 +8,7 @@
 
 ## 请求发到哪里
 
-Android 直接连接网易云，歌单 eapi 主机为 `https://interface.music.163.com`。请求为 POST 表单 `params=<eapi 密文>`，不是把 JSON 明文 POST 到接口，也不经过本仓 `ncrust-api/`。加密路径把 `/eapi/` 换成 `/api/` 后参与签名。
+Android App 直接连接网易云，歌单 eapi 主机为 `https://interface.music.163.com`。请求为 POST 表单 `params=<eapi 密文>`，不是把 JSON 明文 POST 到接口。加密路径把 `/eapi/` 换成 `/api/` 后参与签名。
 
 对应入口：`app/.../network/RetrofitClient.kt:eapiPost`；管理读取在 `playlist/PlaylistReadApi.kt`，曲目详情补拉在 `network/PlaylistApi.kt`，写传输在 `PlaylistEditApi.kt`。阅读上游 `playlist/create` 一类路由时，应区分代理服务的入口名、远端业务路径和 weapi/eapi 加密方式，三者不是同一个 URL。
 

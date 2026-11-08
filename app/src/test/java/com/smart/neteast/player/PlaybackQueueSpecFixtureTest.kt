@@ -8,7 +8,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * spec/fixtures/queue/queue.json 是跨端（Android / Windows）队列语义的权威答案。
+ * spec/fixtures/queue/queue.json 锁定 Android 播放队列语义。
  *
  * 这里只跑 `remove` 这一族用例：夹具 README 明确写了 Android 现行实现是**偏离**的
  * （只 clamp 索引，删当前之前的项就错位），其余 op 与夹具逐条对照一致。

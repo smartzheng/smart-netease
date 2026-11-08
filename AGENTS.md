@@ -1,336 +1,41 @@
-# AGENTS.md
+# Repository guidance
 
-This file provides guidance to coding agents (Codex, Claude Code, opencode, …) working in this repository. The Android source declares **v1.4.2** (`versionCode = 10`); see Versioning & Release below for the recorded release status. When in doubt, the source wins — update this file if you find a stale claim.
+This repository maintains the Smart Netease Android application only. It is a fork of [GuitaristRin/Ncrust](https://github.com/GuitaristRin/Ncrust) that has since evolved substantially. Keep project attribution and license notices intact; see [`docs/PROJECT.md`](docs/PROJECT.md).
 
-**Monorepo.** This repository now hosts more than the Android app: `windows/` (the Windows client, UWP + WinUI 2) and `spec/` (cross-platform spec + test fixtures). Everything below except *Repository Layout* and *Commit Convention* describes the **Android app** only. Working in `windows/`? Read **`windows/AGENTS.md`** — it is canonical there.
+## Build
 
-**Platform direction (2026-10-28):** prioritize Ncrust across five lines: C#/WinUI Windows, Kotlin/Android, Rust/Kanesumi Linux, C++/UWP Windows.UI.Xaml Lumia 950, and an Android 4 minimal client. The former Ritsudou Lumia prototype now lives in `lumia/` (read `lumia/AGENTS.md`); `walkman/` contains the Android 4 taskbook only; Linux has no app implementation yet. Ritsudou's independent direction is deferred. Current status and boundaries: `docs/PLATFORMS.md`.
+- Android application module: `:app`.
+- Android Macrobenchmark module: `:benchmark`.
+- `./gradlew :app:assembleDebug` builds a debug APK.
+- `./gradlew :app:assembleRelease` builds an optimized release APK and requires local signing configuration.
+- `./gradlew test` runs JVM tests; `./gradlew connectedAndroidTest` requires an Android device or emulator.
+- Use JDK 21 and Android SDK Platform 36. The app supports API 24 and later.
 
-## Build & Test Commands
-
-```bash
-./gradlew assembleDebug            # debug APK  -> app/build/outputs/apk/debug/
-./gradlew assembleRelease          # release APK (R8 minified), needs keystore.properties
-./gradlew test                     # JVM unit tests
-./gradlew connectedAndroidTest     # instrumented tests (device/emulator required)
-
-# Macrobenchmark (performance; drives a signed release build, not connectedCheck)
-benchmark/run_benchmark.sh [startup|scroll|expand|all]     # default: all
-
-# Standalone Go backend — NOT used by the app (see ncrust-api/ below)
-cd ncrust-api && go build -o ncrust-api .
-```
-
-Toolchain:
-
-| | |
-|---|---|
-| compileSdk / targetSdk | API 36 |
-| minSdk | 24 |
-| Gradle daemon JDK | 21 (`gradle/gradle-daemon-jvm.properties`: `toolchainVersion=21`; AGP 8.5 itself requires at least 17) |
-| Java source/target / Kotlin jvmTarget | 11 |
-| Kotlin | 2.1.0 (Compose compiler plugin) |
-| Compose BOM | 2024.12.01 (Jetpack Compose 1.7.6) |
-| SaltUI | 2.3.1 (compatible with Jetpack Compose 1.7.6) |
-| Android Gradle Plugin | 8.5.0 |
-| Gradle | wrapper 9.3.1 |
-
-**Android UI dependencies:** Salt UI is integrated in `app/build.gradle.kts`. Android no longer includes or depends on the sibling Kanesumi checkout; a clean clone of this repository is sufficient for Gradle configuration.
-
-## Repository Layout
-
-```
-Ncrust/
-├── app/                  # the Android application (Kotlin + Jetpack Compose)
-├── benchmark/            # macrobenchmark module (3 benchmarks + run_benchmark.sh)
-├── windows/              # the Windows client (C# + UWP + WinUI 2) — see windows/AGENTS.md
-├── lumia/                # imported C++/UWP Lumia 950 prototype — see lumia/AGENTS.md
-├── walkman/              # Android 4 minimal client taskbook (implementation not yet present)
-├── spec/                 # cross-platform source of truth: API docs, test fixtures, design tokens
-├── ncrust-api/           # standalone Go reverse proxy — orphaned, not wired into the app
-├── build.gradle.kts      # top-level plugin declarations
-├── settings.gradle.kts   # :app and :benchmark
-├── gradle.properties     # jvmargs, AndroidX, suppressUnsupportedCompileSdk=36
-├── keystore.properties   # gitignored, release signing (storeFile/storePassword/keyAlias/keyPassword)
-└── local.properties      # gitignored, sdk.dir
-```
-
-- **`app/`** — everything documented below.
-- **`benchmark/`** — `StartupBenchmark` (cold start, 8 iters), `HomeScrollBenchmark` (frame timing, 6 iters), `ExpandPlayerBenchmark` (player expand/collapse, 6 iters, HOT start). Results land in `benchmark/output/<device>/` (gitignored) as `*-benchmarkData.json` + Perfetto traces. `benchmark/cookie.secret` (gitignored) injects a login cookie for realistic runs; `cookie.secret.example` documents it.
-- **`windows/`** — the Windows port (UWP + WinUI 2, .NET Native; WinUI 3 is not on the table). In active development (M1) as of 2026-09-27: Core protocol & playback layer done (230 tests), standard hamburger-menu shell (NavigationView), Groove-style transport bar with lyrics / queue in the player card, home (incl. private FM), search, album / artist / playlist detail, library and settings pages, song context menus, INFINITY autoplay, plus a desktop-only 10-band equalizer (`Ncrust.Audio`) — roughly at parity with the Android trunk; verified on device 2026-09-26/27; see `windows/docs/PLAN.md` for status. It shares **no implementation code** with `app/`; its controls are ported from Kanesumi-sec-a (`windows/docs/KANESUMI_XAML.md`) for visual parity. Built with MSBuild, invisible to Gradle.
-- **`spec/`** — language-neutral answers every platform must agree on: `design/tokens.json` (colors, type, easing, durations, sizes — sourced from this app and Kanesumi-sec-a), and fixtures for crypto / quality ladder / queue ops / LRC (added during Windows M1). **Change a protocol or business rule here first, then in each platform.** See `spec/README.md`.
-- **`ncrust-api/`** — a self-contained Go 1.21 service (stdlib only) that reverse-proxies NetEase with eapi encryption and TTL caching. It includes a checked-in 9.75 MB binary. **The Android app never calls it** — the app talks directly to `music.163.com` / `interface*.music.163.com`. Treat it as an unused side artifact / future scaffold; do not assume it is part of the runtime.
-
-## Versioning & Release
-
-Single source of truth: `app/build.gradle.kts` → `defaultConfig.versionName` / `versionCode`.
-
-- `RetrofitClient` uses `BuildConfig.DEBUG` to gate development-only network logs; keep `buildFeatures.buildConfig = true`.
-- Release flow: bump `versionCode` + `versionName` → commit `build: 升级至 vX.Y.Z ...` → `./gradlew assembleRelease` → upload `ncrust-android-universal-X.Y.Z.apk` to the current rolling release train (`CrateStack-*`), or open a new one if none exists today (`gh release create CrateStack-YYYYMMDD<A> --latest=false`) → user smoke-tests and publishes manually. Train/tag scheme and asset naming live in `docs/RELEASES.md`. Hotfixes may swap same-name assets in place without a version bump, provided the release notes say so.
-- Current: `versionName = "1.4.2"`, `versionCode = 10` (收藏禁用旧通道回退与未知响应重放，串行写入及刷新竞争保护；包含显式开关的实验歌单管理；合入 #39 的系统切歌修复；**Android 应用内更新器已移除**；尚未发布). Android 1.4.1 already contains the checkToken / official-field / 502 fixes, but retains legacy fallbacks and has no playlist management entry. This investigation does **not** establish which historical request caused the user's rollback; overnight persistence remains unverified. See `docs/playlists/android-like-audit.md` for evidence and installation results.
-- Latest published assets are Android **1.4.1** and Windows **1.0.3** in train `CrateStack-20261025A` (published 2026-10-28 08:04:44 UTC), verified from GitHub Releases on 2026-11-06; see `docs/RELEASES.md` for download links. The published 1.4.1 APK predates the current 1.4.2 source: a matching version number does not establish which later master changes are included, so check the release notes and the actual asset before claiming feature coverage.
-
-## Commit Convention
-
-All development history lives in `git log`. **Do not create a parallel `*_log.md` file.**
-
-Conventional Commits, lowercase type prefix, Chinese subject:
-
-| Prefix | When to use |
-|---|---|
-| `feat:` | User-visible new capability (features, UI additions, new APIs) |
-| `fix:` | Bug fix; no new behaviour beyond restoring correctness |
-| `chore:` | Housekeeping (delete unused files, rename dirs, gitignore) |
-| `docs:` | Docs-only changes (README, AGENTS.md, in-code comments) |
-| `build:` | Build system / dependencies / version bumps |
-| `refactor:` | Code-shape change without behavioural change |
-| `perf:` | Performance-only optimisation |
-| `style:` | Formatting, whitespace, comment tweaks |
-
-- Subject: prefix + one-sentence Chinese summary. Body (blank line, then paragraphs) explains **why** — commits should be readable a year later without opening a PR. Reference issues with `Fixes #N` / `#N`.
-- **One logical section = one commit, committed proactively without waiting to be asked.** Don't batch unrelated changes (e.g. "extract txt + fix color + update docs") into one commit. Split by logical unit, not by file count: changes that must compile together are one section; independently revertable changes are separate.
-- Multiple related fixes may share a commit only when they are the same logical change; pick the dominant type by user impact.
-- **Scopes (monorepo):** Android commits stay unscoped (matches existing history). Changes under `windows/` use `(windows)`, e.g. `feat(windows): …`; changes under `spec/` use `docs(spec): …`. A commit touching `spec/` plus one platform takes that platform's scope and states the other platform's follow-up status in the body.
-  Lumia changes use `(lumia)`; the Android 4 line uses `(walkman)`. Linux scope is reserved until its implementation is established.
-- **Tags:** releases ride a rolling multi-platform train tagged `CrateStack-YYYYMMDD<A..Z>` (assets named `ncrust-[platform]-[arch]-[version]`, indexed by the train's `manifest.json`); legacy per-platform tags (`v1.3.1`, `win-v1.0.0`, …) stay untouched for history.
-
-## What This App Is
-
-Ncrust is a third-party NetEase Cloud Music (网易云音乐) Android client built around three design priorities:
-
-1. **Salt UI** — restrained surfaces, consistent spacing and typography, rounded artwork and clear touch targets.
-2. **GPU zero-recomposition** — animations driven by a single `progress: Float` through `graphicsLayer`, not state-driven recomposition.
-3. **Three-layer graphics architecture** — main page / player card / navigation bar are independent composable layers, enabling gesture transitions without interference.
-
-Feature surface at v1.4.0: home discovery (daily songs / recommended playlists / new songs / private FM), three-type search with 500 ms debounce + history, cloud-synced library (liked songs / subscribed albums / user playlists), song share + external link receiving, full-screen player with a 7-level quality ladder (gapless preload is opt-in and experimental as of 1.4.0), 5 playback modes, bilingual lyrics, system media controls + Android Auto / Automotive, WebView + QR login, runtime theming (6 colors × 3 modes), and 8 runtime languages.
-
-## Android UI: Salt UI
-
-The Android app uses Salt UI (`io.github.moriafly:salt-ui`) for its theme and text primitives. Ncrust-specific components and motion tokens live in `ui/design/NcrustDesign.kt`; color and typography tokens are in `ui/theme/`. Keep the app UI on this design system and do not reintroduce Kanesumi/Metro dependencies.
+On Windows development hosts, use the checked-in `gradlew.bat` wrapper.
 
 ## Architecture
 
-### Entry Point & Orchestration
+- App ID and namespace: `com.smart.neteast`.
+- Kotlin and Jetpack Compose provide the app and UI. Salt UI is the current Compose component library; do not add a second UI toolkit.
+- AndroidX Media3 handles playback and media sessions.
+- `network/` contains the NetEase API clients and request protocols; `player/` contains playback service and state; `library/` manages cloud library state; `ui/` contains screens, components, design tokens and navigation.
+- `spec/api/` documents Android protocol behavior. `spec/fixtures/` contains data read by Android tests; update a fixture together with its corresponding implementation and test.
+- `benchmark/` contains Android Macrobenchmark scenarios.
 
-`MainActivity.kt` is a lean entry point (the activity class is ~130 LOC) plus the `MainScreen()` composable in the same file. `MainActivity`:
+## UI changes
 
-- applies the orientation policy (phones `< 600dp` locked portrait; large screens unlocked) via `smallestScreenWidthDp`, re-run in `onConfigurationChanged`;
-- requests `POST_NOTIFICATIONS` on API 33+;
-- calls `RetrofitClient.init(this)` and `AppWarmup.start(this)`;
-- builds the theme stack: `LocalStrings` → `NcrustTheme` (which configures `SaltTheme`) → `MainScreen` + `SplashScreen` + first-run battery prompt.
+- Reuse existing Salt UI primitives, app-owned design tokens and shared components under `ui/design/` and `ui/theme/`.
+- Preserve adaptive layouts, status/navigation bar insets, accessibility labels and touch targets.
+- Player expand/collapse and cover motion are centralized in `ui/player/`; avoid introducing a second competing animation state.
+- Keep pressed-state effects transient and avoid persistent decorative shadows.
 
-`MainScreen()` owns all app-level orchestration: bottom navigation / wide-screen sidebar, the `progress: Animatable<Float>` that drives the player card, the playback queue, the 5 playback modes, the global song menu sheet, clipboard link handling, and the About / WebView-login overlays.
+## Releases
 
-Also at file scope: `formatDuration(ms)`, and `object QueueModes { CYCLE=0, SINGLE=1, SHUFFLE=2, LINE=3, INFINITY=4 }`.
+- `app/build.gradle.kts` is the source of truth for `versionName` and `versionCode`.
+- Keep signing material out of Git. Never commit keystores, passwords, cookies or account data.
+- Release APKs are published in GitHub Releases with notes describing user-visible changes.
+- Confirm the release APK signature before attempting to replace an installed app. Uninstalling an app can erase its local data.
 
-### Package Layout
+## Commits
 
-Under `com.smart.neteast/`:
-
-| Package | Purpose |
-|---|---|
-| `network/` | Retrofit interface (`NcmApi`), eapi/weapi endpoints (`PlaylistApi`), `RetrofitClient` gateway, `CoverUrls`, response models |
-| `network/crypto/` | `EapiCrypto` (AES-128-ECB + MD5 sign), `WeapiCrypto` (double AES-CBC + RSA) |
-| `player/` | `PlaybackService` (MediaLibraryService + ExoPlayer), `PlaybackStateManager`, `SongUrlFetcher`, `PlayReporter` |
-| `auth/` | `CookieManager` (SharedPreferences), `QrPair` / `QrPairClient` / `QrPairServer` (LAN QR handoff) |
-| `library/` | `LibraryManager` (cloud-synced liked songs + subscribed albums), `SearchHistoryManager` |
-| `playlist/` | Account-bound reads, verified write orchestration, pending journal and experimental management state (`PlaylistManager`) |
-| `cache/` | `ContentCache` — in-memory network snapshot (home + LRU detail caches + user profile) |
-| `lyric/` | `LrcParser` (`[MM:SS.mm]` → `LrcLine.timeMs`), `LyricsCache` (200-entry persistent cache) |
-| `warmup/` | `AppWarmup` — cold-start preload singleton |
-| `power/` | `BackgroundActivity` — battery-optimisation whitelist intents |
-| `ui/navigation/` | `NavRoutes` route constants and `MainNavGraph` |
-| `ui/player/` | `PlayerCardOverlay`, `PlayerCard`, `FullPlayerControls`, `LyricsView`, `QueueView`, `SlimProgressBar` |
-| `ui/screen/` | One file per screen (Home, Search, Library, User, Album/Artist/Playlist/Song detail, About, Splash) |
-| `ui/viewmodel/` | `PlayerViewModel`, `SearchViewModel`, `SongViewModel` |
-| `ui/components/` | Reusable composables (`SongCard`, `DetailScaffold`, `SongMenuSheet`, `PlayAllDialog`, `QrLoginDialog`, `QrScannerScreen`, `ArtistSearchItem`, `BackgroundActivityDialog`) |
-| `ui/design/` | Salt UI theme-backed app controls, motion tokens, and shared navigation / lyric primitives |
-| `ui/theme/` | `NcrustColors`, `NcrustTypography`, `ThemeManager`, `ThemeColorSelector`, `MarkdownText` |
-| `ui/i18n/` | Runtime i18n: `Strings` data class, per-language files, `LanguageManager` |
-| `ui/ResponsiveContent.kt` | 360dp (phone) / configurable (wide) max-width centre container |
-| `ui/BottomOverlayInset.kt` | `BottomOverlayInsetDp` constant (144dp narrow / 64dp wide) |
-
-### Android UI components
-
-`ui/design/NcrustDesign.kt` contains app-owned Salt-styled icon buttons, menus, selectors, loading indicators, lyric rows, side navigation, and motion tokens. `NcrustTheme` configures Salt UI colors, text styles, shapes, and dimensions while exposing Ncrust palette locals to app components. Avoid adding another UI toolkit dependency for controls that can use these primitives.
-
-### Player Card Component Tree
-
-- **`PlayerCardOverlay`** — positions the card via `graphicsLayer { translationY = collapsedOffsetY + (0 - collapsedOffsetY) * progress.value }`. Thin wrapper, no animation logic.
-- **`PlayerCard`** — gesture handling (vertical drag, 25% snap threshold), cover-art animation, mini bar, lyrics/queue toggle, wide-screen two-column layout. Owns `lyricAnimProgress` (0 = large cover → 1 = small cover), `queueSlideProgress` (0 = lyrics → 1 = queue), and `wideSplit`. `StableCover` holds the previous cover across song changes (`COVER_HOLD_MS = 400L`). All animation values are read inside `graphicsLayer`.
-- **`FullPlayerControls`** — transport buttons, seekable progress bar, position/duration/quality leaf composables (each collects its own StateFlow), lyrics/queue/library toggles, `compact`/`landscape` variants.
-- **`LyricsView`** — uses the app-owned Salt-styled lyric list. It keeps position extrapolation, tap-to-seek, and bilingual `tlyric` merge.
-- **`QueueView`** — three-zone queue (past / current / upcoming), drag-reorder limited to the upcoming zone, INFINITY placeholder, auto-centre on open.
-- **`SlimProgressBar`** — Canvas-drawn 48dp-touch progress bar with a lazily-started buffering pulse.
-
-`progress: Animatable<Float>` (0 = mini, 1 = full) is owned by `MainScreen` and passed through `PlayerCardOverlay` → `PlayerCard`. Card expand/collapse: 400 ms `CubicBezierEasing(0.2, 0, 0, 1)` / 260 ms `FastOutSlowInEasing`.
-
-### Animation Pattern
-
-The player card uses a single `progress: Float` driven by `Animatable`. All visual properties (card size, position, opacity) are computed inside `graphicsLayer { }` — **never `animateFloatAsState`**. This is the core GPU zero-recomposition pattern. Easing is `tween + CubicBezierEasing` (controlled deceleration, no spring/bounce). Narrow-player covers remain full-width at the original anchor on Regular phones with sufficient space; Compact / Tiny covers shrink to the measured available height and are horizontally centred. All tiers reserve the measured title and controls; transitions retain centre-based `TransformOrigin(0.5f, 0.5f)` and the existing interpolation formulas and timings.
-
-For anything that is *not* the player card, use `NcrustMotion` tokens from `ui/design/NcrustDesign.kt` instead of ad-hoc animation timing.
-
-### Network Layer
-
-Two API styles coexist:
-
-- **REST via Retrofit** (`NcmApi`, base `https://music.163.com/`): search (`api/cloudsearch/pc`, types 1/10/100), song detail (`api/v3/song/detail`), lyrics (`api/song/lyric`), album detail (`api/v1/album/{id}`), artist albums (`api/artist/albums/{id}`).
-- **eapi via manual OkHttp POST** (`PlaylistApi` + `RetrofitClient.eapiPost`): playlists, recommendations, daily songs, personal FM, similar songs, song URL, album sub/unsub, like. **weapi** (`RetrofitClient.weapiPost`) is used for the similar-song fallback. **QR login** uses eapi with a PC client identity on `interfacepc.music.163.com` (`/eapi/login/qrcode/unikey` + `client/login`, `type=3`) — weapi `type=1` now returns `-462` (see `spec/api/endpoints.md`, `spec/api/login.md`). **Likes** go through **xeapi** `/api/v1/radio/like` (`RetrofitClient.xeapiPost`, `spec/api/xeapi.md`); Android must not fall back to legacy weapi/eapi `radio/like` or automatically replay an unreadable write response. Pending intents are persisted before dispatch and serialized by `PendingLikeWrites`; only the current intent's own read-back can clear it. Refreshes merge pending intents and discard snapshots started before a local change. A bounded private `files/like-sync-audit.jsonl` records write/read-back outcomes without credentials.
-
-`RetrofitClient` hosts:
-
-| Constant | Value |
-|---|---|
-| `BASE_URL` | `https://music.163.com` |
-| `API_URL` | `https://interface.music.163.com` (default eapi host) |
-| `INTERFACE_URL` | `https://interface3.music.163.com` (eapi when `useInterface = true`, i.e. song URL fetch) |
-
-- `init(context)` loads the cookie from `CookieManager`; `updateCookie(...)` replaces it (login/logout).
-- `eapiPost(path, payload, useInterface)` encrypts via `EapiCrypto`, sends form `params=<hex>`, PC UA + Referer + Cookie.
-- `eapiPostOfficial(path, payload)` retains the legacy iPhone-shaped helper; Android likes no longer call it. xeapi likes require a freshly fetched nonblank anti-cheat token, sent identically in the encrypted body and header; missing token leaves the intent pending.
-- `weapiPost(path, payloadJson, extraCookies)` produces `params` + `encSecKey` via `WeapiCrypto`.
-- `get(path)` plain GET; `postWeblog(url, logsJson)` form POST for playback reporting.
-- A cookie interceptor injects `Cookie`/`User-Agent`/`Referer`; `HttpLoggingInterceptor` is `BuildConfig.DEBUG`-only.
-
-`EapiCrypto`: AES key `e82ckenh8dichen8`, `/eapi/` → `/api/` path rewrite, signature `MD5("nobody" + path + "use" + json + "md5forencrypt")`, payload `path + "-36cd479b6b5-" + json + "-36cd479b6b5-" + digest`, AES-128-ECB/PKCS5 → hex.
-
-`WeapiCrypto`: random 16-char secret, double AES-128-CBC/PKCS5 with preset key `0CoJUm6Qyw8W8jud` then the secret, and `encSecKey` = raw RSA of the reversed secret (256 hex, no PKCS#1 padding, not base64).
-
-### Playback
-
-`PlaybackService` is a **`MediaLibraryService`** (media3), not a plain `MediaSessionService`. It owns:
-
-- an `ExoPlayer` with audio focus, `handleAudioBecomingNoisy`, `WAKE_MODE_NETWORK`, and `DefaultLoadControl(30_000, 60_000, 2_500, 15_000)`; **no on-disk media cache**;
-- a media3 `MediaLibrarySession` (Android Auto / Automotive browse tree: root → 每日推荐 / 私人 FM / 我喜欢的音乐, resolving `song:<id>` through `SongUrlFetcher`) and a legacy `MediaSessionCompat` (notification / lock-screen);
-- a foreground MediaStyle notification (channel `ncrust_playback`, dominant-colour colorization, artwork bitmap);
-- a **2 Hz** progress ticker (`delay(500)`);
-- error reporting: both `onPlayerError` and `onAudioSinkError` invoke the static `onPlaybackError(songId)`.
-
-`PlayerViewModel` holds all playback state as `MutableStateFlow` (isPlaying, position, duration, progress, buffering, current song metadata, lyrics, `currentQualityIndex`, `needsPreload`). `PlaybackStateManager` persists the last song + queue to SharedPreferences via Gson so playback survives process kill.
-
-**Song URL resolution** (`SongUrlFetcher`) starts at the selected quality and falls back down the ladder. Exact ladders:
-
-```
-dolby    -> dolby, hires, lossless, exhigh, higher, standard
-jyeffect -> jyeffect, lossless, exhigh, higher, standard
-hires    -> hires, lossless, exhigh, higher, standard
-lossless -> lossless, exhigh, higher, standard
-exhigh   -> exhigh, higher, standard
-higher   -> higher, standard
-standard -> standard
-```
-
-- **Device FLAC gate**: skips `lossless`/`hires`/`jyeffect` when no MediaCodec `audio/flac` decoder exists (API < 27 or stripped ROM), so ExoPlayer never gets a FLAC stream it can only render as silence.
-- **Auto quality downgrade**: `PlayerViewModel.handlePlaybackError` retries the same song one rung lower on `qualityRetryLadder` (reverse order, deduped 3 s per `songId@level`), skipping to the next song only when even `standard` fails. `AudioSink` failures are covered too.
-- **Level-aware preload cache**: `PreloadCacheEntry` records `requestedLevel`; a downgrade retry never replays an already-failed higher-tier URL. TTL = 5 min. Gapless preload window = **60 s** (`PRELOAD_THRESHOLD_MS`), despite some older comments saying 20 s.
-- A song that yields no playable URL at any tier is skipped — **never** fall back to `.../song/media/outer/url?id=X.mp3` (it 302→404s HTML and buffers forever).
-
-Quality preferences (indices into the 7-level ladder) live in `ncrust_settings`:
-
-| Index | Display (zh) | API level |
-|---|---|---|
-| 0 | 压缩 | `standard` |
-| 1 | 较好 | `higher` |
-| 2 | 更好 | `exhigh` |
-| 3 | 无损 | `lossless` |
-| 4 | 高解析 | `hires` |
-| 5 | 高清环绕声 | `jyeffect` |
-| 6 | 杜比全景声 | `dolby` |
-
-Defaults: Wi-Fi = 3 (lossless), Mobile = 1 (higher). The selected label shows as a badge in `FullPlayerControls`.
-
-#### Playback reporting (scrobble)
-
-`PlayReporter` feeds local listening back to NetEase (「最近播放」/「听歌排行」/ recommendations). The old plain-form webLog to `clientlogusf` returns 200 but is **silently dropped** (api-enhanced#167), so it now posts **eapi** to `https://clientlog.music.163.com/eapi/feedback/weblog` with an **`os=osx`** client identity (the deciding variable; see `spec/api/endpoints.md`). Two reports per song: `startplay` when playback starts, `play` (with `time` in **seconds**, `end:"playend"`) on natural end **or** progress ≥ 80%. Trial clips (`account/` entitlement = trial) send neither. Fire-and-forget on a `ncrust-scrobble` thread, deduped per song, never blocks playback.
-
-### Queue Management
-
-**Playlist management (2026-10-28, unreleased):** Profile settings expose an explicit `playlist_management_enabled` opt-in, default **false** until real-account writes are verified. Library → playlists supports create and owned/saved grouping; song menus support adding; own ordinary playlist details support name/description/privacy editing, multiselect removal and single deletion. Queue's existing save button creates a playlist from the queue. `PlaylistRepository` reads ownership, writes fixed actions in batches up to 500, and reads back exact target fields/IDs; unknown results only re-read, never replay. Pending commands use explicit JSON keys under `playlist_pending_<uid>` in `ncrust_settings`. Delete requires a complete snapshot backed up, synced and reread under internal `files/playlist-backups/` first. No automatic backup restore or cloud reorder. This implementation has only fake-gateway and emulator evidence, **no real-account write verification**; see `docs/playlists/implementation.md`.
-
-Playlist detail taps create an ordered local snapshot and locate the selected ID; incomplete content cannot replace the queue. Entering an ordinary playlist clears FM and resets INFINITY to CYCLE. SINGLE advances on manual next and repeats on natural end; LINE retains the actual last index; SHUFFLE preloading and tail transitions share one prepared next round. Cloud edits leave the current local queue intact.
-
-All queue operations live in `MainScreen` (not `PlayerViewModel`): `replaceQueueAndPlay`, `playSongItem`, `insertNext`, `appendToQueue`, `insertAllNext`, `appendAllToQueue`, `removeFromQueue`, `moveInQueue`, `playFromQueue`, `playNext`, `playPrevious`, `generateShuffledIndices`, `launchInfinity`, `startFm`.
-
-**Critical invariant:** `playbackQueue[currentQueueIndex]` must always equal the currently playing song. When deduping a queue mutation, record the current song's id first, filter, then re-locate the index — a naive `.filter` can drop an earlier duplicate and point `currentQueueIndex` at the wrong item. Every mutation calls `PlaybackStateManager.saveSession(...)`, which atomically persists the whole `PlaybackSession` (queue + index + mode + FM + shuffled indices); any mutation in SHUFFLE mode regenerates the shuffled-index list.
-
-5 playback modes (`QueueModes`): `CYCLE` (0), `SINGLE` (1), `SHUFFLE` (2), `LINE` (3, stops at tail), `INFINITY` (4, FM radio / similar-song continuation). `launchInfinity()` appends at the tail from `getPersonalFm` (FM mode) or `getSimilarSongs(seed)`, falling back to `getDailyRecommendSongs`, deduped and in-flight guarded.
-
-### Content Cache & Load Transitions
-
-`ContentCache` is an in-memory snapshot (not persistence — that is `LibraryManager`). It holds the three home lists + `homeWarmedUpAt` (15 s freshness window), LRU-32 caches for album / playlist-songs / artist-albums, and the user profile. It is cleared on `onTrimMemory` / `onLowMemory` / manual cache clear.
-
-Load pattern for any network screen:
-
-1. Read `ContentCache.getX(id)` as initial state.
-2. If present, render immediately; do not show a loader.
-3. Regardless, kick off a background refresh and write back on success.
-4. Let `LazyColumn` diff by key.
-5. Wrap loading↔content in `Crossfade(animationSpec = NcrustMotion.CoverFade)` — never a hard `if (isLoading) return Loader()`.
-
-`DetailScaffold` takes `hasCachedContent: Boolean`; when `true` it suppresses the loader even if `isLoading`. Detail screens pass `hasCachedContent = (data != null)`.
-
-### State Management
-
-No DI framework — singletons as service locators: `RetrofitClient`, `CookieManager`, `LibraryManager`, `PlaybackStateManager`, `ContentCache`, `ThemeManager`, `LanguageManager` (via `LocalStrings`). No Room; all persistence is SharedPreferences + Gson.
-
-SharedPreferences files:
-
-| File | Owner(s) | Contents |
-|---|---|---|
-| `ncrust_prefs` | `CookieManager` | `user_cookie` |
-| `ncrust_settings` | `ThemeManager`, `LanguageManager`, `PlayerViewModel`, `UserScreen`, `MainActivity` | theme index/mode, language, quality, gapless, lyrics translation, `battery_prompt_done`, update: `update_auto_check` / `update_last_check_at` / `update_dismissed_version` / `update_found_*` |
-| `ncrust_library` | `LibraryManager` | `saved_songs`, `saved_albums`, `liked_ids` |
-| `ncrust_playback_state` | `PlaybackStateManager` | last song + `session` (explicit-key envelope: queue + index + mode + FM + shuffled indices, one atomic write; pre-1.3.2-fix payloads under obfuscated keys `a`–`f` are read back once via the legacy branch) |
-| `ncrust_lyrics_cache` | `LyricsCache` | `entries` (≤ 200) |
-| `search_history` | `SearchHistoryManager` | `songs`, `albums`, `artists` (≤ 10 each, 14-day TTL) |
-
-### Auth & Login
-
-`CookieManager` stores the raw cookie in `ncrust_prefs`. Login paths:
-
-1. **WebView login** (phone default, and "通用登录" on tablet) — `MainActivity` shows a WebView at `https://music.163.com/#/login`, reads `MUSIC_U=` on `onPageFinished`, saves + `RetrofitClient.updateCookie`, then triggers `LibraryManager.refreshFromCloud`.
-2. **QR login** (wide screens `>= 600dp`) — `QrLoginDialog` requests a `unikey` via eapi + PC identity (`type=3`; QR content is `https://music.163.com/login?codekey=<unikey>`), renders the QR with ZXing, starts a `QrPairServer`, and polls `client/login` every 2 s (max 150 ticks): 800 expired / 802 scanned / 803 success.
-3. **Phone-scanning-tablet handoff** — `QrAuthorizeScreen` (CameraX + ZXing) scans the tablet's QR, extracts the unikey, and sends the phone's cookie over the LAN. Protocol in `QrPair`: UDP broadcast on port `47821` (prefix `NCRUSTPAIR1?` / `NCRUSTPAIR1!`) to discover the tablet, then a TCP connection carrying a length-prefixed AES-128-CBC payload (key = `SHA-256(unikey)[0:16]`, random IV prepended). `cleartextTraffic` is enabled for this.
-
-**Manual cookie paste no longer exists** — it was removed in `a16e381`. Do not reintroduce it in docs.
-
-### i18n System
-
-Runtime-based (not Android resource strings), under `ui/i18n/`:
-
-- `Strings.kt` — one data class with every UI string (≈165 properties; some are lambdas such as `trackCount: (Int) -> String`).
-- One file per locale defining a top-level `Strings(...)` value.
-- `LanguageManager.kt` — `languagePresets`, `LocalStrings` (default `zhCN`), SharedPreferences helpers.
-
-**8 locales:** `zh-CN` 简体中文, `zh-TW` 繁體中文, `en-US` English, `ja-JP` 日本語, `ja-MY` 万葉仮名, `ko-KP` 조선어, `de-DE` Deutsch, `ru-RU` Русский. (The legacy `en-UK` code maps to `en`.)
-
-**Chinese product terminology:** Android uses 「播放列表」 (`zh-CN`) / 「播放清單」 (`zh-TW`) for playlist, and 「播放队列」 / 「播放佇列」 for the temporary queue. Keep protocol paths, identifiers and user-created names unchanged. Library playlist rows live in `PlaylistCollectionContent`, detail composition in `PlaylistDetailHeader`; form width/keyboard behavior and SDK rendering evidence are documented in `docs/playlists/implementation.md`.
-
-To add a locale: create `xx_XX.kt` with a `Strings(...)` and add a `LanguagePreset` to `languagePresets`. To add a string: add the property to `Strings.kt` and to **every** locale file. Composables read `val s = LocalStrings.current` — never hardcode UI strings.
-
-### Theming & Responsive Layout
-
-- **6 theme colors** (`themeColorPresets`): 云杉 `#1DB954`, 钴蓝 `#3B82F6`, 绯红 `#EF4444`, 琥珀 `#F59E0B`, 堇紫 `#8B5CF6`, 素白 `#FFFFFF`.
-- **3 theme modes** (`ThemeMode`): `SYSTEM`, `DARK`, `LIGHT`. Dark base is OLED black `#000000`; light base is warm off-white `#F6F2E9`.
-- `NcrustTheme(primaryColor, isDark)` derives `NcrustColors` and configures `SaltTheme`; app controls use the same palette through `LocalNcrustColors`.
-- `ResponsiveContent`: `< 600dp` → centred `widthIn(max = 360.dp)`; `>= 600dp` with `maxWidth` → centred at that width; without → fills with 24dp horizontal padding.
-- Wide screens (`windowWidthDp >= 600`) replace the bottom nav with a 200dp `NcrustSidebar`; the content column gets `padding(start = 200.dp)`.
-- `BottomOverlayInsetDp` = **144dp** narrow (80 nav + 56 mini + 8 buffer) / **64dp** wide (56 mini + 8). All scrollable content must use it as `contentPadding`; **never** append a manual end-of-list `Spacer`.
-
-## Key Constraints & Pitfalls
-
-- **Salt UI / height adaptation**: `LocalHeightClass` is provided across MainScreen's content tree from the same `contentHeightPx` as `collapsedOffsetY` (Regular ≥720dp, Compact ≥560dp, Tiny <560dp). Regular narrow-player covers stay full-width where space permits (384×896 keeps the original anchor); Compact / Tiny shrink and centre using measured content, top bar, controls and title heights. Measurements are read in layout / graphicsLayer, never per-frame composition. Compact uses compact controls; Tiny merges time / progress and moves panel toggles to the top bar. Lyrics typography is 32/42/20/26, 24/32/16/21, 20/27/14/18sp respectively.
-- **GPU zero-recomposition**: read animation values only inside `graphicsLayer`; never `animateFloatAsState` for the player card. High-frequency StateFlows are subscribed in leaf composables / `draw` scope, not in the parent.
-- **PlayerCard collapsed state**: LyricsView / QueueView / FullPlayerControls remain mounted; visibility is graphicsLayer alpha, input is threshold-gated. Below `progress = 0.01`, the position / progress flows feeding the hidden children are frozen; expansion resumes current values. Do not restore mount/dispose gating on expansion.
-- **Borderless list style**: `SongCard` LIST/COMPACT rows have `0dp` left padding (72dp cover flush to the edge); only the right keeps 16dp. `DetailScaffold` has no `TopAppBar` Surface — a floating back arrow (`NcrustTopScrim`) overlays the content. Grid tiles use `spacedBy(2.dp)`. Home/Library use a 34sp page header instead of an app bar.
-- **Bottom overlay inset**: the mini bar (56dp) sits above the M3-era 80dp nav bar, drawn as a sibling overlay, so `Scaffold.innerPadding.bottom` does **not** reserve space for them. Use `BottomOverlayInsetDp` as `contentPadding`.
-- **System-bar compensation**: `collapsedOffsetY = contentHeightPx - sysNavPx - navBarHeightPx(56/0) - miniBarHeightPx(56) - sysStatusPx`. `sysStatusPx` cancels the `.statusBarsPadding()` applied inside `PlayerCard` to the mini-bar overlay. **Automotive (AAOS) caveat**: CarSystemUI does not deliver WindowInsets, so on `UI_MODE_TYPE_CAR` the content height comes from the measured root height (`rootHeightPx`), not `screenHeightDp`; phone/tablet keep `screenHeightDp` so car changes don't leak. Touch any of these values carefully.
-- **Search debounce**: 500 ms in `SearchViewModel` — do not remove.
-- **No explicit coroutines dependency**: coroutines ship with the Kotlin stdlib configuration here.
-- **Gson 反射 vs R8（v1.3.2 首版启动闪退的根因）**: R8 会剪掉未被 `-keep` 的类的字段 `Signature` 注解，Gson 反序列化时泛型字段退化为裸 `List`，元素全部变成 `LinkedTreeMap`，第一次按真实类型访问元素就 `ClassCastException`。含泛型字段的持久化模型，元素类型必须由「匿名 `TypeToken`」显式携带（`PlaybackStateManager` 的 `songListType`、`LibraryManager` 的各 `*Type` 同此），或把模型加进 `-keep` 规则；**绝不让 Gson 反射整个未 keep 的 data class**。播放会话落盘用显式键信封（`PlaybackStateManager.serializeSession`/`parseSession`，键名写死在代码里），`PlaybackSessionStoreTest` 锁住该格式。
-- **`ContentCache` is not persisted**; `LibraryManager` is the persistence layer.
-- **Gapless preload is opt-in (1.4.0)**: `gapless_playback` defaults to **false** in both `PlayerViewModel.refreshGaplessSetting()` and `preloadNext()`. The feature is advertised as experimental (`gaplessBetaNote`: 「测试中，可能不稳定」) and its switch sits last in the playback settings section. Do not flip the default back to `true`, and never treat a missing key as enabled — only an explicit user opt-in may preload into the ExoPlayer queue.
-- **Stale comments**: some comments say "last 20 s" for the gapless preload window (actual 60 s) and "4 Hz" for progress ticks (actual 2 Hz). Trust the code.
-- **`SongDetailScreen` / `NavRoutes.song(...)` are registered but unreachable** — clipboard song links load into the player instead.
-- **`ncrust-api/` is not part of the app** — see Repository Layout.
+Use Conventional Commit prefixes and concise Chinese subjects, for example `fix: 修复歌词顶栏对齐`. Keep app changes, documentation changes and unrelated cleanup in coherent commits.

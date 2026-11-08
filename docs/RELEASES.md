@@ -1,62 +1,19 @@
-# Ncrust 发布索引
+# Android Releases
 
-Ncrust 在同一个仓库里发布多个平台，各平台**版本线独立**。发布走**滚动多平台班次
-（release train）**：一个 Release 装载当日各平台的最新版资产，tag 形如
-`CrateStack-YYYYMMDD<序号>`（如 `CrateStack-20260928A`），GitHub 的「Latest」徽章即指向
-当前班次。班次内附 [`manifest.json`](https://github.com/GuitaristRin/Ncrust/releases/download/CrateStack-20260928A/manifest.json)
-（版本 × 资产清单，机器可读），产物命名规范 `ncrust-[平台]-[架构]-[版本]`。
+GitHub Releases contain signed Android APKs for this repository. `versionName` and `versionCode` in `app/build.gradle.kts` are the version source of truth.
 
-> 历史版本按平台独立 tag 发布（`v1.3.1`、`win-v1.0.0` 等），旧资产链接保持有效。
-> 某平台的最新版一律以本表为准，**不要看 Latest 徽章判断**——徽章只指向最近一班。
+## Current release
 
-## 各平台最新版
+| Version | APK | Notes |
+|---|---|---|
+| 1.4.2 | [Download Android APK](https://github.com/smartzheng/smart-netease/releases/download/v1.4.2/smart-netease-android-1.4.2.apk) | First release from the independently maintained Android project. |
 
-| 平台 | 版本 | 所在班次 | 下载 | 日期 |
-|---|---|---|---|---|
-| Android（通用包） | 1.4.1 | [`CrateStack-20261025A`](https://github.com/GuitaristRin/Ncrust/releases/tag/CrateStack-20261025A) | [`ncrust-android-universal-1.4.1.apk`](https://github.com/GuitaristRin/Ncrust/releases/download/CrateStack-20261025A/ncrust-android-universal-1.4.1.apk) | 2026-10-28 |
-| Windows（UWP，x64） | 1.0.3 | [`CrateStack-20261025A`](https://github.com/GuitaristRin/Ncrust/releases/tag/CrateStack-20261025A) | [`.appinstaller`](https://github.com/GuitaristRin/Ncrust/releases/download/CrateStack-20261025A/ncrust-windows-x86_64-1.0.3.appinstaller) · [`.msix`](https://github.com/GuitaristRin/Ncrust/releases/download/CrateStack-20261025A/ncrust-windows-x86_64-1.0.3.msix) · [`.cer`](https://github.com/GuitaristRin/Ncrust/releases/download/CrateStack-20261025A/ncrust-windows-x86_64-1.0.3.cer) | 2026-10-28 |
-| Windows Phone（Lumia 950 等） | — | — | — | 计划中 |
-| Linux | — | — | — | 计划中 |
-| macOS | — | — | — | 计划中 |
+## Build a release locally
 
-> 注意：`CrateStack-20261015A` 里的 Android 1.4.0 与 Windows 1.0.2 都**不含**次日提交的
-> 「收藏写入体补 checkToken」修复（`4410100` / `142e908`，2026-10-16）——这两个版本上
-> 「收藏隔天消失」依旧存在，修复随 1.4.1 / 1.0.3 发布。
+1. Set the version in `app/build.gradle.kts`.
+2. Configure `keystore.properties` locally. The file is ignored by Git; never publish the keystore or its passwords.
+3. Build with `./gradlew :app:assembleRelease` (or `gradlew.bat` on a Windows development host).
+4. Verify the APK signature and install it on a test device before publishing.
+5. Create a versioned GitHub Release and attach the signed APK. Keep the release notes focused on Android user-visible changes.
 
-本表于 2026-11-06 按 GitHub Releases 核对；日期列为实际发布时间。相同版本号的主干源码可能继续变化，具体功能以班次说明与发布资产为准。发布时更新本表。
-
-## 版本与班次
-
-- 滚动班次 tag：`CrateStack-YYYYMMDD<A..Z>`（同日多班依次编号），每班装载当时各平台
-  最新版资产；班次内附 `manifest.json`，程序化检查以它为准。
-- 资产命名：`ncrust-[平台]-[架构]-[版本]`，如 `ncrust-android-universal-1.3.2.apk`、
-  `ncrust-windows-x86_64-1.0.0.msix`。
-- 各平台版本号字段各自维护。Android 唯一来源 `app/build.gradle.kts` 的
-  `versionName` / `versionCode`；Windows 唯一来源 `Package.appxmanifest` 的
-  `Identity Version`（`X.Y.Z.0`，第 4 段是开发构建号）。
-- 修复类改动允许**不 bump 版本号、原地更换班次里的同名资产**（先例：2026-09-28 晚更换
-  Android 1.3.2 修复冷启动闪退），但必须在 Release 说明里注明更换时间与原因，
-  并同步本表。
-- Android 不提供应用内更新器，用户需从 Release 页手动下载并安装 APK。Windows 侧仍由
-  App Installer 处理更新；它只接受**严格高于当前版本**的发布资产。
-- `spec/fixtures/update/releases.json`（`update.train.same-version`）保留版本与资产命名规则，
-  供 Windows 更新检查使用；Android 当前不消费这些夹具。
-
-## Windows 下载与更新
-
-- Windows 每班发布三样：**签名 MSIX** + **`.appinstaller`** + **公开证书 `.cer`**。
-- **请用 `.appinstaller` 安装**：只有经它安装的包，系统的 App Installer 才会自动更新；
-  直接装 `.msix` 的没有更新源，永远不会自动更新。
-- 首次安装需要信任自签证书，且必须装进**机器级**存储：MSIX 的签名校验由 SYSTEM 上下文
-  执行、查「本地计算机」证书存储，只装「当前用户」照样 `0x800B0109` 拒装（2026-10-21
-  事件日志实测）。用**管理员** PowerShell 运行
-  `windows/tools/release/install-cert.ps1 -CerPath <下载的 .cer>`，或 `certlm.msc` →
-  受信任人 → 导入。若日后换成正规代码签名证书，这一步就不需要了。
-- 应用内提供「**检查更新 + 一键安装**」：启动静默检查（6 小时缓存），或在「设置 → 关于」手动检查；
-  发现新版会**下载 `.appinstaller` 并交给系统的 App Installer** 完成安装。UWP 无法静默自装，
-  真正在后台自动更新的是 `.appinstaller` 的 `<UpdateSettings>`（所以务必用 `.appinstaller` 安装）。
-- 发布脚本：`windows/tools/release/release.ps1`（编译 + 签名 + 生成 `.appinstaller` + 导出 `.cer`）；
-  证书信任：`windows/tools/release/install-cert.ps1`。
-- 包身份（`Identity Name` + `Publisher = CN=TakahashiRinta`）永不改变；改了会导致老版本无法升级。
-
-详细规则见 `windows/AGENTS.md` 的「版本与发布」。
+Typical APK output: `app/build/outputs/apk/release/app-release.apk`.

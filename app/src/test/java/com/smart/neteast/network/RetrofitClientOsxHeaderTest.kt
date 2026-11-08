@@ -16,8 +16,7 @@ import org.junit.Test
  *
  * 边界：真正把信封序列化成 JSON 的是 `EapiCrypto` 里的 `org.json.JSONObject`，而本地单测里
  * `org.json` 是空桩（见 `QrLoginProtocolTest` 的说明）。这里用 Gson 渲染同一份 Map 断言字段顺序与
- * 原生类型，**「org.json 也这么写」是看代码得出的**；端到端那一步由 Windows Core 测试
- * （解真请求体）覆盖。
+ * 原生类型，**「org.json 也这么写」是看代码得出的**；端到端请求体仍需单独验证。
  */
 class RetrofitClientOsxHeaderTest {
 

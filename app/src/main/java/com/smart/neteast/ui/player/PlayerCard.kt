@@ -953,7 +953,14 @@ fun PlayerCard(
                         val lyricAnimValue = if (isWidePlayer) 0f else lyricAnimProgress.value
 
                         val targetCenterX = largeCoverCenterX + lyricAnimValue * (miniCoverCenterX - largeCoverCenterX)
-                        val targetCenterY = largeCoverCenterY + lyricAnimValue * (miniCoverCenterY - largeCoverCenterY)
+                        // In lyric mode the shared cover sits beside the title inside the 80dp
+                        // header. Center it against that measured header, while keeping the mini
+                        // player destination at the mini bar's own center during collapse.
+                        val lyricHeaderCenterY = statusBarPx + narrowTopBarHeight.floatValue / 2f
+                        val expandedCoverCenterY = if (isWidePlayer) largeCoverCenterY else {
+                            largeCoverCenterY + lyricAnimValue * (lyricHeaderCenterY - largeCoverCenterY)
+                        }
+                        val targetCenterY = if (isWidePlayer) largeCoverCenterY else expandedCoverCenterY
                         val targetScale = miniScale + (1f - lyricAnimValue) * (1f - miniScale)
 
                         val currentCenterX = miniCoverCenterX + normalizedP * (targetCenterX - miniCoverCenterX)

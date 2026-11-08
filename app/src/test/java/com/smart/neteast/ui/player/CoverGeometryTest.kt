@@ -32,7 +32,7 @@ class CoverGeometryTest {
         assertClear(g, 640f, 186f)
     }
 
-    @Test fun `tiny walkman is constrained by height`() {
+    @Test fun `tiny height class is constrained by available height`() {
         val g = geometry(320f, 533f, 118f)
         assertEquals(215f, g.sizePx, .001f)
         assertEquals(160f, g.centerXPx, .001f)

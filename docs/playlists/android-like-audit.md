@@ -13,7 +13,7 @@
 ## 任务边界
 
 - 目标：排查 Android 1.4.1 的云端收藏撤销，修复可证实的缺陷，并安装包含歌单管理的版本。
-- 真值：手机实际 APK、`spec/api/xeapi.md`、Windows 对应实现及真实服务端读回；模拟测试不代替隔日验证。
+- 真值：手机实际 APK、`spec/api/xeapi.md` 与真实服务端读回；模拟测试不代替隔日验证。
 - 参考：`PlaylistApi`、`RetrofitClient`、`LibraryManager`；歌单入口及写入边界见 [implementation.md](implementation.md)。
 - 验收：收藏请求失败时不写旧通道；最后一次用户操作不能被旧请求覆盖；待确认收藏不被刷新抹去；回归测试、签名构建与保留数据的覆盖安装。
 - 止损：不重放未知结果，不改现有歌单或批量恢复收藏，不把立即读回当成隔日持久性证明；服务端证据不足时保留未确认结论。
@@ -23,7 +23,7 @@
 - 用户确认：收藏在网易云官方客户端中也消失，故并非仅本地分页显示问题。
 - 连接手机安装的是 versionCode 9 / 1.4.1，最后更新 2026-10-28；APK SHA-256 为 `363a980a5a75362ecede73c90be2ac9b4b8f870bced122811462809ee9607e3f`。
 - 该 APK 含 `checkToken`、`rqRefer`、`songRqRefer` 及三个通道的日志字符串，不含歌单管理开关字符串；仅靠字符串不能证明每次运行都发出了正确请求。
-- Android 与 Windows 源码均仍在 xeapi 失败后尝试 weapi/eapi 老通道。Windows 的既往成功不能证明 Android 当前失败原因，也不能证明这个回退安全。
+- 旧版 Android 源码曾在 xeapi 失败后尝试 weapi/eapi 老通道；该回退不能证明请求安全。
 - Android 的收藏/取消各自启动 IO 协程，未串行化；旧请求读回成功后无条件清除同一歌曲的新待同步状态。刷新也会用云端列表直接覆盖待同步的乐观收藏。
 - 本轮读取的手机 logcat 没有保留下收藏标签日志，无法追溯本次消失歌曲的历史实际请求。
 - 手机 APK 与本地归档 `build/release-android-1.4.1/ncrust-android-universal-1.4.1.apk` 的 SHA-256 完全相同。
@@ -67,4 +67,4 @@ adb -s <device> install -r build/like-audit-20261029/ncrust-android-universal-1.
 最终包：`build/like-audit-20261029/ncrust-android-universal-1.4.2.apk`。
 界面证据：同目录 `settings-enabled.png`、`playlist-create.png`；新建表单截图没有账号或现有歌单名称。
 
-**未运行：真实账号收藏写入、歌单创建/编辑/删除、写后真实读回与隔日持久性。** 本轮没有变更任何云端收藏或歌单；没有发布、推送；Windows 的旧回退路径未修改。立即读回即使成功，也不能代替隔日验收。
+**未运行：真实账号收藏写入、歌单创建/编辑/删除、写后真实读回与隔日持久性。** 本轮没有变更任何云端收藏或歌单；没有发布、推送。立即读回即使成功，也不能代替隔日验收。

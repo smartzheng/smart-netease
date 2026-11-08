@@ -40,7 +40,7 @@
 ## 取值来源
 
 `eapi.json` / `weapi.json` 的期望值由一个独立参考实现（Node.js `crypto` + `BigInt`）
-按上述算法生成，再与 Android 实现逐条核对。它是三端共同的「标准答案」。
+按上述算法生成，再与 Android 实现逐条核对。它是 Android 测试使用的「标准答案」。
 
 ### `xeapi.json`
 

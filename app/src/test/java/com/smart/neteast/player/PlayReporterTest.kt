@@ -14,7 +14,7 @@ import org.junit.Test
  *
  * 边界：真正把 logs 塞进加密信封的是 `EapiCrypto`（`org.json` 序列化），本地单测里 org.json
  * 是空桩；这里断言的是**交给它的那份文本**，信封形态由
- * `RetrofitClientOsxHeaderTest`（Gson 渲染同一份 Map）与 Windows Core 测试（解真请求体）覆盖。
+ * `RetrofitClientOsxHeaderTest`（Gson 渲染同一份 Map）与本地请求体校验覆盖。
  */
 class PlayReporterTest {
 

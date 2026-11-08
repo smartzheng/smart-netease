@@ -9,7 +9,7 @@
 // 手动收藏一首歌，把 id 填进日志的 officialControlId，check 会一起跟踪。
 //
 // 通道（与 Ncrust 现行/候选实现一一对应）：
-//   weapi       music.163.com/weapi/radio/like           Android/Windows 现行主通道（de193ff / 25f0c39）
+//   weapi       music.163.com/weapi/radio/like           Android 客户端的历史写入通道
 //   eapi-ios    interface.music.163.com/eapi/radio/like  现行回退通道（官方 iPhone 指纹）
 //   xeapi-v1    interface3.music.163.com/xeapi/v1/radio/like  官方 Android 9.x 现行通道（候选修复）
 //

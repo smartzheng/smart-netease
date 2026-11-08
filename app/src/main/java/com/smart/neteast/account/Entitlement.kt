@@ -103,7 +103,7 @@ data class SongPrivilege(
 )
 
 /**
- * 判定单曲播放结果（`spec/api/entitlement.md` §单曲播放结果分类，三端一致）。
+ * 判定单曲播放结果（`spec/api/entitlement.md` §单曲播放结果分类）。
  *
  * @param requestedLevel 客户端**实际尝试的第一档**。调用方必须传 FLAC 门控之后的第一档，
  *   否则设备解不了 FLAC 造成的降级会被误判成「账号权限不足」。
@@ -138,7 +138,7 @@ fun classifyPlayback(
         }
         val requestIdx = QualityLadder.indexOf(requestedLevel)
         val actualIdx = QualityLadder.indexOf(item.level)
-        // 只有两端都在 7 级阶梯内才可比；阶梯外档位（如 sky）不参与比较、不算 capped。
+        // 请求档位和实际档位都在 7 级阶梯内才可比；阶梯外档位（如 sky）不参与比较、不算 capped。
         val capped = requestIdx >= 0 && actualIdx >= 0 && actualIdx < requestIdx
         return PlaybackEntitlement.Full(
             capped = capped,

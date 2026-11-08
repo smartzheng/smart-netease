@@ -19,12 +19,9 @@ keystore.properties
 *.jks
 *.keystore
 
-# Windows 代码签名：私钥 / 口令严禁入库；.cer 公钥随 Release 附件分发
+# Signing material must never be committed.
 *.pfx
 *.pvk
-
-# Windows 打包产物（windows/tools/release 输出）
-windows/dist/
 
 # Benchmark 构建产物、登录态与 pull 下来的性能 trace(个人账号凭证, 禁止入库)
 benchmark/build/

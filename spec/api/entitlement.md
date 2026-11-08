@@ -44,7 +44,7 @@
 
 接口失败（含 301）时 VIP 显示为未知，不显示「未开通」。
 
-## 单曲播放结果分类（纯函数，三端一致；夹具 `spec/fixtures/entitlement/playback.json`）
+## 单曲播放结果分类（纯函数；夹具 `spec/fixtures/entitlement/playback.json`）
 
 输入：`url/v1` 返回的 `data[i]`（`url`、`code`、`level`、`fee`、`freeTrialInfo`、`freeTrialPrivilege`）、请求的档位、
 （可选）歌曲详情的 `privilege`（`st`、`pl`、`fee`）、会话是否 `Valid`。依次判定：

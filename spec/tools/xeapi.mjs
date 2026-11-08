@@ -1,6 +1,6 @@
 // xeapi 参考实现（Node.js 内置库，零依赖）。
 //
-// 三端的「标准答案」生成器：所有随机量都可注入，以便 gen-xeapi-fixtures.mjs 产出逐字节
+// Android 接口的「标准答案」生成器：所有随机量都可注入，以便 gen-xeapi-fixtures.mjs 产出逐字节
 // 可复现的夹具。算法对齐 NeteaseCloudMusicApiEnhanced/api-enhanced@2db6684
 // util/crypto.js（xeapi / xeapiSign / xeapiResDecrypt / xeapiDecryptPublicKey）与
 // module/register_xeapikey.js；2026-10-15 用 probe-xeapi.mjs 实测公钥获取 + 匿名读接口通过。

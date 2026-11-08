@@ -754,7 +754,7 @@ private fun NcrustDropdownRow(
                 sizeDp = 20.dp,
             )
         }
-        // UWP ComboBox 移植:选中项落回锚点原位,菜单从锚点双向展开。
+        // 选中项落回锚点原位，菜单从锚点双向展开。
         NcrustSelectorFlyout(
             expanded = expanded,
             onDismissRequest = { expanded = false },
@@ -944,7 +944,7 @@ fun SaltLanguageDropdown(
             )
         }
 
-        // UWP ComboBox 移植:选中项落回锚点原位,内部滚动到选中语言。
+        // 选中项落回锚点原位，内部滚动到选中语言。
         val selectedIndex = presets.indexOfFirst { it.code == selectedCode }.coerceAtLeast(0)
         NcrustSelectorFlyout(
             expanded = expanded,

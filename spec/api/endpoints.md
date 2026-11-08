@@ -170,7 +170,7 @@ UA 为桌面客户端（`Mozilla/5.0 (Windows NT 10.0; WOW64) … NeteaseMusicDe
 - `id`：歌曲 id。`sourceId`：歌曲来源的歌单 / 专辑 id —— **不知道时用空串**（`content` 就是 `id=`），不要编。
 - `time`：**播放秒数**（不是毫秒）。
 - `wifi`：`0` = Wi-Fi，`1` = 计费网络。参考实现固定发 `0`（它的对照实验都在 Wi-Fi 下做），
-  本仓库两端按实际网络发 0 / 1。
+  Android App 按实际网络发 0 / 1。
 - 时机：每首歌**开始播放**时发 `startplay`（每首一次）；自然结束**或**进度 ≥ 80% 时发 `play`（每首一次）。
   **试听片段两条都不发**（`api/entitlement.md`：45 秒片段不该进「最近播放」与排行）。
 - 仍然尽力而为：fire-and-forget，失败与未登录都不影响、不阻塞播放。
@@ -186,7 +186,7 @@ UA 为桌面客户端（`Mozilla/5.0 (Windows NT 10.0; WOW64) … NeteaseMusicDe
   `requestId=<毫秒时间戳>_<4 位随机>`，末尾按有无补 `MUSIC_U` / `MUSIC_A`。
 - 请求头只有 `User-Agent` 与 `Cookie`（参考实现这条路径不带 `Referer`）；表单体是 `params=<hex>`。
 - **与参考实现的已知差异**：参考实现在 eapi 头末尾还会补上它自己缓存到的 `NMTID`（来自某次 eapi
-  响应的 Set-Cookie）。两端都不带这个字段 —— 上面这份字段清单里没有它，而它取决于一次额外的响应
+  响应的 Set-Cookie）。当前 Android 实现不带这个字段 —— 上面这份字段清单里没有它，而它取决于一次额外的响应
   缓存；**去掉它是否影响入账没有实测**，若日后发现打卡不生效，这是第一个值得补回的字段。
 
 **旧通道（已废弃，别再回去）**：`POST https://clientlogusf.music.163.com/api/feedback/weblog?csrf_token=…`，
@@ -200,6 +200,6 @@ HTTP 200 / `code 200`，但服务端静默丢弃，不入账**（「最近播放
 专用的 Mac Chrome UA、`data.header = header`）、`util/config.json`
 （`clDomian = https://clientlog.music.163.com`、`encryptResponse = false`），以及 #167 的对照实验结论。
 
-> **验证边界**：两端各自的单测锁的是「请求形态 = 上面这份规格」（URL、UA、Cookie、解密后的 logs 字段与
+> **验证边界**：Android 单测锁的是「请求形态 = 上面这份规格」（URL、UA、Cookie、解密后的 logs 字段与
 > 顺序）。**「服务端是否真的入账」没有在真实账号上验证过** —— 未登录 / 无效 cookie 的匿名探针只会拿到
 > `code 200`（正是 #167 里那条假通道的表现），只能由账号主人在官方 App 的「最近播放 / 听歌排行」里核对。

@@ -4,7 +4,7 @@
 包括 FM 播放队列使用的 `/api/v1/radio/like`；普通歌曲收藏使用 `/eapi/song/like`，见
 `spec/api/endpoints.md`。
 
-- 参考实现（三端标准答案）：`spec/tools/xeapi.mjs`，零依赖 Node。
+- 参考实现与固定随机量生成器：`spec/tools/xeapi.mjs`，零依赖 Node。
 - 夹具：`spec/fixtures/crypto/xeapi.json`（`node spec/tools/gen-xeapi-fixtures.mjs` 生成，全部随机量固定）。
 - 线上探针：`node spec/tools/probe-xeapi.mjs`（匿名，不读 cookie）。2026-10-15 实测通过。
 - 上游依据：NeteaseCloudMusicApiEnhanced/api-enhanced@2db6684 `util/crypto.js`、`util/request.js`、
@@ -36,7 +36,7 @@ appVersion=9.5.61&currentKeyVersion=<旧 version 或空>&deviceId=<id>&nonce=<16
   `data.signature == sign(data.timestamp, 请求时的 nonce)`，不等即丢弃。
 - `AES-256-ECB-decrypt(STATIC_KEY, base64(encryptedData))` → `{"publicKey","version","nextUpdateTime","sk"}`；
   `publicKey` 是 32 字节 X25519 原始公钥的 base64。缺 `sk` 视为失败。
-- 持久化缓存（Android SharedPreferences / Windows 设置存储），`nextUpdateTime`（毫秒）过后或业务请求失败时刷新，
+- Android 使用 SharedPreferences 持久化缓存；`nextUpdateTime`（毫秒）过后或业务请求失败时刷新，
   刷新时把旧 `version` 填进 `currentKeyVersion`。
 
 ## 3. 业务请求
@@ -105,7 +105,7 @@ WHATWG `application/x-www-form-urlencoded`：字节集 `A–Z a–z 0–9 * - . 
 `GET https://ac.dun.163yun.com/v3/b?pn=YD00000558929251`，响应形如 `null([200,<n>,"<token>"])`，
 取第三项。**每次写入现取、不缓存**。取不到时发空串（上游同样处理），不阻断请求。
 
-官方（Android 9.6.08 / Windows 3.1.40）把这份 token **同时放进两处**，缺一不可：
+官方 Android 客户端（9.6.08）把这份 token **同时放进两处**，缺一不可：
 
 - 加密业务体的 `checkToken` 字段（进 §3.1 的 `content`）；以及
 - `X-antiCheatToken` 请求头。
@@ -142,7 +142,7 @@ trackId=<id>&time=3&alg=itembased&like=<true|false>
 
 FM 播放队列操作使用 xeapi `/api/v1/radio/like`。普通歌曲收藏使用 Android 官方 `/eapi/song/like`，
 网络或业务码失败均保留待同步，不回退到 radio/like。解不开 xeapi 响应只标记公钥失效供下次请求刷新，
-不自动重放本次写入；服务端可能已接收第一次请求。Windows 当前仍有旧通道回退，尚待跟进。
+不自动重放本次写入；服务端可能已接收第一次请求。
 xeapi FM 队列请求要求现取的反作弊 token 非空；取不到时不提交写入，保留待同步，
 不再沿用 §5 的上游空串兼容行为。这是缺少必需字段时的客户端保护，不是本次历史回滚原因的实证。
 
@@ -150,11 +150,10 @@ xeapi FM 队列请求要求现取的反作弊 token 非空；取不到时不提�
 刷新展示保留尚未确认的收藏/取消方向。立即读回一致仅证明当时可见，不能证明隔日不会回滚。
 应用内部保留有限的脱敏事件记录用于后续调查，不含凭证、token 或设备标识。
 
-> **`checkToken` 必须进体**（2026-10-16 两端官方包实证）。REA 反编译 Android 9.6.08：
+> **`checkToken` 必须进体**（2026-10-16 官方客户端实证）。REA 反编译 Android 9.6.08：
 > `NeteaseMusicApiImpl.Z6` 构造 `v1/radio/like` 的业务 map 时含 `checkToken = vz0.b.G0()`
-> （原生 `securityGetToken`），最终打到 `/eapi/v1/radio/like`。Windows 3.1.40 的
-> `orpheus.ntpk`（webpack `app.chunk.js`）请求拦截器对命中 businessId 的写入执行
-> `Object.assign(a,{checkToken:e})` **且** `headers["X-antiCheatToken"]=e`——同一 token 两处都发。
+> （原生 `securityGetToken`），最终打到 `/eapi/v1/radio/like`。官方客户端的请求拦截器对命中
+> businessId 的写入执行 `Object.assign(a,{checkToken:e})` **且** `headers["X-antiCheatToken"]=e`——同一 token 两处都发。
 > 只发 `X-antiCheatToken` 头、体里没有 `checkToken` 的写入，会被服务端判为异常环境、事后回滚
 > （即「收藏隔天消失」）。
 >
@@ -167,7 +166,7 @@ xeapi FM 队列请求要求现取的反作弊 token 非空；取不到时不提�
 
 ### 旧版 radio/like 调研记录（2026-10-15；不代表普通歌曲收藏路径）
 
-- 现象：经 Ncrust（weapi `/api/radio/like`，`time=3`）点亮的红心当天在官方与两端都可见，隔天消失。
+- 现象：经旧版 Android 客户端（weapi `/api/radio/like`，`time=3`）点亮的红心当天在官方可见，隔天消失。
   de193ff / 25f0c39 把 `time` 从时间戳改成 `3` 后**仍复现**，说明 `time` 不是（唯一）诱因。
 - 服务端对老通道确有「事后取消喜欢」的机制：gmg137/netease-cloud-music-gtk#410 实测
   `/weapi/radio/like` 对部分歌曲直接返回 `524「当前环境异常，已取消喜欢」`，而官方客户端已改用新接口；

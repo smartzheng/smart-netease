@@ -4,14 +4,14 @@
 
 ## 问题
 
-两端主登录是内嵌官方网页（Android WebView / Windows WebView2 打开 `music.163.com/#/login`，轮询 cookie）。
-体验割裂（整个网页播放器 SPA、样式与 Kanesumi 不搭、加载重），但它是**风险最低**的方案。要回答：原生登录能不能替代它，代价是什么。
+Android App 的主登录方式是内嵌官方网页（WebView 打开 `music.163.com/#/login`，轮询 cookie）。
+网页加载较重、视觉与 App 不一致，但它是**风险较低**的方案。本文保留原生登录方案的调研记录和限制。
 
 ## 网易的风控面（2026-10-15 实测）
 
 | 请求 | 结果 |
 |---|---|
-| weapi `/api/login/qrcode/unikey`（type 1，两端现用） | `-462`（「请完成验证操作」） |
+| weapi `/api/login/qrcode/unikey`（type 1） | `-462`（「请完成验证操作」） |
 | eapi `interfacepc/.../login/qrcode/unikey`（type 3，PC 身份；api-enhanced 现用） | 200，可出码（被风控标记 IP 之前） |
 | weapi `/api/sms/captcha/sent`（PC 身份） | 200，验证码送达 |
 | weapi `/api/w/login/cellphone`（验证码登录） | `-462`，`data.url` 指向官方安全验证页 `st.music.163.com/encrypt-pages`（verifyType 40） |
@@ -39,8 +39,8 @@
 
 ## 推荐：C，D 兜底
 
-1. **主入口原生**：扫码面板（eapi + PC 身份 + type 3，修复见 qr-login 任务）为默认；短信验证码表单为第二项。界面完全 Kanesumi。
-2. **设备身份持久化（无论选哪个方案都该先做）**：两端为所有 NetEase 请求补齐并**持久化**一套设备 cookie
+1. **主入口原生**：扫码面板（eapi + PC 身份 + type 3，修复见 qr-login 任务）为默认；短信验证码表单为第二项。界面遵循当前 Salt UI 设计。
+2. **设备身份持久化（无论选哪个方案都该先做）**：Android App 为所有 NetEase 请求补齐并**持久化**一套设备 cookie
    （`NMTID`、`_ntes_nuid`、`_ntes_nnid`、`WNMCID`、`WEVNSM`、`deviceId`/`sDeviceId`），一台设备一套、登出也不换。这是降低 -462 的直接手段，
    与 xeapi 的「设备 id 永不更换」同一思路。
 3. **-462 / 8821 → 官方验证小窗**：用 App 自己的设备 cookie 预先写进 WebView 的 cookie 存储，再加载响应里的 `data.url`；用户完成验证后，
@@ -55,7 +55,7 @@
 1. 设备 cookie 持久化后，同一网络下连续做 50 次匿名读请求：对照「每次随机设备 cookie」的 -462 出现率。
 2. 故意触发一次短信登录的 -462：把 App 的设备 cookie 注入 WebView 后打开 `data.url` 完成验证，读回 cookie，重试登录。
    成功 → 方案 C 成立；失败 → 再试「重试时带上 `verifyToken` / 验证页新写入的 cookie」；仍失败 → 方案 D。
-3. 两端各跑一遍，结果写回本文件。
+3. 在 Android 设备和模拟器分别验证，结果写回本文件。
 
 ## 不做的事
 

@@ -11,8 +11,8 @@ class MarkdownBlocksTest {
         val table = parseMarkdownBlocks("""
             | 平台 | 版本 | 下载 |
             |---|:---:|---:|
-            | Android | 1.4.1 | [APK](https://example.org/app.apk) |
-            | Windows | 1.0.3 | `.msix` |
+            | Android | 1.4.2 | [APK](https://example.org/app.apk) |
+            | Android (beta) | 1.4.3-beta | `.apk` |
         """.trimIndent()).single() as MarkdownBlock.Table
         assertEquals(listOf("平台", "版本", "下载"), table.header)
         assertEquals(listOf(CellAlignment.START, CellAlignment.CENTER, CellAlignment.END), table.alignment)
