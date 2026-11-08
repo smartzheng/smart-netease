@@ -360,7 +360,9 @@ fun MainScreen(
     val collapsedOffsetY =
         contentHeightPx - sysNavPx - navBarHeightPx - miniBarHeightPx - sysStatusPx
 
-    val totalDragDistancePx = contentHeightPx * 0.85f
+    // Shorter travel lets a natural mini-player swipe finish opening the player without
+    // needing to drag almost half the screen.
+    val totalDragDistancePx = contentHeightPx * 0.62f
 
     val navBarHideOffset = if (isWideLayout) 0f else with(density) { 132.dp.toPx() }
     // ------------------------------------
@@ -559,6 +561,9 @@ fun MainScreen(
             val song = playbackQueue[index]
             val (title, artist, artwork) = songParams(song)
             Log.d("MainScreen", "playFromQueue index=$index songId=${song.id} mode=$playMode")
+            // Reflect the tapped/selected track immediately. URL resolution is asynchronous;
+            // waiting for it made the player expand with the previous artwork, then swap mid-transition.
+            currentSong = song
             // 明确指定要播的歌优先于"续播起播"意图：别让在途的 FM 续播把它顶掉。
             infinityNeedsPlay.value = false
             playerViewModel.playSong(
@@ -858,7 +863,7 @@ fun MainScreen(
 
     fun expandCard() {
         coroutineScope.launch {
-            progress.animateTo(1f, tween(400, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)))
+            progress.animateTo(1f, tween(320, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)))
         }
     }
 

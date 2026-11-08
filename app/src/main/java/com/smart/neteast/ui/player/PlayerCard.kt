@@ -76,6 +76,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
 import android.widget.Toast
 
 @Composable
@@ -375,7 +376,27 @@ fun PlayerCard(
                         }
                     }
                     if (!dragging) return@awaitEachGesture
-                    // 手动拖动循环：同样忽略消费标志读位移, 边拖边 consume
+                    // 把手势进度通过 conflated channel 顺序送给一个协程。手指快速移动时
+                    // 只保留最新位置，避免每个 MOVE 都 launch 一次 snapTo 导致动画任务排队。
+                    val updates = Channel<Float>(capacity = Channel.CONFLATED)
+                    val distance = totalDragDistancePx.coerceAtLeast(1f)
+                    coroutineScope.launch {
+                        for (targetProgress in updates) progress.snapTo(targetProgress)
+                        val target = if (startProgress < 0.5f) {
+                            if (progress.value >= 0.38f) 1f else 0f
+                        } else {
+                            if (progress.value >= 0.65f) 1f else 0f
+                        }
+                        progress.animateTo(
+                            target,
+                            if (target == 1f)
+                                tween(durationMillis = 320, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
+                            else
+                                tween(durationMillis = 260, easing = FastOutSlowInEasing)
+                        )
+                    }
+                    var accumulatedDrag = 0f
+                    // 手动拖动循环：忽略消费标志读位移，边拖边 consume
                     // （压制 miniBar clickable 的按压, 让它不会在抬手时误触发展开）。
                     while (true) {
                         val event = awaitPointerEvent()
@@ -384,27 +405,11 @@ fun PlayerCard(
                         change.consume()
                         val dragAmount = change.position.y - change.previousPosition.y
                         if (dragAmount != 0f) {
-                            coroutineScope.launch {
-                                progress.snapTo(
-                                    (progress.value - dragAmount / totalDragDistancePx).coerceIn(0f, 1f)
-                                )
-                            }
+                            accumulatedDrag += dragAmount
+                            updates.trySend((startProgress - accumulatedDrag / distance).coerceIn(0f, 1f))
                         }
                     }
-                    coroutineScope.launch {
-                        val target = if (startProgress < 0.5f) {
-                            if (progress.value >= 0.5f) 1f else 0f
-                        } else {
-                            if (progress.value >= 0.75f) 1f else 0f
-                        }
-                        progress.animateTo(
-                            target,
-                            if (target == 1f)
-                                tween(durationMillis = 400, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
-                            else
-                                tween(durationMillis = 260, easing = FastOutSlowInEasing)
-                        )
-                    }
+                    updates.close()
                 }
             }
     ) {
@@ -798,7 +803,7 @@ fun PlayerCard(
                                     coroutineScope.launch {
                                         progress.animateTo(
                                             1f,
-                                            tween(durationMillis = 400, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
+                                            tween(durationMillis = 320, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
                                         )
                                     }
                                 }
