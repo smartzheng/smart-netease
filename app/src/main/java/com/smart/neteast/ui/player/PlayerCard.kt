@@ -440,6 +440,11 @@ fun PlayerCard(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
+                    // The card is composed and translated off-screen while collapsed so its
+                    // mini-player overlay can stay mounted. Fade the full-screen artwork layer
+                    // with the card progress; otherwise its opaque/blurred backdrop leaks over
+                    // the home list above the mini-player after the collapse animation ends.
+                    alpha = progress.value.coerceIn(0f, 1f)
                     translationY = statusBarPx * (1f - progress.value)
                 }
         ) {
