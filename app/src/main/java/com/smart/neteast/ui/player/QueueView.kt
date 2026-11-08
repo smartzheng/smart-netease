@@ -28,7 +28,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -78,6 +77,7 @@ fun QueueView(
     // 队列面板标题行(含按钮)的高度 px —— 自动定位按「整个队列区域」居中,
     // 不是只按列表视口居中(标题行占了面板上部, 光按视口中心会偏下)
     queueHeaderHeightPx: Float = 0f,
+    artworkStyle: Boolean = false,
     onPlayIndex: (Int) -> Unit,
     onRemoveIndex: (Int) -> Unit,
     onMove: (Int, Int) -> Unit = { _, _ -> }
@@ -360,7 +360,8 @@ fun QueueView(
                                 RowKind.PAST_HEAD -> strings.queueSectionPast
                                 RowKind.NOW_HEAD -> strings.queueSectionNow
                                 else -> strings.queueSectionUpcoming
-                            }
+                            },
+                            artworkStyle = artworkStyle,
                         )
                     }
                     RowKind.INFINITY -> InfinityPlaceholder(strings.queueInfinityPlaceholder)
@@ -426,10 +427,17 @@ fun QueueView(
                             SongCard(
                                 song = song,
                                 style = SongCardStyle.COMPACT,
+                                coverSize = 48.dp,
+                                contentHorizontalPadding = 8.dp,
+                                contentVerticalPadding = 4.dp,
                                 // 折叠态下面板不可交互(见 PlayerCard cardExpandedForInput):
                                 // 否则迷你条与导航栏之间那截屏幕上的不可见队列行会吞点击。
                                 onClick = { if (interactive) onPlayIndex(qi) },
                                 isCurrentPlaying = qi == currentIndex,
+                                titleColor = if (artworkStyle) {
+                                    if (qi == currentIndex) Color(0xFF35D07F) else Color.White.copy(alpha = 0.94f)
+                                } else null,
+                                subtitleColor = if (artworkStyle) Color.White.copy(alpha = 0.72f) else null,
                                 actions = {
                                     if (canDrag && interactive) {
                                         // 把手只是视觉提示; 拖拽手势挂在 QueueView 根节点
@@ -468,30 +476,6 @@ fun QueueView(
             }
         }
 
-        // 上/下渐隐
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .align(Alignment.TopCenter)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(LocalNcrustColors.current.background, Color.Transparent)
-                    )
-                )
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .align(Alignment.BottomCenter)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color.Transparent, LocalNcrustColors.current.background)
-                    )
-                )
-        )
-
                         // 悬浮的被拖行: 拎出 LazyColumn 渲染(列表项本体隐藏)。
         // 位置 = overlayTop(手指驱动的视口位置), 与列表项生命周期无关,
         // 自动滚动把槽位滚出视口也不受影响。alpha=1: 与落定后列表项本体
@@ -502,6 +486,9 @@ fun QueueView(
                 SongCard(
                     song = draggedSong,
                     style = SongCardStyle.COMPACT,
+                    coverSize = 48.dp,
+                    contentHorizontalPadding = 8.dp,
+                    contentVerticalPadding = 4.dp,
                     onClick = {},
                     modifier = Modifier
                         .fillMaxWidth()
@@ -544,20 +531,23 @@ private fun buildQueueRows(
 }
 
 @Composable
-private fun SectionHeader(title: String) {
+private fun SectionHeader(title: String, artworkStyle: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 12.dp, bottom = 4.dp),
+            .padding(top = 8.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         SaltText(
             title,
-            color = LocalNcrustColors.current.primary,
+            color = if (artworkStyle) Color(0xFF35D07F) else LocalNcrustColors.current.primary,
             style = TextStyle(fontSize = 13.sp)
         )
         Spacer(Modifier.width(12.dp))
-        NcrustDivider(color = LocalNcrustColors.current.divider, modifier = Modifier.weight(1f))
+        NcrustDivider(
+            color = if (artworkStyle) Color.White.copy(alpha = 0.42f) else LocalNcrustColors.current.divider,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 

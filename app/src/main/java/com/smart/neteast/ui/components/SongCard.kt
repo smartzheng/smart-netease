@@ -63,7 +63,9 @@ fun SongCard(
     onShowMenu: (() -> Unit)? = null,
     actions: (@Composable RowScope.() -> Unit)? = null,
     isCurrentPlaying: Boolean = false,
-    showCover: Boolean = true
+    showCover: Boolean = true,
+    titleColor: Color? = null,
+    subtitleColor: Color? = null
 ) {
     val strings = LocalStrings.current
     val artistStr = song.artists?.joinToString("/") { it.name } ?: strings.unknownArtist
@@ -106,7 +108,7 @@ fun SongCard(
                 Column(Modifier.weight(1f)) {
                     SaltText(
                         song.name,
-                        color = if (isCurrentPlaying) LocalNcrustColors.current.primary else LocalNcrustColors.current.onBackground,
+                        color = titleColor ?: if (isCurrentPlaying) LocalNcrustColors.current.primary else LocalNcrustColors.current.onBackground,
                         style = LocalNcrustTypography.current.bodyLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -117,7 +119,7 @@ fun SongCard(
                             if (albumName.isNotEmpty()) append(" · $albumName")
                             if (durationStr.isNotEmpty()) append("  $durationStr")
                         },
-                        color = LocalNcrustColors.current.onSurfaceVariant,
+                        color = subtitleColor ?: LocalNcrustColors.current.onSurfaceVariant,
                         style = LocalNcrustTypography.current.bodySmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis

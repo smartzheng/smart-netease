@@ -3,6 +3,7 @@ package com.smart.neteast.ui.player
 import com.smart.neteast.ui.theme.LocalNcrustColors
 
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
@@ -363,10 +363,10 @@ private fun PlayerActionRow(
         actions.forEachIndexed { index, (icon, description, action) ->
             val interaction = remember(icon) { MutableInteractionSource() }
             val pressed by interaction.collectIsPressedAsState()
-            val pressShadow by androidx.compose.animation.core.animateDpAsState(
-                targetValue = if (pressed) 4.dp else 0.dp,
-                animationSpec = spring(dampingRatio = 0.82f, stiffness = 520f),
-                label = "playerActionPressShadow",
+            val pressFill by androidx.compose.animation.animateColorAsState(
+                targetValue = if (pressed) (if (artworkStyle) Color.White else colors.primary).copy(alpha = 0.14f) else Color.Transparent,
+                animationSpec = tween(110),
+                label = "playerActionPressFill",
             )
             val pressScale by androidx.compose.animation.core.animateFloatAsState(
                 targetValue = if (pressed) 0.94f else 1f,
@@ -381,14 +381,7 @@ private fun PlayerActionRow(
             }
             Box(
                 modifier = Modifier.size(48.dp)
-                    .shadow(
-                        elevation = pressShadow,
-                        shape = CircleShape,
-                        clip = false,
-                        ambientColor = Color.Black.copy(alpha = 0.12f),
-                        spotColor = Color.Black.copy(alpha = 0.22f),
-                    )
-                    .scale(pressScale)
+                    .background(pressFill, CircleShape)
                     .clickable(
                     interactionSource = interaction,
                     indication = null,
@@ -407,6 +400,7 @@ private fun PlayerActionRow(
                     contentDescription = description,
                     tint = if (artworkStyle) Color.White else if (selected) colors.primary else colors.onBackground,
                     sizeDp = 24.dp,
+                    modifier = Modifier.scale(pressScale),
                 )
             }
         }

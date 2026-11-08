@@ -10,6 +10,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -22,7 +23,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -55,23 +55,16 @@ fun TransportControlButton(
         animationSpec = spring(dampingRatio = 0.76f, stiffness = 520f),
         label = "transportPressScale",
     )
-    val pressShadow by androidx.compose.animation.core.animateDpAsState(
-        targetValue = if (pressed && enabled) 4.dp else 0.dp,
-        animationSpec = spring(dampingRatio = 0.82f, stiffness = 520f),
-        label = "transportPressShadow",
+    val pressFill by androidx.compose.animation.animateColorAsState(
+        targetValue = if (pressed && enabled) tint.copy(alpha = 0.14f) else Color.Transparent,
+        animationSpec = tween(110),
+        label = "transportPressFill",
     )
 
     Box(
         modifier = modifier
             .size(touchSize.coerceAtLeast(NcrustSpacing.touchTarget))
-            .shadow(
-                elevation = pressShadow,
-                shape = CircleShape,
-                clip = false,
-                ambientColor = Color.Black.copy(alpha = 0.12f),
-                spotColor = Color.Black.copy(alpha = 0.22f),
-            )
-            .scale(scale)
+            .background(pressFill, CircleShape)
             .clickable(
                 enabled = enabled,
                 interactionSource = interactionSource,
@@ -90,7 +83,7 @@ fun TransportControlButton(
             },
             label = "transportGlyphChange",
         ) { visibleGlyph ->
-            Canvas(Modifier.size(iconSize)) {
+            Canvas(Modifier.size(iconSize).scale(scale)) {
                 drawTransportGlyph(visibleGlyph, tint)
             }
         }

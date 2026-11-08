@@ -583,7 +583,7 @@ fun PlayerCard(
                             ) {
                                 SaltText(
                                     strings.queueTitle,
-                                    color = LocalNcrustColors.current.onBackground,
+                                    color = Color.White,
                                     style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold),
                                     modifier = Modifier.weight(1f)
                                 )
@@ -597,7 +597,7 @@ fun PlayerCard(
                                             else -> Icons.Rounded.Repeat
                                         },
                                         contentDescription = strings.playModeButton,
-                                        tint = if (playMode != QueueModes.CYCLE) LocalNcrustColors.current.primary else LocalNcrustColors.current.onBackground,
+                                        tint = if (playMode != QueueModes.CYCLE) Color(0xFF35D07F) else Color.White,
                                         sizeDp = 24.dp
                                     )
                                 }
@@ -605,7 +605,7 @@ fun PlayerCard(
                                     SaltIcon(
                                         imageVector = Icons.Rounded.Add,
                                         contentDescription = strings.saveAsPlaylist,
-                                        tint = LocalNcrustColors.current.onBackground,
+                                        tint = Color.White,
                                         sizeDp = 24.dp
                                     )
                                 }
@@ -614,7 +614,7 @@ fun PlayerCard(
                                     SaltIcon(
                                         imageVector = Icons.Rounded.DeleteSweep,
                                         contentDescription = strings.clearQueue,
-                                        tint = LocalNcrustColors.current.onBackground,
+                                        tint = Color.White,
                                         sizeDp = 24.dp
                                     )
                                 }
@@ -628,6 +628,7 @@ fun PlayerCard(
                                     isActive = showQueue,
                                     interactive = interactive,
                                     queueHeaderHeightPx = queueHeaderHeightPx,
+                                    artworkStyle = true,
                                     onPlayIndex = onPlayFromQueue,
                                     onRemoveIndex = onRemoveFromQueue,
                                     onMove = onMoveInQueue

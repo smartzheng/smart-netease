@@ -1,6 +1,8 @@
 package com.smart.neteast.ui.design
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.core.CubicBezierEasing
@@ -36,6 +38,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -46,6 +52,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -440,24 +447,68 @@ fun NcrustLyricsPanel(
     }
     LazyColumn(
         state = state,
-        modifier = modifier.nestedScroll(scrollConnection),
+            modifier = modifier
+                .nestedScroll(scrollConnection)
+                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            0f to Color.Transparent,
+                            0.16f to Color.Black,
+                            0.84f to Color.Black,
+                            1f to Color.Transparent,
+                        ),
+                        blendMode = BlendMode.DstIn,
+                    )
+                },
         contentPadding = PaddingValues(vertical = 96.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         // Lyrics can legitimately share a timestamp (most often 0 ms for intro lines).
         // Include the row position so equal timestamps do not collide in LazyColumn.
         itemsIndexed(lines, key = { index, line -> "lyric-$index-${line.timeMs}" }) { index, line ->
+            val active = index == activeIndex
+            val emphasis by animateFloatAsState(
+                targetValue = if (active) 1f else 0.80f,
+                animationSpec = spring(dampingRatio = 0.82f, stiffness = 360f),
+                label = "lyricEmphasis",
+            )
+            val lyricColor by animateColorAsState(
+                targetValue = when {
+                    active -> pastLineColor
+                    index < activeIndex -> pastLineColor.copy(alpha = 0.52f)
+                    else -> futureLineColor
+                },
+                animationSpec = tween(240),
+                label = "lyricColor",
+            )
             Column(
-                modifier = Modifier.fillMaxWidth().clickable(enabled = enabled) { onLineClick(line.timeMs) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        scaleX = emphasis
+                        scaleY = emphasis
+                        transformOrigin = TransformOrigin(0f, 0.5f)
+                    }
+                    .clickable(enabled = enabled) { onLineClick(line.timeMs) },
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 SaltText(
                     line.text,
-                    color = if (index <= activeIndex) pastLineColor else futureLineColor,
-                    style = TextStyle(fontSize = fontSize, lineHeight = lineHeight),
+                    color = lyricColor,
+                    style = TextStyle(
+                        fontSize = fontSize,
+                        lineHeight = lineHeight,
+                        fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                    ),
                 )
                 if (line.translation.isNotBlank()) {
-                    SaltText(line.translation, color = futureLineColor, style = TextStyle(fontSize = translationFontSize, lineHeight = translationLineHeight))
+                    SaltText(
+                        line.translation,
+                        color = lyricColor.copy(alpha = if (active) 0.78f else 0.58f),
+                        style = TextStyle(fontSize = translationFontSize, lineHeight = translationLineHeight),
+                    )
                 }
             }
         }

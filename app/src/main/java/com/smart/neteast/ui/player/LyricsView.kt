@@ -198,18 +198,19 @@ fun LyricsView(
                     )
             )
         }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp)
-                .align(Alignment.BottomCenter)
-                .background(
-                    Brush.verticalGradient(
-                        if (artworkStyle) listOf(Color.Transparent, Color.Black.copy(alpha = 0.32f))
-                        else listOf(Color.Transparent, LocalNcrustColors.current.background)
+        if (!artworkStyle) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, LocalNcrustColors.current.background)
+                        )
                     )
-                )
-        )
+            )
+        }
     }
 }
 
