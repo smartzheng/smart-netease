@@ -1,7 +1,8 @@
 # xeapi —— 官方 Android 9.x 的请求加密层
 
-网易云官方 Android 客户端（9.x，AegisSDK）的新一代请求包装。Ncrust 用它承载**收藏写入**
-（`/api/v1/radio/like`），原因见文末「为什么收藏要走 xeapi」。
+网易云官方 Android 客户端（9.x，AegisSDK）的新一代请求包装。Ncrust 用它承载 xeapi 业务，
+包括 FM 播放队列使用的 `/api/v1/radio/like`；普通歌曲收藏使用 `/eapi/song/like`，见
+`spec/api/endpoints.md`。
 
 - 参考实现（三端标准答案）：`spec/tools/xeapi.mjs`，零依赖 Node。
 - 夹具：`spec/fixtures/crypto/xeapi.json`（`node spec/tools/gen-xeapi-fixtures.mjs` 生成，全部随机量固定）。
@@ -109,7 +110,10 @@ WHATWG `application/x-www-form-urlencoded`：字节集 `A–Z a–z 0–9 * - . 
 - 加密业务体的 `checkToken` 字段（进 §3.1 的 `content`）；以及
 - `X-antiCheatToken` 请求头。
 
-## 6. 收藏：`/api/v1/radio/like`
+## 6. FM 播放队列接口：`/api/v1/radio/like`
+
+此接口由官方 FM 播放队列调用（9.6.20 `NeteaseMusicApiImpl.b7` → `to0.f.v6`），不等同于普通歌曲页、歌单和库列表的红心收藏。
+Ncrust 的普通歌曲收藏应走 `/eapi/song/like`，字段与调用点见 `spec/api/endpoints.md`。
 
 业务字段（官方 9.6.13 反编译实证，**每次必发**，缺字段本身就是可识别指纹）：
 
@@ -136,10 +140,10 @@ trackId=<id>&time=3&alg=itembased&like=<true|false>
 
 ### Android 写入失败与待确认状态（2026-10-29）
 
-Android 收藏只允许提交 xeapi `/api/v1/radio/like`。网络、公钥、解密或业务码失败均保留待同步，
-不得回退 weapi/eapi 的旧 `radio/like`。解不开响应只标记公钥失效供下次请求刷新，
+FM 播放队列操作使用 xeapi `/api/v1/radio/like`。普通歌曲收藏使用 Android 官方 `/eapi/song/like`，
+网络或业务码失败均保留待同步，不回退到 radio/like。解不开 xeapi 响应只标记公钥失效供下次请求刷新，
 不自动重放本次写入；服务端可能已接收第一次请求。Windows 当前仍有旧通道回退，尚待跟进。
-Android 还要求现取的反作弊 token 非空；取不到时不提交收藏写入，保留待同步，
+xeapi FM 队列请求要求现取的反作弊 token 非空；取不到时不提交写入，保留待同步，
 不再沿用 §5 的上游空串兼容行为。这是缺少必需字段时的客户端保护，不是本次历史回滚原因的实证。
 
 同一设备的收藏写入按序执行，排队时已被更新意图替代的请求不发送；旧请求不得清除新意图。
@@ -161,7 +165,7 @@ Android 还要求现取的反作弊 token 非空；取不到时不提交收藏�
 > 换顺序就是另一种指纹」的旧结论作废。
 
 
-### 为什么收藏要走 xeapi（2026-10-15 调研）
+### 旧版 radio/like 调研记录（2026-10-15；不代表普通歌曲收藏路径）
 
 - 现象：经 Ncrust（weapi `/api/radio/like`，`time=3`）点亮的红心当天在官方与两端都可见，隔天消失。
   de193ff / 25f0c39 把 `time` 从时间戳改成 `3` 后**仍复现**，说明 `time` 不是（唯一）诱因。

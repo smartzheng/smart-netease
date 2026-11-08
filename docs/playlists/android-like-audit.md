@@ -1,4 +1,12 @@
-# Android 收藏回滚调查与安装验收
+# Android 收藏 524 排查与真机验收
+
+## 2026-11-08：对照 API Enhanced 并修复
+
+- 官方 Android 9.6.20 的 `NeteaseMusicApiImpl.F2` 确认普通歌曲红心路径是 `/api/song/like`，官方 Android 层会添加 `checkToken` 和 `X-antiCheatToken`。`/api/v1/radio/like` 的官方调用点属于 FM 播放队列，不能用于普通收藏。
+- 参考 [api-enhanced 的 `module/song_like.js`](https://github.com/neteasecloudmusicapienhanced/api-enhanced/blob/main/module/song_like.js) 后，确认该通用客户端的 `/api/song/like` 形态只发 `trackId`、`userid`、`like`；其默认 EAPI 域为 `interfacepc.music.163.com`，EAPI 层添加 `e_r=false` 和 `header`。这个请求形态与官方 Android 的反垃圾 token 包装不同。
+- 手机上此前两种路径都曾返回 `524「当前环境异常，已取消喜欢」`。本次将普通收藏切到 API Enhanced 的 EAPI 请求形态：`interfacepc`、普通三字段、`e_r=false`、嵌套 header，不附加易盾 token。
+- OPPO PLJ110 真机覆盖安装 release 后，点击待同步歌曲“重试同步”，`songId=3322007625` 的写入返回 `code=200`；随后 `LibraryManager` 写后读回校验记录 `ok=true`，页面“仅本地保存，等待同步到云端”提示消失。确认本次写入已出现在账号收藏列表。
+- 这验证了本次待同步收藏完成即时云端写入与读回；不代表对所有账号、歌曲和后续长时间持久性的保证。
 
 2026-10-29。
 

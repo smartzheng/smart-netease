@@ -1,6 +1,8 @@
 package com.smart.neteast.network
 
 import android.content.Context
+import android.content.res.Resources
+import android.os.Build
 import android.util.Log
 import com.smart.neteast.BuildConfig
 import com.smart.neteast.auth.CookieManager
@@ -16,6 +18,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
+import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
@@ -44,6 +47,11 @@ object RetrofitClient {
     private const val XEAPI_OS = "android"
     private const val XEAPI_OSVER = "16"
     private const val XEAPI_APPVER = "9.1.65"
+    // Fingerprint values from the supplied official Android 9.6.20 APK.
+    private const val SONG_LIKE_APPVER = "9.6.20"
+    private const val SONG_LIKE_BUILDVER = "261102153723"
+    private const val SONG_LIKE_VERSIONCODE = "9006020"
+    private const val SONG_LIKE_CHANNEL = "netease"
     private const val ANTI_CHEAT_URL = "https://ac.dun.163yun.com/v3/b?pn=YD00000558929251"
     private val FORM_CONTENT_TYPE = "application/x-www-form-urlencoded;charset=utf-8".toMediaType()
 
@@ -118,11 +126,41 @@ object RetrofitClient {
         payload: Map<String, String>,
         useInterface: Boolean = false,
         // 显式指定本次请求的 cookie（扫码 803 后校验还没落盘的新会话）；null 表示用当前登录 cookie。
-        cookieOverride: String? = null
+        cookieOverride: String? = null,
+        antiCheat: Boolean = false
     ): Response {
         val host = if (useInterface) INTERFACE_URL else API_URL
         val fullUrl = host + path
-        val anyPayload = payload.mapValues { it.value as Any }
+        val antiCheatToken = if (antiCheat) {
+            fetchAntiCheatToken().takeIf { it.isNotBlank() } ?: throw IOException("eapi antiCheat unavailable")
+        } else {
+            null
+        }
+        val requestPayload = if (antiCheatToken != null) {
+            payload + ("checkToken" to antiCheatToken)
+        } else {
+            payload
+        }
+        val cookiePairs = if (antiCheat) {
+            androidEapiCookies(cookieOverride ?: currentCookie.orEmpty())
+        } else {
+            emptyMap()
+        }
+        val encryptedPayload = if (antiCheat) {
+            // Official Android EAPI adds its device CookieJar and requestId under `header`,
+            // and sends e_r=true before encrypting the business map.
+            LinkedHashMap<String, Any>().apply {
+                requestPayload.forEach { (key, value) -> put(key, value) }
+                put("e_r", "true")
+                put("header", LinkedHashMap<String, String>().apply {
+                    putAll(cookiePairs)
+                    put("requestId", "${System.currentTimeMillis()}_${Thread.currentThread().id}")
+                })
+            }
+        } else {
+            requestPayload.mapValues { it.value as Any }
+        }
+        val anyPayload = encryptedPayload
         val params = EapiCrypto.encryptParams(fullUrl, anyPayload)
 
         val requestBody = FormBody.Builder()
@@ -132,13 +170,95 @@ object RetrofitClient {
         val request = Request.Builder()
             .url(fullUrl)
             .post(requestBody)
-            .header("User-Agent", UA)
+            .header("User-Agent", if (antiCheat) songLikeAndroidUserAgent() else UA)
             .header("Referer", "https://music.163.com/")
-            .header("Cookie", cookieOverride ?: currentCookie ?: "")
-            .build()
+            .header(
+                "Cookie",
+                if (antiCheat) cookiePairs.entries.joinToString("; ") { "${it.key}=${it.value}" }
+                else cookieOverride ?: currentCookie ?: ""
+            )
+        if (antiCheatToken != null) request.header("X-antiCheatToken", antiCheatToken)
+        val builtRequest = request.build()
 
+        return plainClient.newCall(builtRequest).execute()
+    }
+
+    /**
+     * API Enhanced's `/api/song/like` transport: EAPI on interfacepc, with the standard
+     * `e_r=false` and nested request header. Its route sends only trackId/userid/like;
+     * this is intentionally separate from the Android-native eapi helper above.
+     */
+    fun eapiPostSongLikeCompat(
+        payload: Map<String, String>,
+        cookieOverride: String? = null
+    ): Response {
+        val fullUrl = INTERFACE_PC_URL + "/eapi/song/like"
+        val cookies = cookieValues(cookieOverride ?: currentCookie)
+        val header = linkedMapOf(
+            "osver" to (cookies["osver"] ?: "Microsoft-Windows-10-Professional-build-19045-64bit"),
+            "deviceId" to (cookies["deviceId"] ?: XeapiState.deviceId()),
+            "os" to (cookies["os"] ?: "pc"),
+            "appver" to (cookies["appver"] ?: "3.1.17.204416"),
+            "versioncode" to (cookies["versioncode"] ?: "140"),
+            "mobilename" to (cookies["mobilename"] ?: ""),
+            "buildver" to (cookies["buildver"] ?: (System.currentTimeMillis() / 1000).toString()),
+            "resolution" to (cookies["resolution"] ?: "1920x1080"),
+            "__csrf" to (cookies["__csrf"] ?: ""),
+            "channel" to (cookies["channel"] ?: "netease"),
+            "requestId" to "${System.currentTimeMillis()}_${(0..9999).random().toString().padStart(4, '0')}"
+        )
+        cookies["MUSIC_U"]?.let { header["MUSIC_U"] = it }
+        cookies["MUSIC_A"]?.let { header["MUSIC_A"] = it }
+        cookies["NMTID"]?.let { header["NMTID"] = it }
+
+        val body = LinkedHashMap<String, Any>().apply {
+            payload.forEach { (key, value) ->
+                if (key == "like") put(key, value.equals("true", ignoreCase = true)) else put(key, value)
+            }
+            put("e_r", false)
+            put("header", header)
+        }
+        val cookieHeader = header.entries.joinToString("; ") { (key, value) ->
+            "${java.net.URLEncoder.encode(key, "UTF-8") }=${java.net.URLEncoder.encode(value, "UTF-8") }"
+        }
+        val request = Request.Builder()
+            .url(fullUrl)
+            .post(FormBody.Builder().add("params", EapiCrypto.encryptParams(fullUrl, body)).build())
+            .header("User-Agent", "NeteaseMusic 9.0.90/5038 (iPhone; iOS 16.2; zh_CN)")
+            .header("Cookie", cookieHeader)
+            .build()
         return plainClient.newCall(request).execute()
     }
+
+    private fun androidEapiCookies(credential: String): LinkedHashMap<String, String> {
+        val cookies = LinkedHashMap<String, String>()
+        credential.split(';').forEach { part ->
+            val separator = part.indexOf('=')
+            if (separator > 0) {
+                cookies[part.substring(0, separator).trim()] = part.substring(separator + 1).trim()
+            }
+        }
+        val metrics = Resources.getSystem().displayMetrics
+        val deviceId = XeapiState.deviceId()
+        cookies["buildver"] = SONG_LIKE_BUILDVER
+        cookies["deviceId"] = deviceId
+        cookies["appver"] = SONG_LIKE_APPVER
+        cookies["os"] = "android"
+        cookies["osver"] = encodeDeviceCookie(Build.VERSION.RELEASE)
+        cookies["mobilename"] = encodeDeviceCookie(Build.MODEL)
+        cookies["brand"] = encodeDeviceCookie(Build.BRAND)
+        cookies["resolution"] = "${metrics.heightPixels}x${metrics.widthPixels}"
+        cookies["channel"] = SONG_LIKE_CHANNEL
+        cookies["versioncode"] = SONG_LIKE_VERSIONCODE
+        cookies["packageType"] = "dev"
+        return cookies
+    }
+
+    private fun encodeDeviceCookie(value: String): String =
+        URLEncoder.encode(value.filter { it == '\t' || it >= ' ' }, "UTF-8")
+
+    private fun songLikeAndroidUserAgent(): String =
+        "NeteaseMusic/$SONG_LIKE_APPVER.$SONG_LIKE_BUILDVER($SONG_LIKE_VERSIONCODE);Dalvik/2.1.0 (Linux; U; Android ${Build.VERSION.RELEASE}; ${Build.MODEL} Build/${Build.ID})"
 
     /**
      * eapi + **PC 客户端身份** POST（打 interfacepc）。扫码登录专用：host、PC UA、设备字段
@@ -465,7 +585,7 @@ object RetrofitClient {
      */
     private fun fetchAntiCheatToken(): String {
         return try {
-            val request = Request.Builder().url(ANTI_CHEAT_URL).header("User-Agent", ANDROID_UA).build()
+            val request = Request.Builder().url(ANTI_CHEAT_URL).header("User-Agent", songLikeAndroidUserAgent()).build()
             antiCheatClient.newCall(request).execute().use { response ->
                 val match = ANTI_CHEAT_RE.find(response.body?.string().orEmpty())
                 when {

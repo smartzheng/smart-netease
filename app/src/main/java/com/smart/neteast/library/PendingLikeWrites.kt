@@ -44,8 +44,13 @@ internal class PendingLikeWrites(initial: Map<Long, Boolean> = emptyMap()) {
         fun current() = synchronized(lock) { pending[intent.songId] == intent } &&
             intent.credential == currentCredential()
 
-        if (!current() || !write(intent) || !current()) return@withLock false
-        if (!verify(intent)) return@withLock false
+        if (!current()) return@withLock false
+        // A write response can be rejected or lost even when the desired state is already
+        // present remotely (for example an idempotent unlike returning 524). Treat the
+        // authoritative readback as the source of truth, while keeping the intent pending
+        // whenever the read cannot confirm it.
+        write(intent)
+        if (!current() || !verify(intent) || !current()) return@withLock false
         synchronized(lock) {
             if (!current()) false else {
                 pending.remove(intent.songId)

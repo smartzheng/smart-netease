@@ -32,6 +32,20 @@ import kotlin.coroutines.cancellation.CancellationException
  * 该对象保持公开 API 不变，所有既有调用点（收藏按钮、各详情页「加入收藏」）无需改动。
  */
 object LibraryManager {
+    data class PendingSyncRetryResult(
+        val isLoggedIn: Boolean,
+        val attemptedCount: Int,
+        val pendingCount: Int,
+        val rejectedCode: Int? = null,
+        val readbackPending: Boolean = false,
+    )
+
+    private data class LikePushResult(
+        val confirmed: Boolean,
+        val writeCode: Int?,
+        val readbackPending: Boolean,
+    )
+
     private const val PREFS_NAME = "ncrust_library"
     private const val KEY_SONGS = "saved_songs"
     private const val KEY_ALBUMS = "saved_albums"
@@ -206,18 +220,24 @@ object LibraryManager {
      * 推送一次点赞/取消到云端。返回 true 仅当服务端业务码成功**且**随后的读回校验一致。
      * 不一致或已被新意图替代则保留待同步标记，绝不冒充"云端已同步"。
      */
-    private suspend fun pushLikeBlocking(context: Context, intent: PendingLikeWrites.Intent): Boolean {
+    private suspend fun pushLikeBlocking(context: Context, intent: PendingLikeWrites.Intent): LikePushResult {
         val startedAt = System.currentTimeMillis()
+        var writeCode: Int? = null
+        var readbackConfirmed = false
         val ok = ensurePendingLoaded(context).submit(
             intent,
             currentCredential = { com.smart.neteast.network.RetrofitClient.getCookie().orEmpty() },
             write = {
-                val accepted = PlaylistApi.likeSong(it.songId, it.desired, it.credential)
+                val code = PlaylistApi.likeSong(it.songId, it.desired, it.credential)
+                writeCode = code
+                val accepted = PlaylistApi.isLikeWriteAccepted(code)
                 LikeSyncAudit.record(context, it.songId, it.desired, "write", accepted)
+                Log.i(TAG, "like write result songId=${it.songId} accepted=$accepted code=$code")
                 accepted
             },
             verify = {
                 val matched = verifyLikeState(it.songId, it.desired)
+                readbackConfirmed = matched
                 LikeSyncAudit.record(context, it.songId, it.desired, "readback", matched)
                 matched
             }
@@ -227,7 +247,11 @@ object LibraryManager {
             TAG,
             "pushLike songId=${intent.songId} like=${intent.desired} ok=$ok elapsedMs=${System.currentTimeMillis() - startedAt}"
         )
-        return ok
+        return LikePushResult(
+            confirmed = ok,
+            writeCode = writeCode,
+            readbackPending = writeCode != null && PlaylistApi.isLikeWriteAccepted(writeCode!!) && !readbackConfirmed,
+        )
     }
 
     private fun pushLike(context: Context, songId: Long, like: Boolean) {
@@ -243,18 +267,35 @@ object LibraryManager {
      * 读端失败视为"未确认"（保留待同步），不误判为成功。
      */
     private suspend fun verifyLikeState(songId: Long, like: Boolean): Boolean {
-        return try {
-            val uid = PlaylistApi.getCurrentUserId()
-            when (val result = PlaylistApi.getLikedTrackIds(uid)) {
-                is PlaylistApi.LikedIdsResult.Success -> (songId in result.ids) == like
-                is PlaylistApi.LikedIdsResult.Failure -> false
-            }
+        val uid = try {
+            PlaylistApi.getCurrentUserId()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "verifyLikeState failed songId=$songId: ${e.message}")
-            false
+            Log.w(TAG, "verifyLikeState could not load account id: ${e.message}")
+            return false
         }
+        // 网易云的收藏写入可能比写接口响应晚一会儿才反映到歌单读接口；短暂轮询读回，
+        // 避免已接受的收藏因为首次读到旧快照而长期留在“仅本地保存”。
+        repeat(4) { attempt ->
+            val matched = try {
+                when (val result = PlaylistApi.getLikedTrackIds(uid)) {
+                    is PlaylistApi.LikedIdsResult.Success -> (songId in result.ids) == like
+                    is PlaylistApi.LikedIdsResult.Failure -> {
+                        Log.w(TAG, "verifyLikeState readback failed songId=$songId: ${result.reason}")
+                        false
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "verifyLikeState failed songId=$songId: ${e.message}")
+                false
+            }
+            if (matched) return true
+            if (attempt < 3) delay(700L * (attempt + 1))
+        }
+        return false
     }
 
     /**
@@ -265,16 +306,45 @@ object LibraryManager {
      * 还不在本地列表里，反推会得到 false，于是一次「收藏」被同步成 unlike——收藏真的被撤销，
      * 随后读回校验还会把它当成"已解决"移出待同步表。见 [planPendingLikeRetries]。
      */
-    suspend fun retryPendingSync(context: Context) = withContext(Dispatchers.IO) {
-        if (!isLoggedIn(context)) return@withContext
+    suspend fun retryPendingSync(context: Context): PendingSyncRetryResult = withContext(Dispatchers.IO) {
+        if (!isLoggedIn(context)) {
+            return@withContext PendingSyncRetryResult(
+                isLoggedIn = false,
+                attemptedCount = 0,
+                pendingCount = pendingSnapshot(context).size
+            )
+        }
         val plans = planPendingLikeRetries(pendingSnapshot(context))
-        if (plans.isEmpty()) return@withContext
+        if (plans.isEmpty()) {
+            return@withContext PendingSyncRetryResult(isLoggedIn = true, attemptedCount = 0, pendingCount = 0)
+        }
+        var attemptedCount = 0
+        var rejectedCode: Int? = null
+        var readbackPending = false
         for ((songId, desired) in plans) {
             val intent = ensurePendingLoaded(context).retry(songId, desired,
                 com.smart.neteast.network.RetrofitClient.getCookie().orEmpty()) ?: continue
             persistPending(context)
-            pushLikeBlocking(context, intent)
+            attemptedCount++
+            try {
+                val result = pushLikeBlocking(context, intent)
+                if (!result.confirmed) {
+                    rejectedCode = result.writeCode?.takeUnless(PlaylistApi::isLikeWriteAccepted)
+                    readbackPending = result.readbackPending
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (e: Exception) {
+                Log.w(TAG, "retryPendingSync failed songId=$songId: ${e.message}")
+            }
         }
+        PendingSyncRetryResult(
+            isLoggedIn = true,
+            attemptedCount = attemptedCount,
+            pendingCount = pendingSnapshot(context).size,
+            rejectedCode = rejectedCode,
+            readbackPending = readbackPending,
+        )
     }
 
     /**

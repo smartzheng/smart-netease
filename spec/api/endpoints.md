@@ -53,7 +53,8 @@ POST 表单 `params=<hex>`；加密见 `fixtures/crypto`。
 | `/eapi/song/enhance/player/url/v1` | `ids=[id]`,`level`,`header`(JSON),`encodeType`(dolby→`mp4`,否则`flac`) | 播放 URL（**host 用 `INTERFACE_URL`**） |
 | `/eapi/album/sublist` | `limit`,`offset`,`total=true` | 收藏专辑 |
 | `/eapi/album/sub` / `/eapi/album/unsub` | `id` | 收藏 / 取消收藏专辑 |
-| `/eapi/radio/like` | `alg=itembased`,`trackId`,`like`,`time=3`,`e_r=TRUE`,`csrf_token` | 喜欢 / 取消喜欢（**回退通道**，官方客户端指纹，见下） |
+| `/eapi/song/like` | `trackId`,`userid`,`like`,`e_r=false`,`header` | 普通歌曲收藏 / 取消收藏（采用 API Enhanced `song_like` EAPI 封装；`interfacepc`） |
+| `/eapi/radio/like` | `alg=itembased`,`trackId`,`like`,`time=3`,`e_r=TRUE`,`csrf_token` | 历史 EAPI 路径；不要作为当前普通歌曲收藏通道 |
 | `/eapi/playlist/create` | `name`,`privacy`(0 公开 / 10 私密),`type=NORMAL`,`subType=NORMAL` | 创建歌单（响应顶层 `id` == `playlist.id`） |
 | `/eapi/playlist/manipulate/tracks` | `op`(`add`/`del`),`pid`,`trackIds`(JSON 串),`imme=true` | 歌单增 / 删曲 |
 | `/eapi/playlist/delete` | `pid` | 删除单个歌单（非本人 401） |
@@ -62,14 +63,13 @@ POST 表单 `params=<hex>`；加密见 `fixtures/crypto`。
 | `/eapi/playlist/desc/update` | `id`,`desc` | 改歌单简介 |
 | `/eapi/playlist/update/privacy` | `id`,`privacy`(0/10) | 改歌单隐私 |
 
-**官方客户端指纹**（`EapiPostOfficial`，用于 `/eapi/radio/like`）：iOS UA；设备字段
+**历史 EAPI 客户端指纹**（`EapiPostOfficial`）：iOS UA；设备字段
 `os=iphone`,`appver=8.9.60`,`deviceId`,`osver`,`versioncode=140`,`mobilename`,`buildver`,
 `resolution=1920x1080`,`__csrf`,`channel=yykj`,`requestId` 以 URL-encoded Cookie 形式发送，
 同时整体作为 `header` 字段写进加密 body。写接口在 `BASE_URL` 之外的 host 上可能被判
 `-460 风险`，故固定打 `API_URL`。
 
-> 收藏写入已改走 xeapi（见下节）。Android 不再回退 `/eapi/radio/like` 或 weapi `/api/radio/like`；Windows 仍保留回退，待跟进：
-> 两者都是**老通道**，写入的收藏会被服务端事后回滚（「收藏隔天消失」，`spec/api/xeapi.md` 末节）。
+> 官方 Android 的 `song/like` 确实使用易盾 token；但本项目当前采用 API Enhanced `module/song_like.js` 的普通 EAPI 形态，不发送该 token。OPPO PLJ110 真机上该形态对待同步歌曲返回 200，并通过收藏列表读回。`xeapi /v1/radio/like` 属于 FM 操作，不可替代普通收藏。
 
 ### eapi · 歌单写操作（`API_URL`，需客户端身份 cookie）
 
@@ -134,7 +134,7 @@ UA 为桌面客户端（`Mozilla/5.0 (Windows NT 10.0; WOW64) … NeteaseMusicDe
 | 路径 | 方法 | 参数 | 用途 |
 |---|---|---|---|
 | `/api/bsr/sk/get` | POST 明文表单（打 `API_URL`） | `appVersion=9.5.61`,`currentKeyVersion`,`deviceId`,`nonce`,`os=android`,`requestType=active`,`signature`,`t1=`,`t2=`,`timestamp`,`uid=` | 取公钥（`publicKey`/`version`/`sk`/`nextUpdateTime`），响应需验签 |
-| `/api/v1/radio/like` | POST xeapi（打 `INTERFACE_URL`，实际路径 `/xeapi/v1/radio/like`） | `alg=itembased`,`trackId`,`like`,`time=3`,`checkToken`（易盾 token，进体）；另带同名 `X-antiCheatToken` 头 | 喜欢 / 取消喜欢（**主通道**，`code == 200` 即成功） |
+| `/api/v1/radio/like` | POST xeapi（打 `INTERFACE_URL`，实际路径 `/xeapi/v1/radio/like`） | `alg=itembased`,`trackId`,`like`,`time=3`,`checkToken`（易盾 token，进体）；另带同名 `X-antiCheatToken` 头 | FM 队列喜欢 / 取消喜欢 |
 
 `deviceId` 每台设备生成一次（32 位小写 hex）后持久化，登出也不清；公钥状态落盘、按
 `nextUpdateTime` 或业务解密失败刷新（刷新时带旧 `version`）；`x-encr-ssid`/`x-encr-sskey` 会话只存内存。

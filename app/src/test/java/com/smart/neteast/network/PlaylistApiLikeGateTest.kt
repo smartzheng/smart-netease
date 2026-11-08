@@ -5,19 +5,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 锁住收藏写入的业务码判定（`PlaylistApi.isLikeWriteAccepted`，spec/api/xeapi.md §6）。
- *
- * 502 必须算成功：歌已在红心歌单时 xeapi 回 502，把它当失败会让 likeSong 掉进 weapi
- * 老通道，老通道可能触发风控 524「已取消喜欢」，把已有的收藏反手撤销（issue #33）。
- * 风控码（-460 / 524 等）与其余非 200 一律失败——判定只在 likeSong 的 xeapi 分支使用，
- * weapi / eapi 老通道仍从严只认 200。
+ * 锁住普通歌曲 `/eapi/song/like` 的业务码判定。
  */
 class PlaylistApiLikeGateTest {
 
     @Test
-    fun `200 and 502 are the only accepted codes`() {
+    fun `only code 200 is directly accepted`() {
         assertTrue(PlaylistApi.isLikeWriteAccepted(200))
-        assertTrue("502 = 歌曲已在期望状态（spec §6），必须判成功", PlaylistApi.isLikeWriteAccepted(502))
+        assertFalse("非 200 由云端读回判断是否已经处于目标状态", PlaylistApi.isLikeWriteAccepted(502))
     }
 
     @Test

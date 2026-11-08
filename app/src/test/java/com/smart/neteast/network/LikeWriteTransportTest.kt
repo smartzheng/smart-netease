@@ -7,19 +7,17 @@ import java.io.IOException
 
 class LikeWriteTransportTest {
     @Test
-    fun `both directions use one v1 request with official fields and token injection`() {
+    fun `both directions use API Enhanced song like payload on EAPI`() {
         for (desired in listOf(true, false)) {
             var calls = 0
-            val code = PlaylistApi.writeLikeOnce(2754388325L, desired) { uri, pairs, antiCheat ->
+            val code = PlaylistApi.writeLikeOnce(2754388325L, 123456L, desired) { uri, pairs, antiCheat ->
                 calls++
-                assertEquals("/api/v1/radio/like", uri)
-                assertTrue(antiCheat)
+                assertEquals("/eapi/song/like", uri)
+                assertFalse(antiCheat)
                 assertEquals(mapOf(
-                    "trackId" to "2754388325", "time" to "3", "alg" to "itembased",
-                    "like" to desired.toString(), "rqRefer" to "", "songRqRefer" to "",
-                    "mode" to "", "subMode" to "", "source" to "userfm"
+                    "like" to desired.toString(), "trackId" to "2754388325", "userid" to "123456"
                 ), pairs.toMap())
-                "{\"code\":502}"
+                "{\"code\":200}"
             }
             assertTrue(PlaylistApi.isLikeWriteAccepted(code))
             assertEquals(1, calls)
@@ -30,9 +28,9 @@ class LikeWriteTransportTest {
     fun `risk errors malformed responses and network failures never submit another request`() {
         for (response in listOf("{\"code\":524}", "{\"code\":-460}", "broken", "network")) {
             var calls = 0
-            val code = PlaylistApi.writeLikeOnce(42, true) { uri, _, _ ->
+            val code = PlaylistApi.writeLikeOnce(42, 123456L, true) { uri, _, _ ->
                 calls++
-                assertEquals("/api/v1/radio/like", uri)
+                assertEquals("/eapi/song/like", uri)
                 if (response == "network") throw IOException("offline")
                 response
             }
@@ -43,6 +41,6 @@ class LikeWriteTransportTest {
 
     @Test(expected = CancellationException::class)
     fun `cancellation is propagated without falling back`() {
-        PlaylistApi.writeLikeOnce(42, true) { _, _, _ -> throw CancellationException("cancel") }
+        PlaylistApi.writeLikeOnce(42, 123456L, true) { _, _, _ -> throw CancellationException("cancel") }
     }
 }
