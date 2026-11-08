@@ -362,7 +362,7 @@ fun MainScreen(
 
     // Shorter travel lets a natural mini-player swipe finish opening the player without
     // needing to drag almost half the screen.
-    val totalDragDistancePx = contentHeightPx * 0.62f
+    val totalDragDistancePx = contentHeightPx * 0.40f
 
     val navBarHideOffset = if (isWideLayout) 0f else with(density) { 132.dp.toPx() }
     // ------------------------------------
@@ -863,13 +863,13 @@ fun MainScreen(
 
     fun expandCard() {
         coroutineScope.launch {
-            progress.animateTo(1f, tween(320, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)))
+            progress.animateTo(1f, NcrustMotion.PlayerTransition)
         }
     }
 
     fun collapseCard() {
         coroutineScope.launch {
-            progress.animateTo(0f, tween(260, easing = FastOutSlowInEasing))
+            progress.animateTo(0f, NcrustMotion.PlayerTransition)
         }
     }
 
@@ -1454,7 +1454,7 @@ fun MainScreen(
                 coroutineScope.launch { tabPagerState.animateScrollToPage(2) }
                 if (!isInMain) navController.popBackStack(NavRoutes.HOME, false)
                 coroutineScope.launch {
-                    progress.animateTo(0f, tween(260, easing = FastOutSlowInEasing))
+                    progress.animateTo(0f, NcrustMotion.PlayerTransition)
                 }
             }
         )

@@ -3,11 +3,16 @@ package com.smart.neteast.ui.theme
 
 
 import android.content.Context
+import android.content.ContextWrapper
+import android.app.Activity
+import android.os.Build
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color as ComposeColor
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -19,6 +24,7 @@ import com.moriafly.salt.ui.SaltShapes
 import com.moriafly.salt.ui.SaltTextStyles
 import com.moriafly.salt.ui.SaltTheme
 import com.moriafly.salt.ui.saltConfigs
+import androidx.core.view.WindowCompat
 
 /**
  * 主题色预设条目
@@ -96,6 +102,20 @@ fun NcrustTheme(
     isDark: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val view = LocalView.current
+    @Suppress("DEPRECATION")
+    SideEffect {
+        view.context.findActivity()?.window?.let { window ->
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = !isDark
+            insetsController.isAppearanceLightNavigationBars = !isDark
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                window.isStatusBarContrastEnforced = false
+                window.isNavigationBarContrastEnforced = false
+            }
+        }
+    }
+
     val colors = remember(primaryColor, isDark) {
         (if (isDark) DefaultNcrustColors else LightNcrustColors).copy(
             primary = primaryColor,
@@ -150,6 +170,12 @@ fun NcrustTheme(
             content = content,
         )
     }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 /**

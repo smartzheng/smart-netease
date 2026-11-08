@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- 夜间变体：与 values/themes.xml 一致（应用本身固定暗色），仅深色 windowBackground。 -->
+    <!-- 夜间变体：深色启动底与浅色系统栏图标。 -->
     <style name="Base.Theme.Ncrust" parent="@android:style/Theme.Material.NoActionBar">
         <item name="android:windowBackground">@drawable/splash_window_background</item>
         <item name="android:windowLightStatusBar">false</item>

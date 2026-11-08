@@ -383,16 +383,14 @@ fun PlayerCard(
                     coroutineScope.launch {
                         for (targetProgress in updates) progress.snapTo(targetProgress)
                         val target = if (startProgress < 0.5f) {
-                            if (progress.value >= 0.38f) 1f else 0f
+                            // 0.4 screen-height drag range × 0.95 settle point ≈ 38% screen height.
+                            if (progress.value >= 0.95f) 1f else 0f
                         } else {
                             if (progress.value >= 0.65f) 1f else 0f
                         }
                         progress.animateTo(
                             target,
-                            if (target == 1f)
-                                tween(durationMillis = 320, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
-                            else
-                                tween(durationMillis = 260, easing = FastOutSlowInEasing)
+                            NcrustMotion.PlayerTransition
                         )
                     }
                     var accumulatedDrag = 0f
@@ -413,7 +411,7 @@ fun PlayerCard(
                 }
             }
     ) {
-        // 全屏纯黑背景。展开时 translationY=0，卡片顶与封面顶/内容区顶等高；
+        // 全屏主题背景。展开时 translationY=0，卡片顶与封面顶/内容区顶等高；
         // 折叠时整体下移一个 statusBar 高，使顶边对齐 miniBar 内容。miniBar 自带
         // statusBarsPadding（内容被下推 statusBar 高），背景若不跟着下移，miniBar
         // 上方就会多出一条 statusBar 高的 surface 色块——即"手机 miniBar 变高一片"。
@@ -426,7 +424,7 @@ fun PlayerCard(
                 }
                 .background(LocalNcrustColors.current.background)
         )
-        // 折叠态卡背：卡片整体下移后，miniBar 下方露出的是这张黑底（原底部导航/系统栏
+        // 折叠态卡背：卡片整体下移后，miniBar 下方露出的是这张主题底色（原底部导航/系统栏
         // 位置）。折叠时用 surface 盖住，与 miniBar 同色，避免底部黑块；展开时透明。
         Box(
             modifier = Modifier
@@ -442,6 +440,9 @@ fun PlayerCard(
             modifier = Modifier
                 .fillMaxSize()
                 .systemBarsPadding()
+                .graphicsLayer {
+                    translationY = (1f - progress.value) * with(density) { 24.dp.toPx() }
+                }
                 .onSizeChanged { narrowContentSize.value = it }
         ) {
             if (hasSong) {
@@ -633,7 +634,7 @@ fun PlayerCard(
                                         .widthIn(max = 560.dp)
                                         .fillMaxWidth()
                                         .padding(horizontal = 24.dp)
-                                        .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                                        .graphicsLayer { alpha = playerContentReveal(progress.value) }
                                         .clickable { onSongInfoClick() }
                                 ) {
                                     SaltText(
@@ -658,7 +659,7 @@ fun PlayerCard(
                                     modifier = Modifier
                                         .widthIn(max = 560.dp)
                                         .fillMaxWidth()
-                                        .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                                        .graphicsLayer { alpha = playerContentReveal(progress.value) }
                                 ) {
                                     playerControls()
                                 }
@@ -675,7 +676,7 @@ fun PlayerCard(
                             playerPanels(
                                 Modifier
                                     .fillMaxSize()
-                                    .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                                    .graphicsLayer { alpha = playerContentReveal(progress.value) }
                             )
                         }
                     }
@@ -686,7 +687,7 @@ fun PlayerCard(
                             .fillMaxWidth()
                             .height(56.dp)
                             .onSizeChanged { narrowTopBarHeight.floatValue = it.height.toFloat() }
-                            .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                            .graphicsLayer { alpha = playerContentReveal(progress.value) }
                             // Tiny 右侧固定预留 4×44dp 按键 + 8dp 边距。320dp 宽时标题
                             // 仍有 68dp，长歌名用既有跑马灯，绝不伸到按键下方。
                             .padding(start = 68.dp, end = if (tinyPlayer) 184.dp else 56.dp),
@@ -731,7 +732,7 @@ fun PlayerCard(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                            .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                            .graphicsLayer { alpha = playerContentReveal(progress.value) }
                     ) {
                         playerPanels(Modifier.fillMaxSize())
                         // 大封面模式下的曲名/歌手信息：overlay 在面板底部；不挤占歌词
@@ -743,7 +744,7 @@ fun PlayerCard(
                                 .onSizeChanged { narrowTitleHeight.floatValue = it.height.toFloat() }
                                 .padding(horizontal = 24.dp, vertical = 8.dp)
                                 .graphicsLayer {
-                                    alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) *
+                                    alpha = playerContentReveal(progress.value) *
                                             (1f - lyricAnimProgress.value)
                                 }
                                 // 歌名区域可点: 上拉"转到歌手/转到专辑"菜单(类 Apple Music)
@@ -770,7 +771,7 @@ fun PlayerCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .onSizeChanged { narrowControlsHeight.floatValue = it.height.toFloat() }
-                            .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                            .graphicsLayer { alpha = playerContentReveal(progress.value) }
                     ) {
                         playerControls()
                     }
@@ -803,7 +804,7 @@ fun PlayerCard(
                                     coroutineScope.launch {
                                         progress.animateTo(
                                             1f,
-                                            tween(durationMillis = 320, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
+                                            NcrustMotion.PlayerTransition
                                         )
                                     }
                                 }
@@ -927,7 +928,7 @@ fun PlayerCard(
                         val largeCoverCenterY = if (isWidePlayer) wideCoverCenter.y else geometry.centerYPx
                         val boundsCenter = coverSizePx / 2f
                         val p = progress.value
-                        val normalizedP = ((p - 0.2f) / 0.8f).coerceIn(0f, 1f)
+                        val normalizedP = p.coerceIn(0f, 1f)
                         // 宽屏封面恒为大图（缩到 mini 是窄屏"大封面↔歌词"切换的语义）；
                         // 宽屏下它随分栏进度在左栏与居中之间平滑移动。
                         val lyricAnimValue = if (isWidePlayer) 0f else lyricAnimProgress.value
@@ -963,7 +964,7 @@ fun PlayerCard(
                     .fillMaxWidth()
                     .statusBarsPadding()
                     .height(56.dp)
-                    .graphicsLayer { alpha = ((progress.value - 0.7f) / 0.3f).coerceIn(0f, 1f) }
+                    .graphicsLayer { alpha = playerContentReveal(progress.value) }
                     .padding(end = 8.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
@@ -1037,6 +1038,10 @@ private fun ThresholdScope(state: State<Boolean>, content: @Composable (Boolean)
 
 // 新封面超过该阈值仍未就绪，才退化为纯色占位（"实在不出来再禁用"）。
 private const val COVER_HOLD_MS = 400L
+
+/** Fade player controls in alongside the shared-cover expansion instead of waiting until the end. */
+private fun playerContentReveal(progress: Float): Float =
+    ((progress - 0.45f) / 0.55f).coerceIn(0f, 1f)
 
 /**
  * 切歌不闪的封面。Coil 的 [AsyncImagePainter] 在 model 变化时先进入 loading 态、

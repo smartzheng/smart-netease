@@ -68,6 +68,10 @@ object NcrustMotion {
     val StandardEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
     val CoverFade = tween<Float>(durationMillis = 220, easing = StandardEasing)
     val Interaction = spring<Float>(dampingRatio = 0.82f, stiffness = Spring.StiffnessMedium)
+    val PlayerTransition = spring<Float>(
+        dampingRatio = 0.9f,
+        stiffness = Spring.StiffnessMediumLow,
+    )
 }
 
 fun ncrustSpring(response: Float, dampingRatio: Float) = spring<Float>(
